@@ -12,4 +12,5 @@ public class ModItems {
 
     public static final DeferredItem<Item> INFINITE_CORE =
             ITEMS.register("infinite_core", () -> new InfiniteCoreItem(new Item.Properties()));
+
 }

@@ -45,6 +45,7 @@ public class InfiniteFluidMachineBlock extends Block implements EntityBlock {
     protected InteractionResult useWithoutItem(BlockState state, Level level, BlockPos pos, Player player, BlockHitResult hitResult) {
         if (level.isClientSide) return InteractionResult.SUCCESS;
 
+        // ✅ 必须真正空手：主手+副手都为空才允许取出
         if (!player.getMainHandItem().isEmpty() || !player.getOffhandItem().isEmpty()) {
             return InteractionResult.PASS;
         }
@@ -59,11 +60,9 @@ public class InfiniteFluidMachineBlock extends Block implements EntityBlock {
             return InteractionResult.CONSUME;
         }
 
-        // 清空机器槽位
         machine.getCoreSlot().setStackInSlot(0, ItemStack.EMPTY);
         machine.setChanged();
 
-        // 给玩家（背包满就丢地上）
         if (!player.addItem(inSlot)) {
             player.drop(inSlot, false);
         }
@@ -72,7 +71,8 @@ public class InfiniteFluidMachineBlock extends Block implements EntityBlock {
     }
 
     @Override
-    protected ItemInteractionResult useItemOn(ItemStack stack, BlockState state, Level level, BlockPos pos, Player player, InteractionHand hand, BlockHitResult hitResult) {
+    protected ItemInteractionResult useItemOn(ItemStack stack, BlockState state, Level level, BlockPos pos, Player player,
+                                              InteractionHand hand, BlockHitResult hitResult) {
         if (level.isClientSide) return ItemInteractionResult.SUCCESS;
 
         // 只处理“无限核心”

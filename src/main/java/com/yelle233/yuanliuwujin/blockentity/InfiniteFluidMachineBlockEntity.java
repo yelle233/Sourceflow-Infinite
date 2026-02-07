@@ -14,17 +14,40 @@ import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.material.FlowingFluid;
 import net.minecraft.world.level.material.Fluid;
-import net.neoforged.neoforge.capabilities.Capabilities;
 import net.neoforged.neoforge.fluids.FluidStack;
 import net.neoforged.neoforge.fluids.capability.IFluidHandler;
-import net.neoforged.neoforge.fluids.capability.templates.FluidTank;
 import net.neoforged.neoforge.items.ItemStackHandler;
 
 import javax.annotation.Nullable;
+import java.util.EnumMap;
 
 public class InfiniteFluidMachineBlockEntity extends BlockEntity {
     // 先写死默认值，后面做 GUI 时就改它
-    public static final int DEFAULT_PUSH_PER_TICK = Integer.MAX_VALUE;
+    public static final int DEFAULT_PUSH_PER_TICK = 50;
+
+    //六个面的模式：OFF（不输出），PULL（只给能抽的邻居输出），BOTH（给所有邻居输出）
+    public enum SideMode { OFF, PULL, BOTH }
+
+    private final EnumMap<Direction, SideMode> sideModes = new EnumMap<>(Direction.class);
+
+    public SideMode getSideMode(Direction dir) {
+        if (dir == Direction.UP) return SideMode.OFF; // 顶面不给出液
+        return sideModes.getOrDefault(dir, SideMode.BOTH); // 先默认 BOTH，后面再改默认
+    }
+
+    public void cycleSideMode(Direction dir) {
+        if (dir == Direction.UP) return;
+        SideMode cur = getSideMode(dir);
+        SideMode next = switch (cur) {
+            case OFF -> SideMode.PULL;
+            case PULL -> SideMode.BOTH;
+            case BOTH -> SideMode.OFF;
+        };
+        sideModes.put(dir, next);
+        setChanged();
+        if (level != null) level.sendBlockUpdated(worldPosition, getBlockState(), getBlockState(), 3);
+    }
+
 
     // 1格核心槽
     private final ItemStackHandler coreSlot = new ItemStackHandler(1) {
@@ -42,7 +65,7 @@ public class InfiniteFluidMachineBlockEntity extends BlockEntity {
     // 玩家可调：每 tick 主动输出多少 mB
     private int pushPerTick = DEFAULT_PUSH_PER_TICK;
 
-    // 对外"无限输出"的流体能力（别人来抽永远有）
+    // 对外“无限输出”的流体能力（别人来抽永远有）
     private final IFluidHandler infiniteOutput = new IFluidHandler() {
         @Override
         public int getTanks() {
@@ -52,13 +75,13 @@ public class InfiniteFluidMachineBlockEntity extends BlockEntity {
         @Override
         public FluidStack getFluidInTank(int tank) {
             Fluid f = getBoundSourceFluid();
-            // 这里只是"显示用"，给个非0数量让管道知道里面是什么
-            return f == null ? FluidStack.EMPTY : new FluidStack(f, Integer.MAX_VALUE);
+            // 这里只是“显示用”，给个非0数量让管道知道里面是什么
+            return f == null ? FluidStack.EMPTY : new FluidStack(f, 1000);
         }
 
         @Override
         public int getTankCapacity(int tank) {
-            return Integer.MAX_VALUE; // 表示"无限"
+            return Integer.MAX_VALUE; // 表示“无限”
         }
 
         @Override
@@ -99,10 +122,9 @@ public class InfiniteFluidMachineBlockEntity extends BlockEntity {
     }
 
     /**
-     * 服务端 tick：主动向相邻容器推送液体
-     * 优化版：移除轮次限制，更激进的推送策略
+     * 服务端 tick：主动向相邻容器推送 pushPerTick mB
      */
-public static void serverTick(Level level, BlockPos pos, BlockState state, InfiniteFluidMachineBlockEntity be) {
+    public static void serverTick(Level level, BlockPos pos, BlockState state, InfiniteFluidMachineBlockEntity be) {
         Fluid fluid = be.getBoundSourceFluid();
         if (fluid == null) return;
 
@@ -122,7 +144,7 @@ public static void serverTick(Level level, BlockPos pos, BlockState state, Infin
 
             if (handler == null) continue;
 
-            // 先做一次模拟，确认它能接收这种液体
+            // 先做一次模拟，确认它能接收这种液体（避免白分配）
             int canAccept = handler.fill(new FluidStack(fluid, 1), IFluidHandler.FluidAction.SIMULATE);
             if (canAccept > 0) {
                 outputs.add(handler);
@@ -131,55 +153,39 @@ public static void serverTick(Level level, BlockPos pos, BlockState state, Infin
 
         if (outputs.isEmpty()) return;
 
-        // 2) 均分 + 泵式填充
-        int remaining = total;
+        // 2) 均分：每个邻居先拿到 share
         int n = outputs.size();
+        int share = Math.max(1, total / n); // 至少 1mB，避免 total<n 时全是0
+        int remaining = total;
 
-        // 单次 fill 给一个上限，避免传特别大的数（也更符合很多容器的实现习惯）
-        final int PER_CALL_MAX = 100_000;
-        // 每个容器每 tick 最多循环 fill 次数，防止某些 handler 返回很小值导致死循环/卡顿
-        final int PER_HANDLER_GUARD = 64;
-        // 进行几轮再分配：第1轮均分，第2/3轮把剩余再均分给还能吃的
-        final int ROUNDS = 3;
-
-        for (int round = 0; round < ROUNDS && remaining > 0; round++) {
-            int share = Math.max(1, remaining / n);
-            boolean anyAcceptedThisRound = false;
+        // 为了处理“有的容器吃不完”，我们最多做几轮再分配（防止死循环）
+        for (int round = 0; round < 3 && remaining > 0; round++) {
+            boolean anyAccepted = false;
 
             for (IFluidHandler handler : outputs) {
                 if (remaining <= 0) break;
 
-                // 该容器本轮最多分到的量
-                int budget = Math.min(share, remaining);
-                if (budget <= 0) continue;
+                int offer = Math.min(share, remaining);
 
-                int guard = PER_HANDLER_GUARD;
-                int consumed = 0;
-
-                // 泵式：同一 tick 内多次 fill，尽量把 budget 填完
-                while (consumed < budget && guard-- > 0) {
-                    int offer = Math.min(PER_CALL_MAX, budget - consumed);
-                    int accepted = handler.fill(new FluidStack(fluid, offer), IFluidHandler.FluidAction.EXECUTE);
-                    if (accepted <= 0) break;
-
-                    consumed += accepted;
-                    anyAcceptedThisRound = true;
-                }
-
-                if (consumed > 0) {
-                    remaining -= consumed;
+                int accepted = handler.fill(new FluidStack(fluid, offer), IFluidHandler.FluidAction.EXECUTE);
+                if (accepted > 0) {
+                    remaining -= accepted;
+                    anyAccepted = true;
                 }
             }
 
-            // 如果这一轮没人能接收，说明都满了/不接了，直接结束
-            if (!anyAcceptedThisRound) break;
+            // 如果这一轮没人吃到，说明都满了/不接了，直接结束
+            if (!anyAccepted) break;
+
+            // 下一轮把剩余再均分一次（让还没满的继续分到）
+            if (remaining > 0) {
+                share = Math.max(1, remaining / n);
+            }
         }
     }
 
-
-
     /**
-     * 从核心里读取绑定的液体，并强制转换为"源液体（Source）"
+     * 从核心里读取绑定的液体，并强制转换为“源液体（Source）”
      */
     @Nullable
     private Fluid getBoundSourceFluid() {
@@ -209,6 +215,14 @@ public static void serverTick(Level level, BlockPos pos, BlockState state, Infin
         if (tag.contains("PushPerTick")) {
             pushPerTick = tag.getInt("PushPerTick");
         }
+        if (tag.contains("SideModes")) {
+            CompoundTag modesTag = tag.getCompound("SideModes");
+            for (Direction d : Direction.values()) {
+                if (d == Direction.UP) continue;
+                String s = modesTag.getString(d.getName());
+                if (!s.isEmpty()) sideModes.put(d, SideMode.valueOf(s));
+            }
+        }
     }
 
     @Override
@@ -217,6 +231,14 @@ public static void serverTick(Level level, BlockPos pos, BlockState state, Infin
 
         tag.put("CoreSlot", coreSlot.serializeNBT(registries));
         tag.putInt("PushPerTick", pushPerTick);
+
+        CompoundTag modes = new CompoundTag();
+        for (Direction d : Direction.values()) {
+            if (d == Direction.UP) continue;
+            modes.putString(d.getName(), getSideMode(d).name());
+        }
+        tag.put("SideModes", modes);
+
     }
 
     // ====== 给外部/能力注册用的 getter ======
