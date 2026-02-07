@@ -1,0 +1,6 @@
+{
+  "parent": "minecraft:block/cube_all",
+  "textures": {
+    "all": "yuanliuwujin:block/infinite_fluid_machine"
+  }
+}

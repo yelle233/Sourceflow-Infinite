@@ -1,0 +1,12 @@
+{
+  "parent": "minecraft:item/generated",
+  "textures": {
+    "layer0": "yuanliuwujin:item/infinite_core_empty"
+  },
+  "overrides": [
+    {
+      "predicate": { "custom_model_data": 1 },
+      "model": "yuanliuwujin:item/infinite_core_filled"
+    }
+  ]
+}
