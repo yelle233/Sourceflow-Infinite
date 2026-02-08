@@ -3,6 +3,7 @@ package com.yelle233.yuanliuwujin.blockentity;
 import com.yelle233.yuanliuwujin.block.InfiniteFluidMachineBlock;
 import com.yelle233.yuanliuwujin.item.InfiniteCoreItem;
 import com.yelle233.yuanliuwujin.registry.ModBlockEntities;
+import com.yelle233.yuanliuwujin.registry.Modconfigs;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.HolderLookup;
@@ -22,12 +23,12 @@ import net.neoforged.neoforge.items.ItemStackHandler;
 
 import javax.annotation.Nullable;
 import java.util.EnumMap;
-import java.util.Map;
 
 public class InfiniteFluidMachineBlockEntity extends BlockEntity {
-    // 3) 默认值（你后面会改成从配置读）
+    // 默认值（后面会改成从配置读）
     private static final SideMode DEFAULT_MODE = SideMode.OFF;
-    private static final int DEFAULT_PUSH_PER_TICK = 50; // mB/t，先写死，后面接配置
+    private static final int DEFAULT_PUSH_PER_TICK = Modconfigs.BASE_PUSH_PER_TICK.get(); // mB/t
+
 
     //六个面的模式：OFF（不输出），PULL（只给能抽的邻居输出），BOTH（给所有邻居输出）
     public enum SideMode { OFF, PULL, BOTH }
@@ -40,19 +41,6 @@ public class InfiniteFluidMachineBlockEntity extends BlockEntity {
         return sideModes.getOrDefault(dir, DEFAULT_MODE); // 先默认
     }
 
-
-    public void setSideMode(Direction dir, SideMode mode) {
-        if (dir == Direction.UP) return;
-
-        SideMode old = getSideMode(dir);
-        sideModes.put(dir, mode);
-        // 只有真的变化了才通知，减少无意义刷新
-        if (old != mode) {
-            notifyCapabilityChanged(dir);
-        } else {
-            setChanged();
-        }
-    }
 
     public void cycleSideMode(Direction dir) {
         if (dir == Direction.UP) return;
@@ -71,21 +59,12 @@ public class InfiniteFluidMachineBlockEntity extends BlockEntity {
     public int getSidePushPerTick(Direction dir) {
         if (dir == Direction.UP) return 0;
         int v = sidePushPerTick.getOrDefault(dir, DEFAULT_PUSH_PER_TICK);
-        // clamp：防止负数/过大（上限你自己定）
+        // 防止负数/过大
         if (v < 0) v = 0;
-        if (v > 100_000) v = 100_000;
+//        if (v > 100_000) v = 100_000;
         return v;
     }
 
-    public void setSidePushPerTick(Direction dir, int amount) {
-        if (dir == Direction.UP) return;
-        int v = amount;
-        if (v < 0) v = 0;
-        if (v > 100_000) v = 100_000;
-        sidePushPerTick.put(dir, v);
-        notifyCapabilityChanged(dir);
-        if (level != null) level.sendBlockUpdated(worldPosition, getBlockState(), getBlockState(), 3);
-    }
 
 
     // 1格核心槽
@@ -108,12 +87,14 @@ public class InfiniteFluidMachineBlockEntity extends BlockEntity {
     private final IFluidHandler infiniteOutput = new IFluidHandler() {
         @Override
         public int getTanks() {
+            if (!canWorkNow()) return 0;
             return 1;
         }
 
         @Override
         public FluidStack getFluidInTank(int tank) {
             Fluid f = getBoundSourceFluid();
+            if (!canWorkNow()) return FluidStack.EMPTY;
             // 这里只是“显示用”，给个非0数量让管道知道里面是什么
             return f == null ? FluidStack.EMPTY : new FluidStack(f, Integer.MAX_VALUE);
         }
@@ -135,6 +116,7 @@ public class InfiniteFluidMachineBlockEntity extends BlockEntity {
 
         @Override
         public FluidStack drain(FluidStack resource, FluidAction action) {
+            if (!canWorkNow()) return FluidStack.EMPTY;
             Fluid f = getBoundSourceFluid();
             if (f == null) return FluidStack.EMPTY;
 
@@ -156,6 +138,7 @@ public class InfiniteFluidMachineBlockEntity extends BlockEntity {
         }
     };
 
+    // 构造器：初始化每面模式和输出量
     public InfiniteFluidMachineBlockEntity(BlockPos pos, BlockState state) {
         super(ModBlockEntities.INFINITE_FLUID_MACHINE.get(), pos, state);
             for (Direction d : Direction.values()) {
@@ -177,6 +160,28 @@ public class InfiniteFluidMachineBlockEntity extends BlockEntity {
         Fluid f = be.getBoundSourceFluid();
         if (f == null) return;
 
+        // ===== 1) 计算本 tick 需要的 FE：全 OFF 也要低耗电 =====
+        // enabled 面 = PULL 或 BOTH
+        final int IDLE_FE_PER_TICK = 2;            // 全 OFF 时也消耗的 FE（你可改成配置）
+        final int FE_PER_ENABLED_FACE = 8;         // 每启用一个面额外 FE（PULL/BOTH 同价）
+        int enabledFaces = 0;
+
+        for (Direction d : Direction.values()) {
+            if (d == Direction.UP) continue;
+            SideMode m = be.getSideMode(d);
+            if (m == SideMode.PULL || m == SideMode.BOTH) enabledFaces++;
+        }
+
+        int cost = IDLE_FE_PER_TICK + enabledFaces * FE_PER_ENABLED_FACE;
+
+        // ===== 2) 没电就不工作（不推送）=====
+        // 这里假设你 BE 里有字段 energy（int）或方法能取/扣能量
+        // 推荐你在 BE 里封装成：boolean consumeFe(int cost)
+        if (!be.consumeFe(cost)) {
+            return;
+        }
+
+        // ===== 3) 有电：只对 BOTH 面主动推送 =====
         for (Direction dir : Direction.values()) {
             if (dir == Direction.UP) continue;
             if (be.getSideMode(dir) != SideMode.BOTH) continue;
@@ -194,13 +199,23 @@ public class InfiniteFluidMachineBlockEntity extends BlockEntity {
 
             handler.fill(new FluidStack(f, amount), IFluidHandler.FluidAction.EXECUTE);
         }
+        be.trySyncEnergyToClient();
+    }
+
+    public boolean consumeFe(int cost) {
+        if (cost <= 0) return true;
+        if (energy < cost) return false;   // energy 是你存 FE 的字段
+        energy -= cost;
+        markEnergyDirtyForSync();
+        setChanged();
+        return true;
     }
 
     /**
      * 从核心里读取绑定的液体，并强制转换为“源液体（Source）”
      */
     @Nullable
-    private Fluid getBoundSourceFluid() {
+    public Fluid getBoundSourceFluid() {
         ItemStack core = coreSlot.getStackInSlot(0);
         if (core.isEmpty()) return null;
 
@@ -217,12 +232,13 @@ public class InfiniteFluidMachineBlockEntity extends BlockEntity {
 
 
 
-    // ====== 存档（1.21.1 正确签名） ======
+    // ====== 存档 ======
 
     @Override
     public void loadAdditional(CompoundTag tag, HolderLookup.Provider registries) {
         super.loadAdditional(tag, registries);
 
+        energy = tag.getInt("Energy");
         if (tag.contains("CoreSlot")) {
             coreSlot.deserializeNBT(registries, tag.getCompound("CoreSlot"));
         }
@@ -265,6 +281,7 @@ public class InfiniteFluidMachineBlockEntity extends BlockEntity {
 
         tag.put("CoreSlot", coreSlot.serializeNBT(registries));
         tag.putInt("PushPerTick", pushPerTick);
+        tag.putInt("Energy", energy);
 
         CompoundTag modes = new CompoundTag();
         for (Direction d : Direction.values()) {
@@ -350,6 +367,131 @@ public class InfiniteFluidMachineBlockEntity extends BlockEntity {
     public net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket getUpdatePacket() {
         return net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket.create(this);
     }
+
+
+    // ===== Energy (FE) =====
+    private int energy = 0;
+
+    // 先写死，后面接配置
+    private static final int ENERGY_CAPACITY =Integer.MAX_VALUE;
+    private static final int MAX_RECEIVE_PER_TICK = Integer.MAX_VALUE;
+
+    // 全 OFF 时每 tick 的低耗电（只要插了核心且绑定了液体）
+    private static final int IDLE_FE_PER_TICK = 2;
+
+    // 每启用一个面（PULL 或 BOTH）额外增加的耗电
+    private static final int FE_PER_ENABLED_FACE_PER_TICK = 8;
+
+    private final net.neoforged.neoforge.energy.IEnergyStorage energyStorage =
+            new net.neoforged.neoforge.energy.IEnergyStorage() {
+                @Override public int receiveEnergy(int maxReceive, boolean simulate) {
+                    if (maxReceive <= 0) return 0;
+                    int space = ENERGY_CAPACITY - energy;
+                    int received = Math.min(space, Math.min(MAX_RECEIVE_PER_TICK, maxReceive));
+                    if (!simulate && received > 0) {
+                        energy += received;
+                        markEnergyDirtyForSync();
+                        setChanged();
+                    }
+                    return received;
+                }
+                @Override public int extractEnergy(int maxExtract, boolean simulate) { return 0; } // 不允许外部抽
+                @Override public int getEnergyStored() { return energy; }
+                @Override public int getMaxEnergyStored() { return ENERGY_CAPACITY; }
+                @Override public boolean canExtract() { return false; }
+                @Override public boolean canReceive() { return true; }
+
+            };
+
+    public net.neoforged.neoforge.energy.IEnergyStorage getEnergyStorage() {
+        return energyStorage;
+    }
+
+    public int getFeCostPerTick() { return calcFePerTick(); }
+
+    public int countEnabledFaces() {
+        int c = 0;
+        for (Direction d : Direction.values()) {
+            if (d == Direction.UP) continue;
+            SideMode m = getSideMode(d);
+            if (m == SideMode.PULL || m == SideMode.BOTH) c++;
+        }
+        return c;
+    }
+
+    public int calcFePerTick() {
+        // 没核心/没绑定液体：不耗电也不工作
+        if (coreSlot.getStackInSlot(0).isEmpty()) return 0;
+
+        Fluid bound = getBoundSourceFluid();
+        if (bound == null) return 0;
+
+        int enabled = countEnabledFaces();
+        return IDLE_FE_PER_TICK + enabled * FE_PER_ENABLED_FACE_PER_TICK;
+    }
+
+    public boolean canWorkNow() {
+        int cost = calcFePerTick();
+        // cost==0 代表没有核心/绑定，不算“工作”
+        return cost > 0 && energy >= cost;
+    }
+
+    public boolean consumeFeForTick() {
+        int cost = calcFePerTick();
+        if (cost <= 0) return false;
+        if (energy < cost) return false;
+        energy -= cost;
+        setChanged();
+        return true;
+    }
+
+    //插入核心后更新方块
+    public void onCoreChanged() {
+        if (level == null || level.isClientSide) return;
+
+        setChanged();
+        BlockState st = getBlockState();
+
+        // 这句是让客户端立刻拿到新的 CoreSlot / boundFluid 等数据（HUD/Jade 都靠它）
+        level.sendBlockUpdated(worldPosition, st, st, 3);
+
+        // 如果你希望“核心变化也会影响能力/抽取可用性”，可以顺便清缓存
+        level.invalidateCapabilities(worldPosition);
+    }
+
+    // ===== client sync (energy) =====
+    private int energyLastSynced = Integer.MIN_VALUE;
+    private int energySyncCooldown = 0;
+    private boolean energyDirtyForSync = false;
+
+    public void markEnergyDirtyForSync() {
+        energyDirtyForSync = true;
+    }
+
+    private void trySyncEnergyToClient() {
+        if (level == null || level.isClientSide) return;
+
+        // 节流：每 5 tick 最多同步一次（你可改）
+        if (energySyncCooldown > 0) {
+            energySyncCooldown--;
+            return;
+        }
+
+        // 变化阈值：能量变化不大就不发（你可改）
+        final int THRESHOLD = 1; // 想更省就设 10/50/100
+
+        if (!energyDirtyForSync && Math.abs(energy - energyLastSynced) < THRESHOLD) {
+            return;
+        }
+
+        BlockState st = getBlockState();
+        setChanged();
+        level.sendBlockUpdated(worldPosition, st, st, 3); // 这会发送 BE update packet/tag
+        energyLastSynced = energy;
+        energyDirtyForSync = false;
+        energySyncCooldown = 5;
+    }
+
 
 
 

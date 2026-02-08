@@ -3,6 +3,10 @@
 
   "item.yuanliuwujin.infinite_core": "Infinite Core",
   "block.yuanliuwujin.infinite_fluid_machine": "Infinite Fluid Machine",
-  "item.yuanliuwujin.wrench": "Wrench"
+  "item.yuanliuwujin.wrench": "Wrench",
+
+  "msg.yourmod.wrench_mode": "Mode",
+  "mode.yourmod.wrench.io": "I/O",
+  "mode.yourmod.wrench.config": "Config"
 
 }

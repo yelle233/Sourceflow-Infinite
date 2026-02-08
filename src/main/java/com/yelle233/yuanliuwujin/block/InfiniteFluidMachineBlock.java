@@ -26,7 +26,7 @@ import javax.annotation.Nullable;
 public class InfiniteFluidMachineBlock extends Block implements EntityBlock {
 
 
-    //脏标记
+    //脏标记，用于方块变化时重置周围方块状态
     public static final BooleanProperty DIRTY = BooleanProperty.create("dirty");
 
 
@@ -58,65 +58,14 @@ public class InfiniteFluidMachineBlock extends Block implements EntityBlock {
 
     @Override
     protected InteractionResult useWithoutItem(BlockState state, Level level, BlockPos pos, Player player, BlockHitResult hitResult) {
-        if (level.isClientSide) return InteractionResult.SUCCESS;
-
-        // ✅ 必须真正空手：主手+副手都为空才允许取出
-        if (!player.getMainHandItem().isEmpty() || !player.getOffhandItem().isEmpty()) {
-            return InteractionResult.PASS;
-        }
-
-        BlockEntity be = level.getBlockEntity(pos);
-        if (!(be instanceof InfiniteFluidMachineBlockEntity machine)) {
-            return InteractionResult.PASS;
-        }
-
-        ItemStack inSlot = machine.getCoreSlot().getStackInSlot(0);
-        if (inSlot.isEmpty()) {
-            return InteractionResult.CONSUME;
-        }
-
-        machine.getCoreSlot().setStackInSlot(0, ItemStack.EMPTY);
-        machine.setChanged();
-
-
-
-        if (!player.addItem(inSlot)) {
-            player.drop(inSlot, false);
-        }
-
-        return InteractionResult.CONSUME;
+        return InteractionResult.PASS;
     }
 
     @Override
     protected ItemInteractionResult useItemOn(ItemStack stack, BlockState state, Level level, BlockPos pos, Player player,
                                               InteractionHand hand, BlockHitResult hitResult) {
-        if (level.isClientSide) return ItemInteractionResult.SUCCESS;
 
-        // 只处理“无限核心”
-        if (!(stack.getItem() instanceof InfiniteCoreItem)) {
-            return ItemInteractionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION;
-        }
-
-        BlockEntity be = level.getBlockEntity(pos);
-        if (!(be instanceof InfiniteFluidMachineBlockEntity machine)) {
-            return ItemInteractionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION;
-        }
-
-        // 槽里已经有核心了就不塞
-        if (!machine.getCoreSlot().getStackInSlot(0).isEmpty()) {
-            return ItemInteractionResult.CONSUME;
-        }
-
-        // 放入 1 个
-        ItemStack toInsert = stack.copy();
-        toInsert.setCount(1);
-        machine.getCoreSlot().setStackInSlot(0, toInsert);
-        machine.setChanged();
-
-        // 扣掉玩家手上的 1 个
-        stack.shrink(1);
-
-        return ItemInteractionResult.CONSUME;
+        return ItemInteractionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION;
     }
 
     @Override

@@ -1,6 +1,7 @@
 package com.yelle233.yuanliuwujin;
 
 import com.yelle233.yuanliuwujin.registry.*;
+import net.neoforged.fml.config.ModConfig;
 import org.slf4j.Logger;
 
 import com.mojang.logging.LogUtils;
@@ -27,6 +28,7 @@ public class SourceflowInfinite {
         ModBlocks.BLOCKS.register(modEventBus);
         ModBlockEntities.BLOCK_ENTITIES.register(modEventBus);
         modEventBus.addListener(ModCapabilities::register);
+        modContainer.registerConfig(ModConfig.Type.SERVER,Modconfigs.SPEC);
 
         NeoForge.EVENT_BUS.register(this);
 

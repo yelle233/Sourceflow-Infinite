@@ -38,6 +38,15 @@ public class ModCapabilities {
                 },
                 ModBlocks.INFINITE_FLUID_MACHINE.get()
         );
+
+        event.registerBlock(
+                Capabilities.EnergyStorage.BLOCK,
+                (level, pos, state, be, ctx) -> {
+                    if (!(be instanceof InfiniteFluidMachineBlockEntity machine)) return null;
+                    return (ctx == Direction.UP) ? machine.getEnergyStorage() : null;
+                },
+                ModBlocks.INFINITE_FLUID_MACHINE.get()
+        );
     }
 
 

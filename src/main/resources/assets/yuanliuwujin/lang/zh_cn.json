@@ -3,6 +3,10 @@
 
   "item.yuanliuwujin.infinite_core": "无限核心",
   "block.yuanliuwujin.infinite_fluid_machine": "无限液体机器",
-  "item.yuanliuwujin.wrench": "扳手"
+  "item.yuanliuwujin.wrench": "扳手",
+
+  "msg.yourmod.wrench_mode": "模式",
+  "mode.yourmod.wrench.io": "IO（输入/输出）",
+  "mode.yourmod.wrench.config": "配置"
 
 }
