@@ -1,6 +1,8 @@
 {
   "itemgroup.infinitewater": "Sourceflow Infinite",
 
-  "item.yuanliuwujin.infinite_core": "Infinite Core"
+  "item.yuanliuwujin.infinite_core": "Infinite Core",
+  "block.yuanliuwujin.infinite_fluid_machine": "Infinite Fluid Machine",
+  "item.yuanliuwujin.wrench": "Wrench"
 
 }

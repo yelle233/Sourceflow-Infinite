@@ -17,13 +17,28 @@ import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.entity.BlockEntityTicker;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.block.state.StateDefinition;
+import net.minecraft.world.level.block.state.properties.BooleanProperty;
 import net.minecraft.world.phys.BlockHitResult;
 
 import javax.annotation.Nullable;
 
 public class InfiniteFluidMachineBlock extends Block implements EntityBlock {
+
+
+    //脏标记
+    public static final BooleanProperty DIRTY = BooleanProperty.create("dirty");
+
+
     public InfiniteFluidMachineBlock(Properties properties) {
         super(properties);
+        this.registerDefaultState(this.stateDefinition.any().setValue(DIRTY, false));
+    }
+
+
+    @Override
+    protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder) {
+        builder.add(DIRTY);
     }
 
     @Nullable
@@ -62,6 +77,8 @@ public class InfiniteFluidMachineBlock extends Block implements EntityBlock {
 
         machine.getCoreSlot().setStackInSlot(0, ItemStack.EMPTY);
         machine.setChanged();
+
+
 
         if (!player.addItem(inSlot)) {
             player.drop(inSlot, false);

@@ -20,5 +20,6 @@ public class ModTab {
                     .displayItems((parameters, output) -> {
                         output.accept(ModItems.INFINITE_CORE.get());
                         output.accept(ModBlocks.INFINITE_FLUID_MACHINE.get());
+                        output.accept(ModItems.WRENCH.get());
                     }).build());
 }
