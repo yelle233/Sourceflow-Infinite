@@ -125,7 +125,9 @@ public class WrenchItem extends Item {
         if (face == Direction.UP) return InteractionResult.PASS;
 
         machine.cycleSideMode(face);
-        level.playSound(null, pos, SoundEvents.LEVER_CLICK, SoundSource.BLOCKS, 0.5f, 1.2f);
+//        level.playSound(null, pos, SoundEvents.LEVER_CLICK, SoundSource.BLOCKS, 0.5f, 1.2f);
+        level.playSound(null, pos, SoundEvents.WOODEN_TRAPDOOR_OPEN, SoundSource.BLOCKS, 0.5f, 1.0f);
+
         return InteractionResult.SUCCESS;
     }
 

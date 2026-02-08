@@ -25,6 +25,9 @@ import net.minecraft.world.level.material.FluidState;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.HitResult;
 import net.minecraft.world.phys.Vec3;
+import net.neoforged.neoforge.capabilities.Capabilities;
+import net.neoforged.neoforge.fluids.FluidStack;
+import net.neoforged.neoforge.fluids.capability.IFluidHandler;
 
 import javax.annotation.Nullable;
 import java.util.List;
@@ -53,6 +56,29 @@ public class InfiniteCoreItem extends Item {
         if (player.isShiftKeyDown()) {
             unbindOneCore(player, stack);
             player.displayClientMessage(Component.translatable("tooltip.yuanliuwujin.core.text4").withStyle(ChatFormatting.YELLOW), true);
+            return InteractionResult.CONSUME;
+        }
+
+
+        // 如果点到的是容器，就从容器里绑定 =====
+        ResourceLocation tankFluidId = tryGetFluidIdFromHandler(level, pos, ctx.getClickedFace());
+        if (tankFluidId != null) {
+            ResourceLocation bound = getBoundFluid(stack);
+            if (bound != null) {
+                if (bound.equals(tankFluidId)) {
+                    player.displayClientMessage(Component.literal("已绑定该液体").withStyle(ChatFormatting.YELLOW), true);
+                } else {
+                    player.displayClientMessage(Component.literal("已绑定液体，潜行右键清除后才能重新绑定").withStyle(ChatFormatting.RED), true);
+                }
+                return InteractionResult.CONSUME;
+            }
+
+            bindOneCore(player, stack, tankFluidId);
+            player.displayClientMessage(
+                    Component.literal("已绑定：").withStyle(ChatFormatting.GREEN)
+                            .append(Component.literal(tankFluidId.toString()).withStyle(ChatFormatting.AQUA)),
+                    true
+            );
             return InteractionResult.CONSUME;
         }
 
@@ -184,16 +210,7 @@ public class InfiniteCoreItem extends Item {
 
     @Override
     public void appendHoverText(ItemStack stack, TooltipContext context, List<Component> tooltip, TooltipFlag flag) {
-//        ResourceLocation bound = getBoundFluid(stack);
-//        if (bound == null) {
-//            tooltip.add(Component.literal("未绑定液体").withStyle(ChatFormatting.GRAY));
-//            tooltip.add(Component.literal("右键液体方块进行绑定").withStyle(ChatFormatting.DARK_GRAY));
-//            tooltip.add(Component.literal("潜行右键清除绑定").withStyle(ChatFormatting.DARK_GRAY));
-//        } else {
-//            tooltip.add(Component.literal("已绑定：").withStyle(ChatFormatting.GRAY)
-//                    .append(Component.literal(bound.toString()).withStyle(ChatFormatting.AQUA)));
-//            tooltip.add(Component.literal("潜行右键清除绑定").withStyle(ChatFormatting.DARK_GRAY));
-//        }
+
         ResourceLocation boundId = getBoundFluid(stack);
 
         if (boundId == null) {
@@ -309,5 +326,53 @@ public class InfiniteCoreItem extends Item {
     private static CompoundTag getOrCreateCustomTag(ItemStack stack) {
         CustomData data = stack.get(DataComponents.CUSTOM_DATA);
         return data != null ? data.copyTag() : new CompoundTag();
+    }
+
+
+    //检测容器内液体
+    @Nullable
+    private static ResourceLocation tryGetFluidIdFromHandler(Level level, BlockPos pos, @Nullable Direction preferredSide) {
+        // 1) 优先用点击面方向拿 capability（很多 tank 只在特定面暴露）
+        if (preferredSide != null) {
+            IFluidHandler h = level.getCapability(Capabilities.FluidHandler.BLOCK, pos, preferredSide);
+            ResourceLocation id = firstNonEmptyFluidId(h);
+            if (id != null) return id;
+        }
+
+        // 2) 再尝试所有方向（提高兼容性）
+        for (Direction d : Direction.values()) {
+            IFluidHandler h = level.getCapability(Capabilities.FluidHandler.BLOCK, pos, d);
+            ResourceLocation id = firstNonEmptyFluidId(h);
+            if (id != null) return id;
+        }
+
+        // 3) 有些方块可能 ctx==null 才给（不常见，但可以加一层兜底）
+        // 注意：level.getCapability 这里如果不接受 null，就删掉这一段
+        try {
+            IFluidHandler h = level.getCapability(Capabilities.FluidHandler.BLOCK, pos, null);
+            ResourceLocation id = firstNonEmptyFluidId(h);
+            if (id != null) return id;
+        } catch (Throwable ignored) {}
+
+        return null;
+    }
+
+    @Nullable
+    private static ResourceLocation firstNonEmptyFluidId(@Nullable IFluidHandler h) {
+        if (h == null) return null;
+
+        for (int i = 0; i < h.getTanks(); i++) {
+            FluidStack fs = h.getFluidInTank(i);
+            if (fs == null || fs.isEmpty()) continue;
+
+            Fluid fluid = fs.getFluid();
+            if (fluid instanceof FlowingFluid ff) {
+                fluid = ff.getSource();
+            }
+
+            ResourceLocation id = BuiltInRegistries.FLUID.getKey(fluid);
+            if (id != null) return id;
+        }
+        return null;
     }
 }
