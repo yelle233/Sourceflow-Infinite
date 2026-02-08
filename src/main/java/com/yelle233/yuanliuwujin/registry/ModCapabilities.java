@@ -13,24 +13,12 @@ public class ModCapabilities {
                 (level, pos, state, be, ctx) -> {
                     if (!(be instanceof InfiniteFluidMachineBlockEntity machine)) return null;
 
-                    // 顶面不给出液能力（顶面留给 FE/应力）
-                    if (ctx == Direction.UP) return null;
+                    if (ctx == null) return null;           // ✅避免绕过面
+                    if (ctx == Direction.UP) return null;   // 顶面不给
 
-                    // ctx == null：无方向访问（有些管道/设备会这样）
-                    // ——策略 1：兼容优先（推荐）：只要“存在任一可抽的侧面”，就返回能力
-                    if (ctx == null) {
-                        for (Direction d : Direction.values()) {
-                            if (d == Direction.UP) continue;
-                            var mode = machine.getSideMode(d);
-                            if (mode == InfiniteFluidMachineBlockEntity.SideMode.PULL
-                                    || mode == InfiniteFluidMachineBlockEntity.SideMode.BOTH) {
-                                return machine.getInfiniteOutput();
-                            }
-                        }
-                        return null;
-                    }
+                    // ✅没电/不工作：不给抽
+                    if (!machine.canWorkNow()) return null;
 
-                    // 正常情况：按访问的面返回能力
                     return switch (machine.getSideMode(ctx)) {
                         case OFF -> null;
                         case PULL, BOTH -> machine.getInfiniteOutput();

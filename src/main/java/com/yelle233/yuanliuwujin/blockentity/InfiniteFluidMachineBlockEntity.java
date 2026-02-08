@@ -128,6 +128,8 @@ public class InfiniteFluidMachineBlockEntity extends BlockEntity {
 
         @Override
         public FluidStack drain(int maxDrain, FluidAction action) {
+            if (!canWorkNow()) return FluidStack.EMPTY;
+
             Fluid f = getBoundSourceFluid();
             if (f == null) return FluidStack.EMPTY;
 
