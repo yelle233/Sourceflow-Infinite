@@ -109,10 +109,10 @@ public class SourceflowInfiniteClient {
 
         Fluid bound = machine.getBoundSourceFluid();
         Component fluidName = (bound == null)
-                ? Component.translatable("hud.sourceflowinfinite.none") // ✅ 可翻译
-                : bound.getFluidType().getDescription();               // ✅ 原版自带翻译
+                ? Component.translatable("hud.sourceflowinfinite.none")
+                : bound.getFluidType().getDescription();
 
-        // Faces：只显示启用的面（PULL/BOTH），用 N/E/S/W/D 缩写
+        // Faces：只显示启用的面，用 N/E/S/W/D 缩写
         int enabledFaces = 0;
         StringBuilder facesShort = new StringBuilder();
         for (Direction d : Direction.values()) {
@@ -127,7 +127,6 @@ public class SourceflowInfiniteClient {
             enabledFaces++;
             if (!facesShort.isEmpty()) facesShort.append(' ');
 
-            // ✅ 这些字母如果你也想翻译，可以改成 translatable（见下面“可选增强”）
             String letter = switch (d) {
                 case NORTH -> "N";
                 case SOUTH -> "S";
@@ -139,7 +138,7 @@ public class SourceflowInfiniteClient {
             facesShort.append(letter);
         }
 
-        // ===== 文本行（全部 translatable）=====
+        // ===== 文本行=====
         Component lineEnergy = Component.translatable(
                 "hud.sourceflowinfinite.energy",
                 compactFE(energy),
