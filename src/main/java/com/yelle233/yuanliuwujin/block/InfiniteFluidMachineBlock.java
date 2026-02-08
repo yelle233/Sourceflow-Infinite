@@ -70,7 +70,6 @@ public class InfiniteFluidMachineBlock extends Block implements EntityBlock {
 
     @Override
     public void onRemove(BlockState state, Level level, BlockPos pos, BlockState newState, boolean isMoving) {
-        // 只有在“方块真的被换掉/破坏”时才执行（避免同种方块状态更新时重复掉落）
         if (!state.is(newState.getBlock())) {
             BlockEntity be = level.getBlockEntity(pos);
             if (be instanceof InfiniteFluidMachineBlockEntity machine) {
