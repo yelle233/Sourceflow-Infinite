@@ -13,8 +13,8 @@ public class ModCapabilities {
                 (level, pos, state, be, ctx) -> {
                     if (!(be instanceof InfiniteFluidMachineBlockEntity machine)) return null;
 
-                    if (ctx == null) return null;           // ✅避免绕过面
-                    if (ctx == Direction.UP) return null;   // 顶面不给
+                    if (ctx == null) return null;
+                    if (ctx == Direction.UP) return null;
 
                     // ✅没电/不工作：不给抽
                     if (!machine.canWorkNow()) return null;

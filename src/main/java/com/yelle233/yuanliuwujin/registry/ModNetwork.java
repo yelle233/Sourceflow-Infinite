@@ -47,7 +47,6 @@ public class ModNetwork {
                                 .append(modeName);
 
 
-                        // 给玩家提示：actionbar
                         player.displayClientMessage(msg, true);
 
                         //切模式音效

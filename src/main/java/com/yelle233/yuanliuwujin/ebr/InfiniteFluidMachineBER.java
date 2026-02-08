@@ -32,16 +32,16 @@ public class InfiniteFluidMachineBER implements BlockEntityRenderer<InfiniteFlui
     public void render(InfiniteFluidMachineBlockEntity be, float partialTick, PoseStack poseStack,
                        MultiBufferSource bufferSource, int packedLight, int packedOverlay) {
 
-        // ===== 1) 先渲染“内部核心方块模型”=====
+
         renderCoreBlockInside(be, partialTick, poseStack, bufferSource, packedLight);
 
-        // ===== 2) 再渲染侧面 overlay（仅 PULL/BOTH；OFF 不渲染）=====
+
         for (Direction dir : Direction.values()) {
             if (dir == Direction.UP) continue;
 
             InfiniteFluidMachineBlockEntity.SideMode mode = be.getSideMode(dir);
 
-            //  OFF 直接跳过：去掉 OFF 贴图
+            //跳过OFF
             if (mode == InfiniteFluidMachineBlockEntity.SideMode.OFF) continue;
 
             ResourceLocation tex = (mode == InfiniteFluidMachineBlockEntity.SideMode.PULL)
@@ -53,15 +53,13 @@ public class InfiniteFluidMachineBER implements BlockEntityRenderer<InfiniteFlui
         }
     }
 
-    /**
-     * 在机器内部渲染：yuanliuwujin:infinite_core_block 的模型，并旋转
-     */
+
     private static void renderCoreBlockInside(InfiniteFluidMachineBlockEntity be, float partialTick,
                                               PoseStack poseStack, MultiBufferSource bufferSource, int packedLight) {
 
         if (be.getLevel() == null) return;
 
-        // 没有装配核心 -> 不渲染
+        // 没有装配核心不渲染
         if (be.getCoreSlot().getStackInSlot(0).isEmpty()) return;
 
 
@@ -109,13 +107,12 @@ public class InfiniteFluidMachineBER implements BlockEntityRenderer<InfiniteFlui
 
         poseStack.pushPose();
 
-        // 移动到方块中心
         poseStack.translate(0.5, 0.5, 0.5);
 
-        // 朝向指定面
+
         rotateToFace(poseStack, face);
 
-        // 贴到表面上（略微外推防止 Z-fighting）
+
         double z = 0.501;
         poseStack.translate(0.3, -0.5, z);
 

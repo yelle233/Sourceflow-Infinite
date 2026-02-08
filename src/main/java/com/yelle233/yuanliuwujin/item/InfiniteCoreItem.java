@@ -43,7 +43,7 @@ public class InfiniteCoreItem extends Item {
         super(properties);
     }
 
-    // 右键方块：优先从容器(IFluidHandler)绑定，其次绑定液体方块
+    // 优先从容器绑定
     @Override
     public InteractionResult useOn(UseOnContext ctx) {
         Level level = ctx.getLevel();
@@ -55,7 +55,7 @@ public class InfiniteCoreItem extends Item {
         ItemStack stack = ctx.getItemInHand();
         BlockPos pos = ctx.getClickedPos();
 
-        // 潜行右键：清除绑定
+        // 潜行右键清除绑定
         if (player.isShiftKeyDown()) {
             unbindOneCore(player, stack);
             // 强制写回并保存
@@ -104,7 +104,7 @@ public class InfiniteCoreItem extends Item {
         // ===== 2) 否则按液体方块绑定 =====
         FluidState fluidState = level.getFluidState(pos);
 
-        // 如果点击位置没有液体，检查点击面的对侧（液体可能在那里）
+        // 如果点击位置没有液体，检查点击面的对侧
         if (fluidState.isEmpty()) {
             Direction face = ctx.getClickedFace();
             BlockPos fluidPos = pos.relative(face);
@@ -155,12 +155,12 @@ public class InfiniteCoreItem extends Item {
         return InteractionResult.CONSUME;
     }
 
-    // 空中右键：潜行清除 / 射线绑定液体方块
+    // 清除绑定液体方块
     @Override
     public InteractionResultHolder<ItemStack> use(Level level, Player player, InteractionHand hand) {
         ItemStack stack = player.getItemInHand(hand);
 
-        // 潜行空中右键：清除绑定
+        // 清除绑定
         if (!level.isClientSide && player.isShiftKeyDown()) {
             unbindOneCore(player, stack);
 
@@ -171,7 +171,7 @@ public class InfiniteCoreItem extends Item {
             return InteractionResultHolder.consume(stack);
         }
 
-        // 空中右键：射线检测玩家准星指向（包含液体）
+        // 检测玩家准星指向
         if (!level.isClientSide) {
             BlockPos fluidPos = findFluidPos(level, player);
             if (fluidPos != null) {
@@ -220,9 +220,7 @@ public class InfiniteCoreItem extends Item {
         return InteractionResultHolder.pass(stack);
     }
 
-    /**
-     * ✅ 改进：每秒校正一次 + 调试日志
-     */
+    // 每秒检查一次绑定状态，更新模型数据以切换外观
     @Override
     public void inventoryTick(ItemStack stack, Level level, Entity entity, int slot, boolean selected) {
         if (level.isClientSide) return;
@@ -304,7 +302,6 @@ public class InfiniteCoreItem extends Item {
     private static void bindOneCore(Player player, ItemStack stackInHand, ResourceLocation fluidId) {
         if (player.level().isClientSide) return;
 
-        // 手里只有 1 个：直接绑定
         if (stackInHand.getCount() == 1) {
             setBoundFluid(stackInHand, fluidId);
             setCoreModelState(stackInHand, true);
@@ -321,7 +318,6 @@ public class InfiniteCoreItem extends Item {
         setBoundFluid(single, fluidId);
         setCoreModelState(single, true);
 
-        // 拆出来的 1 个塞回背包（塞不进去就丢地上）
         if (!player.addItem(single)) {
             player.drop(single, false);
         }
@@ -350,49 +346,17 @@ public class InfiniteCoreItem extends Item {
         }
     }
 
-    /**
-     * ✅ 修复：使用更可靠的方式存储绑定数据
-     */
+    //存储绑定数据
     private static void setBoundFluid(ItemStack stack, ResourceLocation id) {
-//        CompoundTag tag = getOrCreateCustomTag(stack);
-//        tag.putString(TAG_BOUND_FLUID, id.toString());
-//
-//        // 确保数据被正确包装并持久化
-//        CustomData customData = CustomData.of(tag);
-//        stack.set(DataComponents.CUSTOM_DATA, customData);
         stack.set(ModDataComponents.BOUND_FLUID.get(), id);
     }
 
     private static void clearBoundFluid(ItemStack stack) {
-//        CustomData data = stack.get(DataComponents.CUSTOM_DATA);
-//        if (data == null) return;
-//
-//        CompoundTag tag = data.copyTag();
-//        tag.remove(TAG_BOUND_FLUID);
-//
-//        if (tag.isEmpty()) {
-//            stack.remove(DataComponents.CUSTOM_DATA);
-//        } else {
-//            stack.set(DataComponents.CUSTOM_DATA, CustomData.of(tag));
-//        }
         stack.remove(ModDataComponents.BOUND_FLUID.get());
     }
 
     @Nullable
     public static ResourceLocation getBoundFluid(ItemStack stack) {
-//        CustomData data = stack.get(DataComponents.CUSTOM_DATA);
-//        if (data == null) {
-//            return null;
-//        }
-//
-//        CompoundTag tag = data.copyTag();
-//        if (!tag.contains(TAG_BOUND_FLUID)) {
-//            return null;
-//        }
-//
-//        String fluidIdStr = tag.getString(TAG_BOUND_FLUID);
-//        ResourceLocation result = ResourceLocation.tryParse(fluidIdStr);
-//        return result;
         return stack.get(ModDataComponents.BOUND_FLUID.get());
     }
 
@@ -401,20 +365,13 @@ public class InfiniteCoreItem extends Item {
         return data != null ? data.copyTag() : new CompoundTag();
     }
 
-    /**
-     * ✅ 新增：强制更新物品栈并保存
-     * 确保数据被正确持久化
-     */
+    //强制更新物品栈并保存
     private static void forceUpdateStack(Player player, InteractionHand hand, ItemStack stack) {
-        // 方法1：强制设置回玩家手中（触发同步）
         player.setItemInHand(hand, stack);
 
-        // 方法2：标记背包已修改（触发保存）
         player.getInventory().setChanged();
 
-        // 方法3：如果是服务端，额外触发一次数据同步
         if (!player.level().isClientSide) {
-            // 这会确保客户端收到最新的物品数据
             player.inventoryMenu.broadcastChanges();
         }
     }

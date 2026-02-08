@@ -66,7 +66,6 @@ public class InfiniteFluidMachineBlockEntity extends BlockEntity {
         @Override
         protected void onContentsChanged(int slot) {
             setChanged();
-            // ✅ 插拔核心实时同步 HUD/能力
             onCoreChanged();
         }
 
@@ -145,9 +144,7 @@ public class InfiniteFluidMachineBlockEntity extends BlockEntity {
         }
     }
 
-    /**
-     * 服务端 tick：主动向相邻容器推送
-     */
+
     public static void serverTick(Level level, BlockPos pos, BlockState state, InfiniteFluidMachineBlockEntity be) {
         be.trySyncEnergyToClient();
 
@@ -208,7 +205,7 @@ public class InfiniteFluidMachineBlockEntity extends BlockEntity {
     }
 
     // 从核心里读取绑定的液体，并强制转换为源液体
-    // ✅ 强制禁用输出：如果配置 ban 了这个流体，直接返回 null
+    // 强制禁用输出：如果配置 ban 了这个流体，直接返回 null
     @Nullable
     public Fluid getBoundSourceFluid() {
         ItemStack core = coreSlot.getStackInSlot(0);
