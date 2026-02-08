@@ -18,8 +18,12 @@ import net.minecraft.world.item.context.UseOnContext;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
 
+import java.util.Properties;
+
 public class WrenchItem extends Item {
-    public WrenchItem(Properties props) { super(props); }
+    public WrenchItem(Properties props) {
+        super(props);
+    }
     public enum WrenchMode {
         IO, CONFIG;
 

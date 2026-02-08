@@ -35,8 +35,15 @@ public class ModBlocks {
                             Block.Properties.of()
                                     .mapColor(MapColor.METAL)
                                     .strength(3.0F, 6.0F)
+                                    .noOcclusion()
                                     .requiresCorrectToolForDrops()
                     )
             );
+    public static final DeferredBlock<Block> INFINITE_CORE_BLOCK=
+            registerBlock("infinite_core_block",
+                    () -> new Block(
+                            Block.Properties.of()
+                    )
+            );//无限液体机器中心的无限核心方块（仅装饰使用）
 
 }

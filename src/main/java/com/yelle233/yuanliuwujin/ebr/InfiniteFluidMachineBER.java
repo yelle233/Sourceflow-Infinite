@@ -5,18 +5,22 @@ import com.mojang.blaze3d.vertex.VertexConsumer;
 import com.mojang.math.Axis;
 import com.yelle233.yuanliuwujin.SourceflowInfinite;
 import com.yelle233.yuanliuwujin.blockentity.InfiniteFluidMachineBlockEntity;
+import com.yelle233.yuanliuwujin.registry.ModBlocks;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.MultiBufferSource;
 import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.blockentity.BlockEntityRenderer;
 import net.minecraft.client.renderer.blockentity.BlockEntityRendererProvider;
+import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.core.Direction;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.state.BlockState;
 import org.joml.Matrix3f;
 import org.joml.Matrix4f;
 
 public class InfiniteFluidMachineBER implements BlockEntityRenderer<InfiniteFluidMachineBlockEntity> {
-    private static final ResourceLocation OVERLAY_OFF  =
-            ResourceLocation.fromNamespaceAndPath(SourceflowInfinite.MODID, "textures/block/overlay_off.png");
+
     private static final ResourceLocation OVERLAY_PULL =
             ResourceLocation.fromNamespaceAndPath(SourceflowInfinite.MODID, "textures/block/overlay_pull.png");
     private static final ResourceLocation OVERLAY_BOTH =
@@ -28,28 +32,79 @@ public class InfiniteFluidMachineBER implements BlockEntityRenderer<InfiniteFlui
     public void render(InfiniteFluidMachineBlockEntity be, float partialTick, PoseStack poseStack,
                        MultiBufferSource bufferSource, int packedLight, int packedOverlay) {
 
+        // ===== 1) 先渲染“内部核心方块模型”=====
+        renderCoreBlockInside(be, partialTick, poseStack, bufferSource, packedLight);
 
+        // ===== 2) 再渲染侧面 overlay（仅 PULL/BOTH；OFF 不渲染）=====
         for (Direction dir : Direction.values()) {
             if (dir == Direction.UP) continue;
 
             InfiniteFluidMachineBlockEntity.SideMode mode = be.getSideMode(dir);
 
-            ResourceLocation tex = switch (mode) {
-                case OFF -> OVERLAY_OFF;
-                case PULL -> OVERLAY_PULL;
-                case BOTH -> OVERLAY_BOTH;
-            };
+            //  OFF 直接跳过：去掉 OFF 贴图
+            if (mode == InfiniteFluidMachineBlockEntity.SideMode.OFF) continue;
+
+            ResourceLocation tex = (mode == InfiniteFluidMachineBlockEntity.SideMode.PULL)
+                    ? OVERLAY_PULL
+                    : OVERLAY_BOTH;
 
             int fullBright = net.minecraft.client.renderer.LightTexture.FULL_BRIGHT;
-
             renderFaceOverlay(poseStack, bufferSource, dir, tex, fullBright, packedOverlay);
         }
+    }
+
+    /**
+     * 在机器内部渲染：yuanliuwujin:infinite_core_block 的模型，并旋转
+     */
+    private static void renderCoreBlockInside(InfiniteFluidMachineBlockEntity be, float partialTick,
+                                              PoseStack poseStack, MultiBufferSource bufferSource, int packedLight) {
+
+        if (be.getLevel() == null) return;
+
+        // 没有装配核心 -> 不渲染
+        if (be.getCoreSlot().getStackInSlot(0).isEmpty()) return;
+
+
+        Level level = be.getLevel();
+
+        poseStack.pushPose();
+
+        poseStack.translate(0.5, 0.5, 0.5);
+
+        // 旋转
+        float t = level.getGameTime() + partialTick;
+        float rotY = (t * 2.0f) % 360.0f;
+        poseStack.mulPose(Axis.YP.rotationDegrees(rotY));
+
+        // 倾斜角度
+        poseStack.mulPose(Axis.XP.rotationDegrees(0.0f));
+
+
+        // 缩放
+        float scale = 2.0f;
+        poseStack.scale(scale, scale, scale);
+
+
+        // 渲染模型
+        BlockState coreState = ModBlocks.INFINITE_CORE_BLOCK.get().defaultBlockState();
+
+        // 亮度
+        int light = net.minecraft.client.renderer.LightTexture.FULL_BRIGHT;
+
+        Minecraft.getInstance().getBlockRenderer().renderSingleBlock(
+                coreState,
+                poseStack,
+                bufferSource,
+                light,
+                OverlayTexture.NO_OVERLAY
+        );
+
+        poseStack.popPose();
     }
 
     private static void renderFaceOverlay(PoseStack poseStack, MultiBufferSource bufferSource, Direction face,
                                           ResourceLocation texture, int packedLight, int packedOverlay) {
 
-        // 渲染一张贴图贴在方块表面上
         VertexConsumer vc = bufferSource.getBuffer(RenderType.entityCutoutNoCull(texture));
 
         poseStack.pushPose();
@@ -60,41 +115,38 @@ public class InfiniteFluidMachineBER implements BlockEntityRenderer<InfiniteFlui
         // 朝向指定面
         rotateToFace(poseStack, face);
 
-        // 贴到表面上
-        // 当前坐标系：面朝向 +Z
+        // 贴到表面上（略微外推防止 Z-fighting）
         double z = 0.501;
-        poseStack.translate(0, 0, z);
+        poseStack.translate(0.3, -0.5, z);
 
-        // overlay 大小
-        float s = 0.45f; // 0.5 是整面半径，这里留点边
+        float s = 1.0f;
         PoseStack.Pose pose = poseStack.last();
         Matrix4f mat = pose.pose();
 
-
         vc.addVertex(mat, -s, -s, 0)
-                .setColor(255,255,255,255)
-                .setUv(0,1)
-                .setOverlay(packedOverlay)
-                .setLight(packedLight)
-                .setNormal(pose, 0,0,1);
-        vc.addVertex(mat, s, -s, 0)
                 .setColor(255, 255, 255, 255)
-                .setUv(1.0f, 1.0f)
+                .setUv(0, 1)
                 .setOverlay(packedOverlay)
                 .setLight(packedLight)
-                .setNormal(pose, 0.0f, 0.0f, 1.0f);
+                .setNormal(pose, 0, 0, 1);
+        vc.addVertex(mat,  s, -s, 0)
+                .setColor(255, 255, 255, 255)
+                .setUv(1, 1)
+                .setOverlay(packedOverlay)
+                .setLight(packedLight)
+                .setNormal(pose, 0, 0, 1);
         vc.addVertex(mat,  s,  s, 0)
-                .setColor(255,255,255,255)
-                .setUv(1,0)
+                .setColor(255, 255, 255, 255)
+                .setUv(1, 0)
                 .setOverlay(packedOverlay)
                 .setLight(packedLight)
-                .setNormal(pose, 0,0,1);
+                .setNormal(pose, 0, 0, 1);
         vc.addVertex(mat, -s,  s, 0)
-                .setColor(255,255,255,255)
-                .setUv(0,0)
+                .setColor(255, 255, 255, 255)
+                .setUv(0, 0)
                 .setOverlay(packedOverlay)
                 .setLight(packedLight)
-                .setNormal(pose, 0,0,1);
+                .setNormal(pose, 0, 0, 1);
 
         poseStack.popPose();
     }
@@ -109,4 +161,5 @@ public class InfiniteFluidMachineBER implements BlockEntityRenderer<InfiniteFlui
             default -> {}
         }
     }
+
 }

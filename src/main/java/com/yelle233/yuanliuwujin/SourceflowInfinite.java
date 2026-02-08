@@ -27,6 +27,7 @@ public class SourceflowInfinite {
         ModTab.TABS.register(modEventBus);
         ModBlocks.BLOCKS.register(modEventBus);
         ModBlockEntities.BLOCK_ENTITIES.register(modEventBus);
+        ModDataComponents.REGISTRAR.register(modEventBus);
         modEventBus.addListener(ModCapabilities::register);
         modContainer.registerConfig(ModConfig.Type.SERVER,Modconfigs.SPEC);
 

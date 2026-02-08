@@ -25,6 +25,8 @@
   "tooltip.yuanliuwujin.core.unbound": "No fluid bound",
   "tooltip.yuanliuwujin.core.bind_hint": "Right-click a fluid block to bind",
   "tooltip.yuanliuwujin.core.clear_hint": "Sneak-right-click to clear",
-  "tooltip.yuanliuwujin.core.bound": "Bound: %s"
+  "tooltip.yuanliuwujin.core.bound": "Bound: %s",
+  "tooltip.fluid_banned": "banned: %s"
+
 
 }

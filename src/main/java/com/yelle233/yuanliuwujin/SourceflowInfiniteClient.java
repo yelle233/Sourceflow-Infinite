@@ -76,9 +76,6 @@ public class SourceflowInfiniteClient {
 
         // 发包给服务端，让服务端改扳手 NBT
         PacketDistributor.sendToServer(new WrenchModeScrollPayload(delta));
-
-        // 可选：阻止原版滚轮切物品栏（让体验更像 Create）
-        // 不同版本事件取消方法可能不同；如果你的事件支持 setCanceled/cancel 就用之
          e.setCanceled(true);
     }
 
@@ -86,6 +83,7 @@ public class SourceflowInfiniteClient {
     @SubscribeEvent
     public static void onRenderGui(net.neoforged.neoforge.client.event.RenderGuiEvent.Post e) {
         Minecraft mc = Minecraft.getInstance();
+        if (mc.options.hideGui) return;
         LocalPlayer player = mc.player;
         if (player == null || mc.level == null) return;
 
@@ -185,7 +183,6 @@ public class SourceflowInfiniteClient {
         int maxWidth = 190;
         int innerMaxWidth = maxWidth - padding * 2;
 
-        // Faces 可能很长：split 成 FormattedCharSequence（1.21 正确类型）
         List<FormattedCharSequence> faceLines = mc.font.split(lineFaces, innerMaxWidth);
 
         // 计算宽度：取所有行最大宽度

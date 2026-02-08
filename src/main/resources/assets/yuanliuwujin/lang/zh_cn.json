@@ -26,6 +26,8 @@
   "tooltip.yuanliuwujin.core.unbound": "未绑定液体",
   "tooltip.yuanliuwujin.core.bind_hint": "右键液体方块进行绑定",
   "tooltip.yuanliuwujin.core.clear_hint": "潜行右键清除绑定",
-  "tooltip.yuanliuwujin.core.bound": "已绑定：%s"
+  "tooltip.yuanliuwujin.core.bound": "已绑定：%s",
+  "tooltip.fluid_banned": "已禁用：%s"
+
 
 }

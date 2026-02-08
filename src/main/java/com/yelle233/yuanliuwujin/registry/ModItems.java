@@ -12,7 +12,7 @@ public class ModItems {
     public static final DeferredRegister.Items ITEMS = DeferredRegister.createItems(SourceflowInfinite.MODID);
 
     public static final DeferredItem<Item> INFINITE_CORE =
-            ITEMS.register("infinite_core", () -> new InfiniteCoreItem(new Item.Properties()));
+            ITEMS.register("infinite_core", () -> new InfiniteCoreItem(new Item.Properties().stacksTo(1)));
 
     public static final DeferredItem<Item> WRENCH =
             ITEMS.register("wrench", () -> new WrenchItem(new Item.Properties().stacksTo(1)));

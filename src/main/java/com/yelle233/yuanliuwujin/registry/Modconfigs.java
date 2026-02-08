@@ -33,10 +33,12 @@ public class Modconfigs {
                         "  \"gtceu:oxygen\"",
                         "  \"#c:toxic_fluids\""
                 )
+                .comment("无限核心绑定及无限流体机器输出的禁用列表.",
+                        "支持使用流体 ID 或流体标签 Tag 进行配置。")
                 .defineListAllowEmpty(
                         "banlist",
                         List.of(
-                                "minecraft:lava"
+
                         ),
                         o -> o instanceof String s && isValidBanEntry(s)
                 );
@@ -45,15 +47,15 @@ public class Modconfigs {
         b.push("infinite_fluid_machine");
         FE_PER_TICK = b.comment("Base FE consumed per tick when machine is outputting")
                 .comment("机器默认消耗的FE")
-                .defineInRange("fePerTick", 2, 0, Integer.MAX_VALUE);
+                .defineInRange("fePerTick", 2, 0, Integer.MAX_VALUE-1);
 
         BASE_PUSH_PER_TICK = b.comment("Default push per tick (mB)")
                 .comment("每tick主动输出的液体量")
-                .defineInRange("defaultPushPerTick", 10000000, 0, Integer.MAX_VALUE);
+                .defineInRange("PushPerTick", Integer.MAX_VALUE-1, 0, Integer.MAX_VALUE-1);
 
         FE_PER_ENABLED_FACE_PER_TICK= b.comment("Additional FE consumption for each enabled side.")
                 .comment("每增加一个启用的面额外消耗的FE")
-                .defineInRange("fePerEnableFacePerTick", 8, 0, Integer.MAX_VALUE);
+                .defineInRange("fePerEnableFacePerTick", 8, 0, Integer.MAX_VALUE-1);
 
         b.pop();
 
@@ -75,9 +77,7 @@ public class Modconfigs {
         }
     }
 
-    /**
-     * ✅ 是否被 ban（支持 fluidId 和 #tag）
-     */
+
     public static boolean isFluidBanned(ResourceLocation fluidId) {
         if (fluidId == null) return false;
 
@@ -97,7 +97,6 @@ public class Modconfigs {
             try {
                 ResourceLocation tagId = ResourceLocation.parse(entry.substring(1));
                 TagKey<Fluid> tagKey = TagKey.create(Registries.FLUID, tagId);
-                // builtInRegistryHolder().is(tag) 是 1.21.x 常用写法
                 if (fluid.builtInRegistryHolder().is(tagKey)) return true;
             } catch (Exception ignored) {
             }
