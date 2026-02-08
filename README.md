@@ -1,25 +1,132 @@
+# 源流无尽 (Sourceflow Infinite)
 
-Installation information
-=======
+**源流无尽** 是一个以「无限液体 × 能量消耗 × 配置」为核心的 NeoForge 模组。  
+它提供了一种**可配置、可限制、需要能量驱动**的无限液体解决方案，适合科技向、自动化向整合包。
 
-This template repository can be directly cloned to get you started with a new
-mod. Simply create a new repository cloned from this one, by following the
-instructions provided by [GitHub](https://docs.github.com/en/repositories/creating-and-managing-repositories/creating-a-repository-from-a-template).
 
-Once you have your clone, simply open the repository in the IDE of your choice. The usual recommendation for an IDE is either IntelliJ IDEA or Eclipse.
 
-If at any point you are missing libraries in your IDE, or you've run into problems you can
-run `gradlew --refresh-dependencies` to refresh the local cache. `gradlew clean` to reset everything 
-{this does not affect your code} and then start the process again.
+---
 
-Mapping Names:
-============
-By default, the MDK is configured to use the official mapping names from Mojang for methods and fields 
-in the Minecraft codebase. These names are covered by a specific license. All modders should be aware of this
-license. For the latest license text, refer to the mapping file itself, or the reference copy here:
-https://github.com/NeoForged/NeoForm/blob/main/Mojang.md
+##  核心内容
 
-Additional Resources: 
-==========
-Community Documentation: https://docs.neoforged.net/  
-NeoForged Discord: https://discord.neoforged.net/
+### 🔹 无限核心（Infinite Core）
+- 一个可绑定液体的核心物品
+- 右键任意液体即可绑定该液体类型
+- 插入机器后，机器即可无限生成该液体
+- 一个核心只绑定一种液体
+
+### 🔹 无限液体机器（Infinite Fluid Machine）
+- 可插入 **无限核心**
+- 通过 **能量（FE）** 驱动
+- 支持对 **每个侧面进行独立配置**
+- 可与其他模组的流体管道、泵进行联动
+
+### 🔹 扳手（Wrench）
+- 机器的主要交互工具
+- 用于 **装卸核心**、**配置侧面模式**
+- 潜行 + 鼠标滚轮切换工作模式
+
+---
+
+##  能量系统（FE）
+
+- 机器需要 **FE 能量** 才能工作
+- **能量为 0 时，机器完全不工作**
+    - 无法主动输出液体
+    - 无法被其他模组抽取液体
+- 能量消耗规则：
+    - 所有侧面为 `OFF`：仍有极低的待机能耗
+    - 每启用一个侧面（`PULL` 或 `BOTH`）：
+        - 每 tick 的 FE 消耗都会增加
+- 面越多、系统越强 → 能量需求越高
+
+---
+
+##  侧面模式说明
+
+无限液体机器除顶面外，其余五个面都可以设置为以下三种模式：
+
+| 模式 | 说明 |
+|----|----|
+| **OFF** | 关闭该面，不输出也不可被抽取 |
+| **PULL** | 不主动输出，但允许其他模组从该面抽取液体 |
+| **BOTH** | 主动向相邻容器输出液体 |
+
+> 每个面当前的模式会通过贴图直接显示在机器表面。
+
+---
+
+##  扳手使用说明
+
+###  切换扳手模式
+- **潜行 + 鼠标滚轮**
+- 可在以下两种模式间切换：
+    - **装卸模式**
+    - **配置模式**
+
+---
+
+###  装卸模式
+
+- **右手持扳手 + 左手持无限核心**
+    - 右键机器：将核心插入机器
+- **潜行 + 右手持扳手右键机器**
+    - 取出已插入的无限核心
+
+---
+
+###  配置模式
+
+- **右键机器某一侧面**
+    - 在 `OFF → PULL → BOTH` 间循环切换该面的模式
+- 顶面不可配置（用于能量输入）
+
+---
+
+##  HUD 信息显示（无需 Jade）
+
+当你将准星对准无限液体机器时，会在屏幕上显示：
+
+- 当前储存的能量（FE）
+- 每秒 / 每 tick 的能量消耗
+- 是否已插入无限核心
+- 核心绑定的液体类型
+- 当前启用的侧面及其模式
+
+这些信息会**实时更新**，无需额外模组支持。
+
+---
+## 后续更新计划
+- 后续版本可能加入：
+    - 联动机械动力
+    - 更多自动化功能
+    - 与其他模组的联动
+
+---
+
+##  常见问题（FAQ）
+
+### Q：这是“白给无限液体”吗？
+A：不完全是。  
+机器需要能量驱动，启用供应面越多，能量消耗越高。
+
+### Q：没接电但机器里还有能量，能工作吗？
+A：可以。只要机器内部存下的能量还能支撑消耗，就能继续工作。
+
+### Q：能不能自动化插入无限核心？
+A：不行。  
+无限核心只能通过 **扳手的装卸模式** 手动装卸。
+
+---
+
+## 📦 模组信息
+
+- **模组名**：源流无尽 (Sourceflow Infinite)
+- **模组 ID**：`yuanliuwujin`
+- **加载器**：NeoForge
+- **Minecraft 版本**：1.21.1
+
+---
+
+
+欢迎反馈与建议，祝你玩的开心！
