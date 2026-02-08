@@ -16,6 +16,7 @@ import net.minecraft.world.level.block.entity.BlockEntity;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.material.FlowingFluid;
 import net.minecraft.world.level.material.Fluid;
+import net.neoforged.fml.common.Mod;
 import net.neoforged.neoforge.capabilities.Capabilities;
 import net.neoforged.neoforge.fluids.FluidStack;
 import net.neoforged.neoforge.fluids.capability.IFluidHandler;
@@ -25,12 +26,12 @@ import javax.annotation.Nullable;
 import java.util.EnumMap;
 
 public class InfiniteFluidMachineBlockEntity extends BlockEntity {
-    // 默认值（后面会改成从配置读）
     private static final SideMode DEFAULT_MODE = SideMode.OFF;
+
     private static final int DEFAULT_PUSH_PER_TICK = Modconfigs.BASE_PUSH_PER_TICK.get(); // mB/t
 
 
-    //六个面的模式：OFF（不输出），PULL（只给能抽的邻居输出），BOTH（给所有邻居输出）
+    //六个面的模式：OFF，PULL，BOTH
     public enum SideMode { OFF, PULL, BOTH }
 
     private final EnumMap<Direction, SideMode> sideModes = new EnumMap<>(Direction.class);
@@ -38,7 +39,7 @@ public class InfiniteFluidMachineBlockEntity extends BlockEntity {
 
     public SideMode getSideMode(Direction dir) {
         if (dir == Direction.UP) return SideMode.OFF; // 顶面不给出液
-        return sideModes.getOrDefault(dir, DEFAULT_MODE); // 先默认
+        return sideModes.getOrDefault(dir, DEFAULT_MODE);
     }
 
 
@@ -59,9 +60,8 @@ public class InfiniteFluidMachineBlockEntity extends BlockEntity {
     public int getSidePushPerTick(Direction dir) {
         if (dir == Direction.UP) return 0;
         int v = sidePushPerTick.getOrDefault(dir, DEFAULT_PUSH_PER_TICK);
-        // 防止负数/过大
+        // 防止负数
         if (v < 0) v = 0;
-//        if (v > 100_000) v = 100_000;
         return v;
     }
 
@@ -80,10 +80,10 @@ public class InfiniteFluidMachineBlockEntity extends BlockEntity {
         }
     };
 
-    // 玩家可调：每 tick 主动输出多少 mB
+    // 每 tick 主动输出多少 mB
     private int pushPerTick = DEFAULT_PUSH_PER_TICK;
 
-    // 对外“无限输出”的流体能力（别人来抽永远有）
+    // 对外无限输出
     private final IFluidHandler infiniteOutput = new IFluidHandler() {
         @Override
         public int getTanks() {
@@ -95,7 +95,6 @@ public class InfiniteFluidMachineBlockEntity extends BlockEntity {
         public FluidStack getFluidInTank(int tank) {
             Fluid f = getBoundSourceFluid();
             if (!canWorkNow()) return FluidStack.EMPTY;
-            // 这里只是“显示用”，给个非0数量让管道知道里面是什么
             return f == null ? FluidStack.EMPTY : new FluidStack(f, Integer.MAX_VALUE);
         }
 
@@ -124,7 +123,6 @@ public class InfiniteFluidMachineBlockEntity extends BlockEntity {
             int amt = resource.getAmount();
             if (amt <= 0) return FluidStack.EMPTY;
 
-            // 不消耗任何内部存储，所以 action 无论 SIMULATE/EXECUTE 都直接返回
             return new FluidStack(f, amt);
         }
 
@@ -144,7 +142,7 @@ public class InfiniteFluidMachineBlockEntity extends BlockEntity {
             for (Direction d : Direction.values()) {
                 if (d == Direction.UP) continue;
                 sideModes.put(d, DEFAULT_MODE);
-                sidePushPerTick.put(d, DEFAULT_PUSH_PER_TICK); // 每面输出量默认值
+                sidePushPerTick.put(d, DEFAULT_PUSH_PER_TICK);
             }
 
     }
@@ -153,6 +151,8 @@ public class InfiniteFluidMachineBlockEntity extends BlockEntity {
      * 服务端 tick：主动向相邻容器推送 pushPerTick mB
      */
     public static void serverTick(Level level, BlockPos pos, BlockState state, InfiniteFluidMachineBlockEntity be) {
+
+        be.trySyncEnergyToClient();
         // 必须有核心
         if (be.getCoreSlot().getStackInSlot(0).isEmpty()) return;
 
@@ -160,10 +160,10 @@ public class InfiniteFluidMachineBlockEntity extends BlockEntity {
         Fluid f = be.getBoundSourceFluid();
         if (f == null) return;
 
-        // ===== 1) 计算本 tick 需要的 FE：全 OFF 也要低耗电 =====
+        // ===== 1) 计算本 tick 需要的 FE：全 OFF 低耗电 =====
         // enabled 面 = PULL 或 BOTH
-        final int IDLE_FE_PER_TICK = 2;            // 全 OFF 时也消耗的 FE（你可改成配置）
-        final int FE_PER_ENABLED_FACE = 8;         // 每启用一个面额外 FE（PULL/BOTH 同价）
+        final int IDLE_FE_PER_TICK = Modconfigs.FE_PER_TICK.get();
+        final int FE_PER_ENABLED_FACE = Modconfigs.FE_PER_ENABLED_FACE_PER_TICK.get();
         int enabledFaces = 0;
 
         for (Direction d : Direction.values()) {
@@ -174,9 +174,7 @@ public class InfiniteFluidMachineBlockEntity extends BlockEntity {
 
         int cost = IDLE_FE_PER_TICK + enabledFaces * FE_PER_ENABLED_FACE;
 
-        // ===== 2) 没电就不工作（不推送）=====
-        // 这里假设你 BE 里有字段 energy（int）或方法能取/扣能量
-        // 推荐你在 BE 里封装成：boolean consumeFe(int cost)
+        // ===== 2) 没电不工作=====
         if (!be.consumeFe(cost)) {
             return;
         }
@@ -204,16 +202,15 @@ public class InfiniteFluidMachineBlockEntity extends BlockEntity {
 
     public boolean consumeFe(int cost) {
         if (cost <= 0) return true;
-        if (energy < cost) return false;   // energy 是你存 FE 的字段
+        if (energy < cost) return false;
         energy -= cost;
         markEnergyDirtyForSync();
         setChanged();
         return true;
     }
 
-    /**
-     * 从核心里读取绑定的液体，并强制转换为“源液体（Source）”
-     */
+
+    //从核心里读取绑定的液体，并强制转换为源液体
     @Nullable
     public Fluid getBoundSourceFluid() {
         ItemStack core = coreSlot.getStackInSlot(0);
@@ -226,7 +223,6 @@ public class InfiniteFluidMachineBlockEntity extends BlockEntity {
         if (fluid instanceof FlowingFluid ff) {
             fluid = ff.getSource();
         }
-        // BuiltInRegistries.FLUID.get 对未知 id 会返回默认值或空对象的情况非常少见，这里不额外判空
         return fluid;
     }
 
@@ -256,13 +252,12 @@ public class InfiniteFluidMachineBlockEntity extends BlockEntity {
                     try {
                         sideModes.put(d, SideMode.valueOf(s));
                     } catch (IllegalArgumentException ignored) {
-                        // 旧存档/非法值：忽略，走默认
                     }
                 }
             }
         }
 
-// --- SidePushPerTick ---
+        // --- SidePushPerTick ---
         sidePushPerTick.clear();
         if (tag.contains("SidePushPerTick")) {
             CompoundTag pushTag = tag.getCompound("SidePushPerTick");
@@ -320,17 +315,14 @@ public class InfiniteFluidMachineBlockEntity extends BlockEntity {
 
 
     //解决OFF->PULL需要重放才生效的问题
-
     private void notifyCapabilityChanged(Direction side) {
         if (level == null || level.isClientSide) return;
 
         setChanged();
         BlockState st = getBlockState();
 
-        // 1) 清掉本机 capability 缓存
         level.invalidateCapabilities(worldPosition);
 
-        // 2) 强制触发 neighborChanged：翻转一个无意义的 blockstate 属性
         if (st.getBlock() instanceof InfiniteFluidMachineBlock) {
             boolean dirty = st.getValue(InfiniteFluidMachineBlock.DIRTY);
             BlockState newState = st.setValue(InfiniteFluidMachineBlock.DIRTY, !dirty);
@@ -338,10 +330,8 @@ public class InfiniteFluidMachineBlockEntity extends BlockEntity {
             st = newState;
         }
 
-        // 3) 通知周围方块（Create 泵/管道会因此重算）
         level.updateNeighborsAt(worldPosition, st.getBlock());
 
-        // 4) 额外：对“被改的那一侧”的邻居也推一把（更稳）
         if (side != null && side != Direction.UP) {
             BlockPos npos = worldPosition.relative(side);
             level.invalidateCapabilities(npos);
@@ -350,7 +340,6 @@ public class InfiniteFluidMachineBlockEntity extends BlockEntity {
             level.sendBlockUpdated(npos, ns, ns, 3);
         }
 
-        // 5) 客户端同步（Jade 等）
         level.sendBlockUpdated(worldPosition, st, st, 3);
     }
 
@@ -359,7 +348,7 @@ public class InfiniteFluidMachineBlockEntity extends BlockEntity {
     @Override
     public net.minecraft.nbt.CompoundTag getUpdateTag(HolderLookup.Provider registries) {
         CompoundTag tag = super.getUpdateTag(registries);
-        saveAdditional(tag, registries); // 把 CoreSlot/SideModes/SidePushPerTick 一起塞进去
+        saveAdditional(tag, registries);
         return tag;
     }
 
@@ -372,15 +361,15 @@ public class InfiniteFluidMachineBlockEntity extends BlockEntity {
     // ===== Energy (FE) =====
     private int energy = 0;
 
-    // 先写死，后面接配置
+
     private static final int ENERGY_CAPACITY =Integer.MAX_VALUE;
     private static final int MAX_RECEIVE_PER_TICK = Integer.MAX_VALUE;
 
-    // 全 OFF 时每 tick 的低耗电（只要插了核心且绑定了液体）
-    private static final int IDLE_FE_PER_TICK = 2;
+    // 全 OFF 时每 tick 的耗电
+    private static final int IDLE_FE_PER_TICK = Modconfigs.FE_PER_TICK.get();
 
-    // 每启用一个面（PULL 或 BOTH）额外增加的耗电
-    private static final int FE_PER_ENABLED_FACE_PER_TICK = 8;
+    // 每启用一个面额外增加的耗电
+    private static final int FE_PER_ENABLED_FACE_PER_TICK = Modconfigs.FE_PER_ENABLED_FACE_PER_TICK.get();
 
     private final net.neoforged.neoforge.energy.IEnergyStorage energyStorage =
             new net.neoforged.neoforge.energy.IEnergyStorage() {
@@ -471,14 +460,13 @@ public class InfiniteFluidMachineBlockEntity extends BlockEntity {
     private void trySyncEnergyToClient() {
         if (level == null || level.isClientSide) return;
 
-        // 节流：每 5 tick 最多同步一次（你可改）
+        // 每 5 tick 同步一次
         if (energySyncCooldown > 0) {
             energySyncCooldown--;
             return;
         }
 
-        // 变化阈值：能量变化不大就不发（你可改）
-        final int THRESHOLD = 1; // 想更省就设 10/50/100
+        final int THRESHOLD = 1;
 
         if (!energyDirtyForSync && Math.abs(energy - energyLastSynced) < THRESHOLD) {
             return;
@@ -486,7 +474,7 @@ public class InfiniteFluidMachineBlockEntity extends BlockEntity {
 
         BlockState st = getBlockState();
         setChanged();
-        level.sendBlockUpdated(worldPosition, st, st, 3); // 这会发送 BE update packet/tag
+        level.sendBlockUpdated(worldPosition, st, st, 3);
         energyLastSynced = energy;
         energyDirtyForSync = false;
         energySyncCooldown = 5;

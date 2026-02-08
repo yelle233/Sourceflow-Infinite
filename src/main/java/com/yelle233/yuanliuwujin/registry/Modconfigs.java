@@ -8,20 +8,24 @@ public class Modconfigs {
 
     public static final ModConfigSpec.IntValue FE_PER_TICK;
     public static final ModConfigSpec.IntValue BASE_PUSH_PER_TICK;
-    public static final ModConfigSpec.IntValue ENERGY_CAPACITY;
+    public static final ModConfigSpec.IntValue FE_PER_ENABLED_FACE_PER_TICK;
 
     static {
         ModConfigSpec.Builder b = new ModConfigSpec.Builder();
 
         b.push("infinite_fluid_machine");
         FE_PER_TICK = b.comment("Base FE consumed per tick when machine is outputting")
-                .defineInRange("fePerTick", 20, 0, 1_000_000);
+                .comment("机器默认消耗的FE")
+                .defineInRange("fePerTick", 2, 0, Integer.MAX_VALUE);
 
         BASE_PUSH_PER_TICK = b.comment("Default push per tick (mB)")
-                .defineInRange("defaultPushPerTick", 10000000, 1, Integer.MAX_VALUE);
+                .comment("每tick主动输出的液体量")
+                .defineInRange("defaultPushPerTick", 10000000, 0, Integer.MAX_VALUE);
 
-        ENERGY_CAPACITY = b.comment("Internal battery capacity (FE)")
-                .defineInRange("energyCapacity", 100_000, 0, 10_000_000);
+        FE_PER_ENABLED_FACE_PER_TICK= b.comment("Additional FE consumption for each enabled side.")
+                .comment("每增加一个启用的面额外消耗的FE")
+                .defineInRange("fePerEnableFacePerTick", 8, 0, Integer.MAX_VALUE);
+
         b.pop();
 
         SPEC = b.build();

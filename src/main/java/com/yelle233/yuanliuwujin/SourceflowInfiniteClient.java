@@ -89,7 +89,6 @@ public class SourceflowInfiniteClient {
         LocalPlayer player = mc.player;
         if (player == null || mc.level == null) return;
 
-        // 仅当准星命中方块时显示
         HitResult hit = mc.hitResult;
         if (!(hit instanceof BlockHitResult bhr)) return;
 
@@ -110,8 +109,8 @@ public class SourceflowInfiniteClient {
 
         Fluid bound = machine.getBoundSourceFluid();
         Component fluidName = (bound == null)
-                ? Component.literal("—")
-                : bound.getFluidType().getDescription();
+                ? Component.translatable("hud.sourceflowinfinite.none") // ✅ 可翻译
+                : bound.getFluidType().getDescription();               // ✅ 原版自带翻译
 
         // Faces：只显示启用的面（PULL/BOTH），用 N/E/S/W/D 缩写
         int enabledFaces = 0;
@@ -128,6 +127,7 @@ public class SourceflowInfiniteClient {
             enabledFaces++;
             if (!facesShort.isEmpty()) facesShort.append(' ');
 
+            // ✅ 这些字母如果你也想翻译，可以改成 translatable（见下面“可选增强”）
             String letter = switch (d) {
                 case NORTH -> "N";
                 case SOUTH -> "S";
@@ -136,70 +136,77 @@ public class SourceflowInfiniteClient {
                 case DOWN  -> "D";
                 default    -> "?";
             };
-
-            // 如果你想区分 PULL/BOTH，可以改成：N(P) / N(B)
             facesShort.append(letter);
         }
 
-        // ===== 文本行组装（标签灰，数值亮）=====
-        Component lineEnergy = Component.literal("Energy ").withStyle(ChatFormatting.GRAY)
-                .append(Component.literal(compactFE(energy) + "/" + compactFE(cap) + " FE")
-                        .withStyle(ChatFormatting.WHITE));
+        // ===== 文本行（全部 translatable）=====
+        Component lineEnergy = Component.translatable(
+                "hud.sourceflowinfinite.energy",
+                compactFE(energy),
+                compactFE(cap)
+        ).withStyle(ChatFormatting.WHITE);
 
         ChatFormatting costColor =
                 (costPerSec >= 2000) ? ChatFormatting.RED :
                         (costPerSec >= 800)  ? ChatFormatting.GOLD :
                                 ChatFormatting.GREEN;
 
-        Component lineCost = Component.literal("Cost ").withStyle(ChatFormatting.GRAY)
-                .append(Component.literal(compactFE(costPerSec) + " FE/s")
-                        .withStyle(costColor))
-                .append(Component.literal("  (" + costPerTick + "/t)").withStyle(ChatFormatting.DARK_GRAY));
+        Component lineCost = Component.translatable(
+                "hud.sourceflowinfinite.cost",
+                compactFE(costPerSec),
+                costPerTick
+        ).withStyle(costColor);
 
-        Component lineCore = Component.literal("Core ").withStyle(ChatFormatting.GRAY)
-                .append(Component.literal(hasCore ? "Inserted" : "Missing")
-                        .withStyle(hasCore ? ChatFormatting.GREEN : ChatFormatting.RED));
+        Component lineCore = Component.translatable(
+                "hud.sourceflowinfinite.core",
+                Component.translatable(hasCore
+                        ? "hud.sourceflowinfinite.core.inserted"
+                        : "hud.sourceflowinfinite.core.missing"
+                ).withStyle(hasCore ? ChatFormatting.GREEN : ChatFormatting.RED)
+        );
 
-        Component lineFluid = Component.literal("Fluid ").withStyle(ChatFormatting.GRAY)
-                .append(fluidName.copy().withStyle(bound == null ? ChatFormatting.DARK_GRAY : ChatFormatting.AQUA));
+        Component lineFluid = Component.translatable(
+                "hud.sourceflowinfinite.fluid",
+                fluidName.copy().withStyle(bound == null ? ChatFormatting.DARK_GRAY : ChatFormatting.AQUA)
+        );
 
-        Component lineFaces = Component.literal("Faces ").withStyle(ChatFormatting.GRAY)
-                .append(Component.literal("(" + enabledFaces + ") ").withStyle(ChatFormatting.DARK_GRAY))
-                .append(Component.literal(enabledFaces == 0 ? "—" : facesShort.toString())
-                        .withStyle(enabledFaces == 0 ? ChatFormatting.DARK_GRAY : ChatFormatting.GREEN));
+        Component lineFaces = Component.translatable(
+                "hud.sourceflowinfinite.faces",
+                enabledFaces,
+                (enabledFaces == 0
+                        ? Component.translatable("hud.sourceflowinfinite.none").withStyle(ChatFormatting.DARK_GRAY)
+                        : Component.literal(facesShort.toString()).withStyle(ChatFormatting.GREEN))
+        ).withStyle(ChatFormatting.WHITE);
 
         List<Component> rawLines = List.of(lineEnergy, lineCost, lineCore, lineFluid);
 
         // ===== 布局参数 =====
         int padding = 4;
         int gap = 2;
-
-        // 你想要的最大宽度（越小越“机械动力”，越大越信息板）
         int maxWidth = 190;
         int innerMaxWidth = maxWidth - padding * 2;
 
         // Faces 可能很长：split 成 FormattedCharSequence（1.21 正确类型）
         List<FormattedCharSequence> faceLines = mc.font.split(lineFaces, innerMaxWidth);
 
-        // 计算面板宽度：取所有行的最大宽度（不超过 maxWidth）
+        // 计算宽度：取所有行最大宽度
         int innerMax = 0;
         for (Component c : rawLines) innerMax = Math.max(innerMax, mc.font.width(c));
         for (FormattedCharSequence seq : faceLines) innerMax = Math.max(innerMax, mc.font.width(seq));
         int panelW = Math.min(innerMax + padding * 2, maxWidth);
 
-        // Faces split 需要根据最终 panelW 再算一次（否则 panelW 变窄时还可能溢出）
+        // 根据最终 panelW 重新 split faces
         innerMaxWidth = panelW - padding * 2;
         faceLines = mc.font.split(lineFaces, innerMaxWidth);
 
-        // 计算高度
+        // 高度
         int lh = mc.font.lineHeight;
         int mainH = rawLines.size() * lh + (rawLines.size() - 1) * gap;
         int facesH = faceLines.size() * lh + (faceLines.size() - 1) * gap;
-
-        int sepH = 5; // 分隔区高度
+        int sepH = 5;
         int panelH = padding * 2 + mainH + sepH + facesH;
 
-        // ===== 悬浮准心附近（右下），并 clamp 防止出屏 =====
+        // 悬浮准心附近（右下），并 clamp
         int screenW = mc.getWindow().getGuiScaledWidth();
         int screenH = mc.getWindow().getGuiScaledHeight();
         int cx = screenW / 2;
@@ -211,13 +218,13 @@ public class SourceflowInfiniteClient {
         x = Mth.clamp(x, 6, screenW - panelW - 6);
         y = Mth.clamp(y, 6, screenH - panelH - 6);
 
-        // ===== 背景/边框（不挡视野）=====
-        int bg = 0x55000000;      // 半透明黑
-        int border = 0x22FFFFFF;  // 淡边框
+        // 背景
+        int bg = 0x55000000;
+        int border = 0x22FFFFFF;
         gg.fill(x - 1, y - 1, x + panelW + 1, y + panelH + 1, border);
         gg.fill(x, y, x + panelW, y + panelH, bg);
 
-        // ===== 绘制文本 =====
+        // 画主行
         int ty = y + padding;
         for (Component c : rawLines) {
             gg.drawString(mc.font, c, x + padding, ty, 0xFFFFFF, false);
@@ -229,6 +236,7 @@ public class SourceflowInfiniteClient {
         gg.fill(x + padding, ty, x + panelW - padding, ty + 1, 0x22FFFFFF);
         ty += 3;
 
+        // Faces（split 的 FormattedCharSequence）
         for (FormattedCharSequence seq : faceLines) {
             gg.drawString(mc.font, seq, x + padding, ty, 0xFFFFFF, false);
             ty += lh + gap;

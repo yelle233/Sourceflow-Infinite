@@ -6,7 +6,26 @@
   "item.yuanliuwujin.wrench": "扳手",
 
   "msg.yourmod.wrench_mode": "模式",
-  "mode.yourmod.wrench.io": "IO（输入/输出）",
-  "mode.yourmod.wrench.config": "配置"
+  "mode.yourmod.wrench.io": "装配模式",
+  "mode.yourmod.wrench.config": "配置模式",
+
+  "hud.sourceflowinfinite.none": "无",
+  "hud.sourceflowinfinite.energy": "能量 %s/%s FE",
+  "hud.sourceflowinfinite.cost": "消耗 %s FE/s（%s FE/t）",
+  "hud.sourceflowinfinite.core": "核心 %s",
+  "hud.sourceflowinfinite.core.inserted": "已插入",
+  "hud.sourceflowinfinite.core.missing": "缺失",
+  "hud.sourceflowinfinite.fluid": "绑定流体 %s",
+  "hud.sourceflowinfinite.faces": "启用面（%s）%s",
+
+
+  "tooltip.yuanliuwujin.core.text1": "已绑定该液体",
+  "tooltip.yuanliuwujin.core.text2": "已绑定液体，潜行右键清除后才能重新绑定",
+  "tooltip.yuanliuwujin.core.text3": "已绑定:",
+  "tooltip.yuanliuwujin.core.text4": "已清除绑定",
+  "tooltip.yuanliuwujin.core.unbound": "未绑定液体",
+  "tooltip.yuanliuwujin.core.bind_hint": "右键液体方块进行绑定",
+  "tooltip.yuanliuwujin.core.clear_hint": "潜行右键清除绑定",
+  "tooltip.yuanliuwujin.core.bound": "已绑定：%s"
 
 }

@@ -6,7 +6,25 @@
   "item.yuanliuwujin.wrench": "Wrench",
 
   "msg.yourmod.wrench_mode": "Mode",
-  "mode.yourmod.wrench.io": "I/O",
-  "mode.yourmod.wrench.config": "Config"
+  "mode.yourmod.wrench.io": "Assembly Mode",
+  "mode.yourmod.wrench.config": "Configuration Mode",
+
+  "hud.sourceflowinfinite.none": "None",
+  "hud.sourceflowinfinite.energy": "Energy %s/%s FE",
+  "hud.sourceflowinfinite.cost": "Cost %s FE/s (%s FE/t)",
+  "hud.sourceflowinfinite.core": "Core %s",
+  "hud.sourceflowinfinite.core.inserted": "Inserted",
+  "hud.sourceflowinfinite.core.missing": "Missing",
+  "hud.sourceflowinfinite.fluid": "Fluid %s",
+  "hud.sourceflowinfinite.faces": "Faces (%s) %s",
+
+  "tooltip.yuanliuwujin.core.text1": "This fluid is already bound.",
+  "tooltip.yuanliuwujin.core.text2": "A fluid is already bound. Sneak and right-click to clear before rebinding.",
+  "tooltip.yuanliuwujin.core.text3": "Bound:",
+  "tooltip.yuanliuwujin.core.text4": "Binding cleared.",
+  "tooltip.yuanliuwujin.core.unbound": "No fluid bound",
+  "tooltip.yuanliuwujin.core.bind_hint": "Right-click a fluid block to bind",
+  "tooltip.yuanliuwujin.core.clear_hint": "Sneak-right-click to clear",
+  "tooltip.yuanliuwujin.core.bound": "Bound: %s"
 
 }

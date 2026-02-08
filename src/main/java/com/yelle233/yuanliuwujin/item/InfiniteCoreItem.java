@@ -52,7 +52,7 @@ public class InfiniteCoreItem extends Item {
         // 潜行右键：清除绑定
         if (player.isShiftKeyDown()) {
             unbindOneCore(player, stack);
-            player.displayClientMessage(Component.literal("已清除绑定").withStyle(ChatFormatting.YELLOW), true);
+            player.displayClientMessage(Component.translatable("tooltip.yuanliuwujin.core.text4").withStyle(ChatFormatting.YELLOW), true);
             return InteractionResult.CONSUME;
         }
 
@@ -82,9 +82,9 @@ public class InfiniteCoreItem extends Item {
         ResourceLocation bound = getBoundFluid(stack);
         if (bound != null) {
             if (bound.equals(id)) {
-                player.displayClientMessage(Component.literal("已绑定该液体").withStyle(ChatFormatting.YELLOW), true);
+                player.displayClientMessage(Component.translatable("tooltip.yuanliuwujin.core.text1").withStyle(ChatFormatting.YELLOW), true);
             } else {
-                player.displayClientMessage(Component.literal("已绑定液体，潜行右键清除后才能重新绑定").withStyle(ChatFormatting.RED), true);
+                player.displayClientMessage(Component.translatable("tooltip.yuanliuwujin.core.text2").withStyle(ChatFormatting.RED), true);
             }
             return InteractionResult.CONSUME;
         }
@@ -93,7 +93,7 @@ public class InfiniteCoreItem extends Item {
 
         // 提示玩家
         player.displayClientMessage(
-                Component.literal("已绑定：").withStyle(ChatFormatting.GREEN)
+                Component.translatable("tooltip.yuanliuwujin.core.text3").withStyle(ChatFormatting.GREEN)
                         .append(Component.literal(id.toString()).withStyle(ChatFormatting.AQUA)),
                 true
         );
@@ -109,7 +109,7 @@ public class InfiniteCoreItem extends Item {
         // 潜行空中右键：清除绑定
         if (!level.isClientSide && player.isShiftKeyDown()) {
             unbindOneCore(player, stack);
-            player.displayClientMessage(Component.literal("已清除绑定").withStyle(ChatFormatting.YELLOW), true);
+            player.displayClientMessage(Component.translatable("tooltip.yuanliuwujin.core.text4").withStyle(ChatFormatting.YELLOW), true);
             return InteractionResultHolder.consume(stack);
         }
 
@@ -128,9 +128,9 @@ public class InfiniteCoreItem extends Item {
                 ResourceLocation bound = getBoundFluid(stack);
                 if (bound != null) {
                     if (bound.equals(id)) {
-                        player.displayClientMessage(Component.literal("已绑定该液体").withStyle(ChatFormatting.YELLOW), true);
+                        player.displayClientMessage(Component.translatable("tooltip.yuanliuwujin.core.text1").withStyle(ChatFormatting.YELLOW), true);
                     } else {
-                        player.displayClientMessage(Component.literal("已绑定液体，潜行右键清除后才能重新绑定").withStyle(ChatFormatting.RED), true);
+                        player.displayClientMessage(Component.translatable("tooltip.yuanliuwujin.core.text2").withStyle(ChatFormatting.RED), true);
                     }
                     return InteractionResultHolder.consume(stack);
                 }
@@ -139,7 +139,7 @@ public class InfiniteCoreItem extends Item {
 
 
                 player.displayClientMessage(
-                        Component.literal("已绑定：").withStyle(ChatFormatting.GREEN)
+                        Component.translatable("tooltip.yuanliuwujin.core.text3").withStyle(ChatFormatting.GREEN)
                                 .append(Component.literal(id.toString()).withStyle(ChatFormatting.AQUA)),
                         true
                 );
@@ -184,16 +184,38 @@ public class InfiniteCoreItem extends Item {
 
     @Override
     public void appendHoverText(ItemStack stack, TooltipContext context, List<Component> tooltip, TooltipFlag flag) {
-        ResourceLocation bound = getBoundFluid(stack);
-        if (bound == null) {
-            tooltip.add(Component.literal("未绑定液体").withStyle(ChatFormatting.GRAY));
-            tooltip.add(Component.literal("右键液体方块进行绑定").withStyle(ChatFormatting.DARK_GRAY));
-            tooltip.add(Component.literal("潜行右键清除绑定").withStyle(ChatFormatting.DARK_GRAY));
-        } else {
-            tooltip.add(Component.literal("已绑定：").withStyle(ChatFormatting.GRAY)
-                    .append(Component.literal(bound.toString()).withStyle(ChatFormatting.AQUA)));
-            tooltip.add(Component.literal("潜行右键清除绑定").withStyle(ChatFormatting.DARK_GRAY));
+//        ResourceLocation bound = getBoundFluid(stack);
+//        if (bound == null) {
+//            tooltip.add(Component.literal("未绑定液体").withStyle(ChatFormatting.GRAY));
+//            tooltip.add(Component.literal("右键液体方块进行绑定").withStyle(ChatFormatting.DARK_GRAY));
+//            tooltip.add(Component.literal("潜行右键清除绑定").withStyle(ChatFormatting.DARK_GRAY));
+//        } else {
+//            tooltip.add(Component.literal("已绑定：").withStyle(ChatFormatting.GRAY)
+//                    .append(Component.literal(bound.toString()).withStyle(ChatFormatting.AQUA)));
+//            tooltip.add(Component.literal("潜行右键清除绑定").withStyle(ChatFormatting.DARK_GRAY));
+//        }
+        ResourceLocation boundId = getBoundFluid(stack);
+
+        if (boundId == null) {
+            tooltip.add(Component.translatable("tooltip.yuanliuwujin.core.unbound")
+                    .withStyle(ChatFormatting.GRAY));
+            tooltip.add(Component.translatable("tooltip.yuanliuwujin.core.bind_hint")
+                    .withStyle(ChatFormatting.DARK_GRAY));
+            tooltip.add(Component.translatable("tooltip.yuanliuwujin.core.clear_hint")
+                    .withStyle(ChatFormatting.DARK_GRAY));
+            return;
         }
+
+        // ✅ 显示“流体本地化名字”而不是 "modid:fluid"
+        // BuiltInRegistries.FLUID.get(boundId) 找不到时会给默认值，所以这里做个兜底
+        var fluid = net.minecraft.core.registries.BuiltInRegistries.FLUID.get(boundId);
+        Component fluidName = fluid.getFluidType().getDescription(); // 原版自带翻译
+
+        tooltip.add(Component.translatable("tooltip.yuanliuwujin.core.bound", fluidName)
+                .withStyle(ChatFormatting.GRAY));
+        tooltip.add(Component.translatable("tooltip.yuanliuwujin.core.clear_hint")
+                .withStyle(ChatFormatting.DARK_GRAY));
+
     }
 
     private static void setCoreModelState(ItemStack stack, boolean filled) {
