@@ -29,6 +29,11 @@ public class InfiniteFluidMachineBlockEntity extends BlockEntity {
     private static final SideMode DEFAULT_MODE = SideMode.OFF;
     private static final int DEFAULT_PUSH_PER_TICK = Modconfigs.BASE_PUSH_PER_TICK.get(); // mB/t
 
+    private static int cfgPushPerTick() {
+        return Modconfigs.BASE_PUSH_PER_TICK.get();
+    }
+
+
     // 六个面的模式：OFF，PULL，BOTH
     public enum SideMode { OFF, PULL, BOTH }
 
@@ -56,9 +61,7 @@ public class InfiniteFluidMachineBlockEntity extends BlockEntity {
     // 每面输出量（mB/t）
     public int getSidePushPerTick(Direction dir) {
         if (dir == Direction.UP) return 0;
-        int v = sidePushPerTick.getOrDefault(dir, DEFAULT_PUSH_PER_TICK);
-        if (v < 0) v = 0;
-        return v;
+        return cfgPushPerTick();
     }
 
     // 1格核心槽
@@ -123,7 +126,6 @@ public class InfiniteFluidMachineBlockEntity extends BlockEntity {
 
         @Override
         public FluidStack drain(int maxDrain, FluidAction action) {
-            // ✅ 关键修复：没电 / 不可工作 时，PULL 不能抽
             if (!canWorkNow()) return FluidStack.EMPTY;
 
             Fluid f = getBoundSourceFluid();
@@ -140,7 +142,6 @@ public class InfiniteFluidMachineBlockEntity extends BlockEntity {
         for (Direction d : Direction.values()) {
             if (d == Direction.UP) continue;
             sideModes.put(d, DEFAULT_MODE);
-            sidePushPerTick.put(d, DEFAULT_PUSH_PER_TICK);
         }
     }
 
@@ -234,10 +235,6 @@ public class InfiniteFluidMachineBlockEntity extends BlockEntity {
         if (tag.contains("CoreSlot")) {
             coreSlot.deserializeNBT(registries, tag.getCompound("CoreSlot"));
         }
-        if (tag.contains("PushPerTick")) {
-            pushPerTick = tag.getInt("PushPerTick");
-        }
-
         sideModes.clear();
         if (tag.contains("SideModes")) {
             CompoundTag modesTag = tag.getCompound("SideModes");
@@ -269,7 +266,6 @@ public class InfiniteFluidMachineBlockEntity extends BlockEntity {
         super.saveAdditional(tag, registries);
 
         tag.put("CoreSlot", coreSlot.serializeNBT(registries));
-        tag.putInt("PushPerTick", pushPerTick);
         tag.putInt("Energy", energy);
 
         CompoundTag modes = new CompoundTag();
@@ -291,8 +287,9 @@ public class InfiniteFluidMachineBlockEntity extends BlockEntity {
 
     public ItemStackHandler getCoreSlot() { return coreSlot; }
     public IFluidHandler getInfiniteOutput() { return infiniteOutput; }
-    public int getPushPerTick() { return pushPerTick; }
-    public void setPushPerTick(int v) { pushPerTick = Math.max(0, v); setChanged(); }
+    public int getPushPerTick() {
+        return cfgPushPerTick();
+    }
 
     // 解决 OFF->PULL 需要重放才生效的问题
     private void notifyCapabilityChanged(Direction side) {

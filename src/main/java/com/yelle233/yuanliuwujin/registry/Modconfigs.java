@@ -18,6 +18,10 @@ public class Modconfigs {
     public static final ModConfigSpec.IntValue FE_PER_ENABLED_FACE_PER_TICK;
     public static final ModConfigSpec.ConfigValue<List<? extends String>> BANNED_FLUIDS;
 
+
+
+
+
     static {
         ModConfigSpec.Builder b = new ModConfigSpec.Builder();
 
