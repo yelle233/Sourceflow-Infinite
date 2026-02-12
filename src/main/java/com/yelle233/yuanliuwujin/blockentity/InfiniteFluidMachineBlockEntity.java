@@ -45,6 +45,11 @@ import java.util.EnumMap;
  */
 public class InfiniteFluidMachineBlockEntity extends BlockEntity {
 
+    /* ====== 类成员变量区域 ====== */
+
+    //记录上一 tick 机器是否处于能工作的状态
+    private boolean lastTickCanWork = false;
+
     /* ====== 面模式枚举 ====== */
 
     public enum SideMode {
@@ -275,6 +280,33 @@ public class InfiniteFluidMachineBlockEntity extends BlockEntity {
         be.trySyncEnergyToClient();
 
         if (be.getCoreSlot().getStackInSlot(0).isEmpty()) return;
+
+        // =========================================================
+        // 检测工作状态突变 (解决 Mekanism 管道连接滞后问题)
+        // =========================================================
+        // 判断当前是否满足工作条件 (有核心 + 已绑定 + 电量足够)
+        boolean canWorkNow = be.canWorkNow();
+        // 如果 "现在的状态" 和 "上一 tick 的状态" 不一样
+        if (canWorkNow != be.lastTickCanWork) {
+            // 更新记录
+            be.lastTickCanWork = canWorkNow;
+            // 关键：通知周围邻居（包括管道）这里发生了变化
+            // 这会让 Mekanism 管道清除“无法连接”的缓存，重新尝试连接
+            level.updateNeighborsAt(pos, state.getBlock());
+        }
+
+        /* 让机器可以在有无限核心的情况下发光 */
+
+        // 1. 检查核心槽位是否有无限核心
+        boolean hasCore = !be.getCoreSlot().getStackInSlot(0).isEmpty();
+        // 2. 获取当前方块状态中的 LIT 值
+        boolean isLit = state.getValue(InfiniteFluidMachineBlock.LIT);
+        // 3. 如果 "实际是否有核心" 和 "方块是否发光" 不一致，则更新方块状态
+        if (hasCore != isLit) {
+            // 更新 BlockState，保持 LIT 属性与 hasCore 一致
+            // flag 3 = Block.UPDATE_ALL (通知客户端更新渲染 + 通知邻居方块)
+            level.setBlock(pos, state.setValue(InfiniteFluidMachineBlock.LIT, hasCore), 3);
+        }
 
         BindType bindType = be.getCoreBindType();
         if (bindType == BindType.NONE) return;
