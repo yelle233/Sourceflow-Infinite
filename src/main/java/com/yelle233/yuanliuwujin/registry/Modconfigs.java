@@ -35,6 +35,9 @@ public class Modconfigs {
     /** 液体禁用列表，支持 "namespace:path"（ID）和 "#namespace:path"（Tag） */
     public static final ModConfigSpec.ConfigValue<List<? extends String>> BANNED_FLUIDS;
 
+    /** 每 tick 可抽取的液体量（mB），默认为 Integer.MAX_VALUE - 1 */
+    public static final ModConfigSpec.IntValue BASE_PULL_PER_TICK;
+
     static {
         ModConfigSpec.Builder b = new ModConfigSpec.Builder();
 
@@ -54,12 +57,20 @@ public class Modconfigs {
         b.push("infinite_fluid_machine");
 
         FE_PER_TICK = b.comment("Base FE consumed per tick when machine has a valid core")
+                .comment("机器在待机状态下的每tick耗电")
                 .defineInRange("fePerTick", 2, 0, Integer.MAX_VALUE - 1);
 
         BASE_PUSH_PER_TICK = b.comment("Fluid pushed per tick per BOTH-mode face (mB)")
+                .comment("每tick每面主动推送的液体量(mB)，设为最大值等于无限制")
                 .defineInRange("PushPerTick", Integer.MAX_VALUE - 1, 0, Integer.MAX_VALUE - 1);
 
+        BASE_PULL_PER_TICK = b.comment("Max drain per tick per face (mB) in PULL/BOTH mode. Set to max for unlimited.")
+                .comment("每tick每面最大被抽取量(mB)，设为最大值等于无限制")
+                .defineInRange("PullPerTick", Integer.MAX_VALUE - 1, 1, Integer.MAX_VALUE - 1);
+
+
         FE_PER_ENABLED_FACE_PER_TICK = b.comment("Additional FE per tick for each enabled face")
+                .comment("每启用一个面额外增加的 FE/tick 消耗")
                 .defineInRange("fePerEnableFacePerTick", 8, 0, Integer.MAX_VALUE - 1);
 
         b.pop();

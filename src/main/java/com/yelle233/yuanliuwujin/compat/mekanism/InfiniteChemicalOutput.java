@@ -28,14 +28,22 @@ public class InfiniteChemicalOutput implements IChemicalHandler {
     /** 判断机器是否可以工作（有电+有核心+未被ban） */
     private final Supplier<Boolean> canWorkSupplier;
 
+    private final Supplier<Long> budgetSupplier;
+
+    private final java.util.function.LongConsumer budgetConsumer;
+
     /**
      * @param chemicalSupplier 提供当前绑定化学品的 Supplier（如果返回 null 则停止输出）
      * @param canWorkSupplier  判断机器是否可工作
      */
     public InfiniteChemicalOutput(Supplier<Chemical> chemicalSupplier,
-                                   Supplier<Boolean> canWorkSupplier) {
+                                  Supplier<Boolean> canWorkSupplier,
+                                  Supplier<Long> budgetSupplier,
+                                  java.util.function.LongConsumer budgetConsumer) {
         this.chemicalSupplier = chemicalSupplier;
         this.canWorkSupplier = canWorkSupplier;
+        this.budgetSupplier = budgetSupplier;
+        this.budgetConsumer = budgetConsumer;
     }
 
     /**
@@ -88,7 +96,15 @@ public class InfiniteChemicalOutput implements IChemicalHandler {
     public ChemicalStack extractChemical(int tank, long amount, Action action) {
         Chemical c = getActiveChemical();
         if (c == null || amount <= 0) return ChemicalStack.EMPTY;
-        return c.getStack(amount);
+
+        long budget = budgetSupplier.get();
+        long amt = Math.min(amount, budget);
+        if (amt <= 0) return ChemicalStack.EMPTY;
+
+        if (action.execute()) {
+            budgetConsumer.accept(amt);
+        }
+        return c.getStack(amt);
     }
 
     @Override
@@ -100,6 +116,14 @@ public class InfiniteChemicalOutput implements IChemicalHandler {
     public ChemicalStack extractChemical(long amount, Action action) {
         Chemical c = getActiveChemical();
         if (c == null || amount <= 0) return ChemicalStack.EMPTY;
-        return c.getStack(amount);
+
+        long budget = budgetSupplier.get();
+        long amt = Math.min(amount, budget);
+        if (amt <= 0) return ChemicalStack.EMPTY;
+
+        if (action.execute()) {
+            budgetConsumer.accept(amt);
+        }
+        return c.getStack(amt);
     }
 }

@@ -50,6 +50,11 @@ public class InfiniteFluidMachineBlockEntity extends BlockEntity {
     //记录上一 tick 机器是否处于能工作的状态
     private boolean lastTickCanWork = false;
 
+    private long chemPullBudgetRemaining = 0;
+
+    /** 本 tick 剩余可被抽取量（每 tick 重置） */
+    private int pullBudgetRemaining = 0;
+
     /* ====== 面模式枚举 ====== */
 
     public enum SideMode {
@@ -146,7 +151,14 @@ public class InfiniteFluidMachineBlockEntity extends BlockEntity {
             if (!canWorkNow()) return FluidStack.EMPTY;
             Fluid f = getBoundSourceFluid();
             if (f == null || resource.isEmpty() || resource.getFluid() != f) return FluidStack.EMPTY;
-            return resource.getAmount() > 0 ? new FluidStack(f, resource.getAmount()) : FluidStack.EMPTY;
+
+            int amt = Math.min(resource.getAmount(), pullBudgetRemaining);
+            if (amt <= 0) return FluidStack.EMPTY;
+
+            if (action.execute()) {
+                pullBudgetRemaining -= amt;
+            }
+            return new FluidStack(f, amt);
         }
 
         @Override
@@ -154,7 +166,14 @@ public class InfiniteFluidMachineBlockEntity extends BlockEntity {
             if (!canWorkNow()) return FluidStack.EMPTY;
             Fluid f = getBoundSourceFluid();
             if (f == null || maxDrain <= 0) return FluidStack.EMPTY;
-            return new FluidStack(f, maxDrain);
+
+            int amt = Math.min(maxDrain, pullBudgetRemaining);
+            if (amt <= 0) return FluidStack.EMPTY;
+
+            if (action.execute()) {
+                pullBudgetRemaining -= amt;
+            }
+            return new FluidStack(f, amt);
         }
     };
 
@@ -180,13 +199,14 @@ public class InfiniteFluidMachineBlockEntity extends BlockEntity {
      */
     public Object getInfiniteChemicalOutput() {
         if (chemicalOutputHandler == null && MekanismChecker.isLoaded()) {
-            // 懒初始化：传入 lambda 以动态获取当前绑定的化学品和工作状态
             chemicalOutputHandler = new InfiniteChemicalOutput(
                     () -> {
                         ResourceLocation chemId = getBoundChemicalId();
                         return chemId != null ? MekChemicalHelper.getChemical(chemId) : null;
                     },
-                    this::canWorkNow
+                    this::canWorkNow,
+                    () -> chemPullBudgetRemaining,
+                    consumed -> chemPullBudgetRemaining -= consumed
             );
         }
         return chemicalOutputHandler;
@@ -288,6 +308,9 @@ public class InfiniteFluidMachineBlockEntity extends BlockEntity {
 
     public static void serverTick(Level level, BlockPos pos, BlockState state, InfiniteFluidMachineBlockEntity be) {
         be.trySyncEnergyToClient();
+
+        be.pullBudgetRemaining = Modconfigs.BASE_PULL_PER_TICK.get();
+        be.chemPullBudgetRemaining = Modconfigs.BASE_PULL_PER_TICK.get();
 
         if (be.getCoreSlot().getStackInSlot(0).isEmpty()) return;
 
