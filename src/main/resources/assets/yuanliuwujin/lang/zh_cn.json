@@ -18,7 +18,9 @@
   "hud.sourceflowinfinite.fluid": "绑定流体 %s",
   "hud.sourceflowinfinite.faces": "启用面（%s）%s",
 
-
+  "tooltip.yuanliuwujin.core.bind_chem_hint": "右键 Mekanism 化学品储罐绑定化学品",
+  "tooltip.yuanliuwujin.core.bound_chemical": "已绑定化学品: %s",
+  "tooltip.yuanliuwujin.core.text3_chem": "已绑定化学品: ",
   "tooltip.yuanliuwujin.core.text1": "已绑定该液体",
   "tooltip.yuanliuwujin.core.text2": "已绑定液体，潜行右键清除后才能重新绑定",
   "tooltip.yuanliuwujin.core.text3": "已绑定:",

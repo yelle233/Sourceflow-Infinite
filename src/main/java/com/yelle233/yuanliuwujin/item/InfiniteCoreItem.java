@@ -1,5 +1,7 @@
 package com.yelle233.yuanliuwujin.item;
 
+import com.yelle233.yuanliuwujin.compat.MekanismChecker;
+import com.yelle233.yuanliuwujin.compat.mekanism.MekChemicalHelper;
 import com.yelle233.yuanliuwujin.registry.ModDataComponents;
 import com.yelle233.yuanliuwujin.registry.Modconfigs;
 import net.minecraft.ChatFormatting;
@@ -34,12 +36,12 @@ import java.util.List;
 /**
  * 无限核心物品。
  * <p>
- * 功能：
+ * 支持绑定两种物质类型：
  * <ul>
- *   <li>右键液体方块或含液体的容器方块 → 绑定该液体</li>
- *   <li>潜行右键 → 清除绑定</li>
- *   <li>绑定后放入无限流体机器即可无限产出该液体</li>
+ *   <li><b>流体</b>（原版/模组）—— 右键液体方块或流体容器</li>
+ *   <li><b>化学品</b>（Mekanism）—— 右键 Mekanism 化学品储罐（需安装 Mekanism）</li>
  * </ul>
+ * 潜行右键清除绑定。两种绑定互斥，同一核心只能绑定一种。
  */
 public class InfiniteCoreItem extends Item {
 
@@ -47,7 +49,19 @@ public class InfiniteCoreItem extends Item {
         super(properties);
     }
 
-    /* ====== 右键方块交互（优先从容器绑定，其次液体方块） ====== */
+    /* ====== 绑定类型枚举 ====== */
+
+    /** 标识当前绑定的物质类型 */
+    public enum BindType {
+        /** 未绑定 */
+        NONE,
+        /** 原版/模组流体 */
+        FLUID,
+        /** Mekanism 化学品 */
+        CHEMICAL
+    }
+
+    /* ====== 右键方块交互 ====== */
 
     @Override
     public InteractionResult useOn(UseOnContext ctx) {
@@ -59,6 +73,31 @@ public class InfiniteCoreItem extends Item {
 
         ItemStack stack = ctx.getItemInHand();
 
+
+
+        BlockPos pos = ctx.getClickedPos();
+        Direction face = ctx.getClickedFace();
+
+        // 1) 尝试从流体容器绑定
+        ResourceLocation fluidId = tryGetFluidIdFromHandler(level, pos, face);
+        if (fluidId != null) {
+            return tryBind(player, stack, ctx.getHand(), fluidId, BindType.FLUID);
+        }
+
+        // 2) 尝试从 Mekanism 化学品储罐绑定（仅在 Mekanism 已加载时）
+        if (MekanismChecker.isLoaded()) {
+            ResourceLocation chemId = MekChemicalHelper.tryGetChemicalIdFromHandler(level, pos, face);
+            if (chemId != null) {
+                return tryBind(player, stack, ctx.getHand(), chemId, BindType.CHEMICAL);
+            }
+        }
+
+        // 3) 尝试从液体方块绑定
+        ResourceLocation worldFluidId = tryGetFluidIdFromWorld(level, pos, face);
+        if (worldFluidId != null) {
+            return tryBind(player, stack, ctx.getHand(), worldFluidId, BindType.FLUID);
+        }
+
         // 潜行右键：清除绑定
         if (player.isShiftKeyDown()) {
             unbindOneCore(player, stack);
@@ -66,20 +105,6 @@ public class InfiniteCoreItem extends Item {
             player.displayClientMessage(
                     Component.translatable("tooltip.yuanliuwujin.core.text4").withStyle(ChatFormatting.YELLOW), true);
             return InteractionResult.CONSUME;
-        }
-
-        BlockPos pos = ctx.getClickedPos();
-
-        // 1) 优先尝试从容器方块绑定液体
-        ResourceLocation fluidId = tryGetFluidIdFromHandler(level, pos, ctx.getClickedFace());
-        if (fluidId != null) {
-            return tryBind(player, stack, ctx.getHand(), fluidId);
-        }
-
-        // 2) 尝试从液体方块绑定
-        fluidId = tryGetFluidIdFromWorld(level, pos, ctx.getClickedFace());
-        if (fluidId != null) {
-            return tryBind(player, stack, ctx.getHand(), fluidId);
         }
 
         return InteractionResult.PASS;
@@ -90,7 +115,6 @@ public class InfiniteCoreItem extends Item {
     @Override
     public InteractionResultHolder<ItemStack> use(Level level, Player player, InteractionHand hand) {
         ItemStack stack = player.getItemInHand(hand);
-
         if (level.isClientSide) return InteractionResultHolder.pass(stack);
 
         // 潜行右键：清除绑定
@@ -102,14 +126,14 @@ public class InfiniteCoreItem extends Item {
             return InteractionResultHolder.consume(stack);
         }
 
-        // 射线检测玩家准星方向的液体方块
+        // 射线检测液体方块
         BlockPos fluidPos = findFluidPos(level, player);
         if (fluidPos == null) return InteractionResultHolder.pass(stack);
 
         ResourceLocation fluidId = resolveSourceFluidId(level.getFluidState(fluidPos));
         if (fluidId == null) return InteractionResultHolder.pass(stack);
 
-        InteractionResult result = tryBind(player, stack, hand, fluidId);
+        InteractionResult result = tryBind(player, stack, hand, fluidId, BindType.FLUID);
         return result == InteractionResult.CONSUME
                 ? InteractionResultHolder.consume(stack)
                 : InteractionResultHolder.pass(stack);
@@ -117,16 +141,25 @@ public class InfiniteCoreItem extends Item {
 
     /* ====== 库存 Tick：同步模型数据 ====== */
 
-    /**
-     * 每秒检查一次绑定状态，更新 CustomModelData 以切换物品外观。
-     * CustomModelData(1) = 已绑定外观，无 = 默认外观。
-     */
     @Override
     public void inventoryTick(ItemStack stack, Level level, Entity entity, int slot, boolean selected) {
         if (level.isClientSide || level.getGameTime() % 20 != 0) return;
 
-        ResourceLocation bound = getBoundFluid(stack);
-        boolean shouldLookBound = bound != null && !Modconfigs.isFluidBanned(bound);
+        boolean shouldLookBound = false;
+
+        // 检查流体绑定
+        ResourceLocation boundFluid = getBoundFluid(stack);
+        if (boundFluid != null && !Modconfigs.isFluidBanned(boundFluid)) {
+            shouldLookBound = true;
+        }
+
+        // 检查化学品绑定
+        if (!shouldLookBound) {
+            ResourceLocation boundChem = getBoundChemical(stack);
+            if (boundChem != null) {
+                shouldLookBound = true;
+            }
+        }
 
         if (shouldLookBound) {
             if (!stack.has(DataComponents.CUSTOM_MODEL_DATA)) {
@@ -143,60 +176,106 @@ public class InfiniteCoreItem extends Item {
 
     @Override
     public void appendHoverText(ItemStack stack, TooltipContext context, List<Component> tooltip, TooltipFlag flag) {
-        ResourceLocation boundId = getBoundFluid(stack);
+        ResourceLocation boundFluidId = getBoundFluid(stack);
+        ResourceLocation boundChemId = getBoundChemical(stack);
 
-        if (boundId == null) {
+        if (boundFluidId == null && boundChemId == null) {
+            // 未绑定
             tooltip.add(Component.translatable("tooltip.yuanliuwujin.core.unbound").withStyle(ChatFormatting.GRAY));
             tooltip.add(Component.translatable("tooltip.yuanliuwujin.core.bind_hint").withStyle(ChatFormatting.DARK_GRAY));
+            if (MekanismChecker.isLoaded()) {
+                tooltip.add(Component.translatable("tooltip.yuanliuwujin.core.bind_chem_hint").withStyle(ChatFormatting.DARK_GRAY));
+            }
             tooltip.add(Component.translatable("tooltip.yuanliuwujin.core.clear_hint").withStyle(ChatFormatting.DARK_GRAY));
             return;
         }
 
-        Fluid fluid = BuiltInRegistries.FLUID.get(boundId);
-        Component fluidName = fluid.getFluidType().getDescription();
-        tooltip.add(Component.translatable("tooltip.yuanliuwujin.core.bound", fluidName).withStyle(ChatFormatting.GRAY));
+        if (boundFluidId != null) {
+            // 绑定了流体
+            Fluid fluid = BuiltInRegistries.FLUID.get(boundFluidId);
+            Component fluidName = fluid.getFluidType().getDescription();
+            tooltip.add(Component.translatable("tooltip.yuanliuwujin.core.bound", fluidName).withStyle(ChatFormatting.GRAY));
 
-        if (Modconfigs.isFluidBanned(boundId)) {
-            tooltip.add(Component.literal("BANNED by config").withStyle(ChatFormatting.RED));
+            if (Modconfigs.isFluidBanned(boundFluidId)) {
+                tooltip.add(Component.literal("BANNED by config").withStyle(ChatFormatting.RED));
+            }
+        } else {
+            // 绑定了化学品
+            Component chemName = null;
+            if (MekanismChecker.isLoaded()) {
+                chemName = MekChemicalHelper.getChemicalName(boundChemId);
+            }
+            if (chemName == null) {
+                chemName = Component.literal(boundChemId.toString());
+            }
+            tooltip.add(Component.translatable("tooltip.yuanliuwujin.core.bound_chemical", chemName)
+                    .withStyle(ChatFormatting.LIGHT_PURPLE));
         }
 
         tooltip.add(Component.translatable("tooltip.yuanliuwujin.core.clear_hint").withStyle(ChatFormatting.DARK_GRAY));
     }
 
-    /* ====== 绑定数据的读写（Data Component） ====== */
+    /* ====== 绑定数据读写 ====== */
 
-    /** 读取绑定的液体 ID，未绑定则返回 null */
+    /** 获取绑定类型 */
+    public static BindType getBindType(ItemStack stack) {
+        if (stack.has(ModDataComponents.BOUND_FLUID.get())) return BindType.FLUID;
+        if (stack.has(ModDataComponents.BOUND_CHEMICAL.get())) return BindType.CHEMICAL;
+        return BindType.NONE;
+    }
+
+    /** 读取绑定的流体 ID */
     @Nullable
     public static ResourceLocation getBoundFluid(ItemStack stack) {
         return stack.get(ModDataComponents.BOUND_FLUID.get());
     }
 
+    /** 读取绑定的化学品 ID */
+    @Nullable
+    public static ResourceLocation getBoundChemical(ItemStack stack) {
+        return stack.get(ModDataComponents.BOUND_CHEMICAL.get());
+    }
+
+    /** 设置流体绑定（同时清除化学品绑定） */
     private static void setBoundFluid(ItemStack stack, ResourceLocation id) {
         stack.set(ModDataComponents.BOUND_FLUID.get(), id);
+        stack.remove(ModDataComponents.BOUND_CHEMICAL.get()); // 互斥
     }
 
-    private static void clearBoundFluid(ItemStack stack) {
+    /** 设置化学品绑定（同时清除流体绑定） */
+    private static void setBoundChemical(ItemStack stack, ResourceLocation id) {
+        stack.set(ModDataComponents.BOUND_CHEMICAL.get(), id);
+        stack.remove(ModDataComponents.BOUND_FLUID.get()); // 互斥
+    }
+
+    /** 清除所有绑定 */
+    private static void clearBinding(ItemStack stack) {
         stack.remove(ModDataComponents.BOUND_FLUID.get());
+        stack.remove(ModDataComponents.BOUND_CHEMICAL.get());
     }
 
-    /* ====== 核心绑定/解绑逻辑（处理堆叠拆分） ====== */
+    /* ====== 统一绑定入口 ====== */
 
     /**
      * 统一的绑定入口：检查 banlist、重复绑定，然后执行绑定。
-     * @return CONSUME 或 PASS
+     *
+     * @param type 绑定类型（FLUID 或 CHEMICAL）
      */
-    private InteractionResult tryBind(Player player, ItemStack stack, InteractionHand hand, ResourceLocation fluidId) {
-        // banlist 检查
-        if (Modconfigs.isFluidBanned(fluidId)) {
+    private InteractionResult tryBind(Player player, ItemStack stack, InteractionHand hand,
+                                       ResourceLocation substanceId, BindType type) {
+        // 流体 banlist 检查（化学品暂无 banlist，可后续扩展）
+        if (type == BindType.FLUID && Modconfigs.isFluidBanned(substanceId)) {
             player.displayClientMessage(
-                    Component.translatable("tooltip.fluid_banned", fluidId.toString()).withStyle(ChatFormatting.RED), true);
+                    Component.translatable("tooltip.fluid_banned", substanceId.toString()).withStyle(ChatFormatting.RED), true);
             return InteractionResult.CONSUME;
         }
 
-        // 已绑定检查
-        ResourceLocation bound = getBoundFluid(stack);
-        if (bound != null) {
-            if (bound.equals(fluidId)) {
+        // 已绑定检查：不允许在已有绑定时再绑定
+        BindType currentType = getBindType(stack);
+        if (currentType != BindType.NONE) {
+            ResourceLocation currentId = (currentType == BindType.FLUID)
+                    ? getBoundFluid(stack) : getBoundChemical(stack);
+            if (currentId != null && currentId.equals(substanceId)) {
                 player.displayClientMessage(
                         Component.translatable("tooltip.yuanliuwujin.core.text1").withStyle(ChatFormatting.YELLOW), true);
             } else {
@@ -207,48 +286,55 @@ public class InfiniteCoreItem extends Item {
         }
 
         // 执行绑定
-        bindOneCore(player, stack, fluidId);
+        bindOneCore(player, stack, substanceId, type);
         forceUpdateStack(player, hand, stack);
 
+        String translationKey = (type == BindType.CHEMICAL)
+                ? "tooltip.yuanliuwujin.core.text3_chem"
+                : "tooltip.yuanliuwujin.core.text3";
         player.displayClientMessage(
-                Component.translatable("tooltip.yuanliuwujin.core.text3").withStyle(ChatFormatting.GREEN)
-                        .append(Component.literal(fluidId.toString()).withStyle(ChatFormatting.AQUA)),
+                Component.translatable(translationKey).withStyle(ChatFormatting.GREEN)
+                        .append(Component.literal(substanceId.toString()).withStyle(ChatFormatting.AQUA)),
                 true);
         return InteractionResult.CONSUME;
     }
 
-    /**
-     * 绑定一个核心。如果堆叠数 > 1，先拆出单个再绑定。
-     */
-    private static void bindOneCore(Player player, ItemStack stackInHand, ResourceLocation fluidId) {
+    /* ====== 核心绑定/解绑（处理堆叠拆分） ====== */
+
+    private static void bindOneCore(Player player, ItemStack stackInHand,
+                                     ResourceLocation id, BindType type) {
         if (player.level().isClientSide) return;
 
         if (stackInHand.getCount() == 1) {
-            setBoundFluid(stackInHand, fluidId);
+            applyBinding(stackInHand, id, type);
             setCoreModelState(stackInHand, true);
             syncInventory(player);
             return;
         }
 
-        // 堆叠 > 1：减少原堆叠，创建单个已绑定的副本
+        // 堆叠 > 1：拆出单个
         stackInHand.shrink(1);
         ItemStack single = stackInHand.copy();
         single.setCount(1);
-        setBoundFluid(single, fluidId);
+        applyBinding(single, id, type);
         setCoreModelState(single, true);
 
-        if (!player.addItem(single)) {
-            player.drop(single, false);
-        }
+        if (!player.addItem(single)) player.drop(single, false);
         syncInventory(player);
     }
 
-    /**
-     * 解绑一个核心。如果堆叠数 > 1，先拆出单个再清除。
-     */
+    /** 根据类型设置对应的绑定组件 */
+    private static void applyBinding(ItemStack stack, ResourceLocation id, BindType type) {
+        if (type == BindType.CHEMICAL) {
+            setBoundChemical(stack, id);
+        } else {
+            setBoundFluid(stack, id);
+        }
+    }
+
     private static void unbindOneCore(Player player, ItemStack stackInHand) {
         if (stackInHand.getCount() == 1) {
-            clearBoundFluid(stackInHand);
+            clearBinding(stackInHand);
             setCoreModelState(stackInHand, false);
             return;
         }
@@ -256,15 +342,12 @@ public class InfiniteCoreItem extends Item {
         stackInHand.shrink(1);
         ItemStack single = stackInHand.copy();
         single.setCount(1);
-        clearBoundFluid(single);
+        clearBinding(single);
         setCoreModelState(single, false);
 
-        if (!player.addItem(single)) {
-            player.drop(single, false);
-        }
+        if (!player.addItem(single)) player.drop(single, false);
     }
 
-    /** 设置物品的 CustomModelData 来切换外观 */
     private static void setCoreModelState(ItemStack stack, boolean filled) {
         if (filled) {
             stack.set(DataComponents.CUSTOM_MODEL_DATA, new CustomModelData(1));
@@ -275,7 +358,6 @@ public class InfiniteCoreItem extends Item {
 
     /* ====== 工具方法 ====== */
 
-    /** 强制同步物品栈到客户端 */
     private static void forceUpdateStack(Player player, InteractionHand hand, ItemStack stack) {
         player.setItemInHand(hand, stack);
         player.getInventory().setChanged();
@@ -284,27 +366,22 @@ public class InfiniteCoreItem extends Item {
         }
     }
 
-    /** 同步背包变更 */
     private static void syncInventory(Player player) {
         player.getInventory().setChanged();
         player.inventoryMenu.broadcastChanges();
     }
 
-    /**
-     * 从世界中的液体方块获取源液体的 ID。
-     * 先检查点击位置，再检查点击面的对面。
-     */
+    /* ====== 流体检测工具方法 ====== */
+
     @Nullable
     private static ResourceLocation tryGetFluidIdFromWorld(Level level, BlockPos pos, Direction clickedFace) {
         FluidState fluidState = level.getFluidState(pos);
         if (fluidState.isEmpty()) {
-            // 点击位置没有液体，检查点击面的外侧
             fluidState = level.getFluidState(pos.relative(clickedFace));
         }
         return fluidState.isEmpty() ? null : resolveSourceFluidId(fluidState);
     }
 
-    /** 将 FluidState 解析为源液体的 ResourceLocation */
     @Nullable
     private static ResourceLocation resolveSourceFluidId(FluidState fluidState) {
         if (fluidState.isEmpty()) return null;
@@ -313,7 +390,6 @@ public class InfiniteCoreItem extends Item {
         return BuiltInRegistries.FLUID.getKey(fluid);
     }
 
-    /** 沿玩家视线方向搜索最近的液体方块 */
     @Nullable
     private static BlockPos findFluidPos(Level level, Player player) {
         double reach = player.blockInteractionRange();
@@ -327,39 +403,27 @@ public class InfiniteCoreItem extends Item {
         for (int i = 0; i <= steps; i++) {
             Vec3 point = eye.add(look.scale(i * step));
             BlockPos pos = BlockPos.containing(point);
-
-            // 跳过同一个方块位置
             if (pos.equals(lastPos)) continue;
             lastPos = pos;
-
             if (!level.getFluidState(pos).isEmpty()) return pos;
         }
         return null;
     }
 
-    /* ====== 容器内液体检测 ====== */
-
-    /**
-     * 尝试从指定位置的方块的流体 Handler 中获取液体 ID。
-     * 优先使用点击面的方向，然后遍历所有方向，最后尝试 null。
-     */
     @Nullable
     private static ResourceLocation tryGetFluidIdFromHandler(Level level, BlockPos pos, @Nullable Direction preferredSide) {
-        // 优先检查点击面
         if (preferredSide != null) {
             ResourceLocation id = firstNonEmptyFluidId(
                     level.getCapability(Capabilities.FluidHandler.BLOCK, pos, preferredSide));
             if (id != null) return id;
         }
 
-        // 遍历所有方向
         for (Direction d : Direction.values()) {
             ResourceLocation id = firstNonEmptyFluidId(
                     level.getCapability(Capabilities.FluidHandler.BLOCK, pos, d));
             if (id != null) return id;
         }
 
-        // 最后尝试 null context
         try {
             return firstNonEmptyFluidId(
                     level.getCapability(Capabilities.FluidHandler.BLOCK, pos, null));
@@ -368,14 +432,12 @@ public class InfiniteCoreItem extends Item {
         }
     }
 
-    /** 从 FluidHandler 的所有槽中找到第一个非空液体的源液体 ID */
     @Nullable
     private static ResourceLocation firstNonEmptyFluidId(@Nullable IFluidHandler handler) {
         if (handler == null) return null;
         for (int i = 0; i < handler.getTanks(); i++) {
             FluidStack fs = handler.getFluidInTank(i);
             if (fs == null || fs.isEmpty()) continue;
-
             Fluid fluid = fs.getFluid();
             if (fluid instanceof FlowingFluid ff) fluid = ff.getSource();
             ResourceLocation id = BuiltInRegistries.FLUID.getKey(fluid);

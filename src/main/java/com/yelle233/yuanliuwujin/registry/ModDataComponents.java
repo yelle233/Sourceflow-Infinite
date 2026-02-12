@@ -30,4 +30,17 @@ public class ModDataComponents {
                             .persistent(ResourceLocation.CODEC)
                             .networkSynchronized(ResourceLocation.STREAM_CODEC)
             );
+
+    /**
+     * 无限核心绑定的化学品 ID。
+     * <p>
+     * 使用 {@link ResourceLocation} 存储。
+     * 同时注册了持久化和网络同步编解码器，确保客户端能正确显示绑定状态。
+     */
+    public static final Supplier<DataComponentType<ResourceLocation>> BOUND_CHEMICAL =
+            REGISTRAR.registerComponentType("bound_chemical",
+                    builder -> builder
+                            .persistent(ResourceLocation.CODEC)
+                            .networkSynchronized(ResourceLocation.STREAM_CODEC)
+            );
 }

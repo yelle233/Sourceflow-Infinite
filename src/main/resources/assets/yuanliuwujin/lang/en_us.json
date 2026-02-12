@@ -18,6 +18,9 @@
   "hud.sourceflowinfinite.fluid": "Fluid %s",
   "hud.sourceflowinfinite.faces": "Faces (%s) %s",
 
+  "tooltip.yuanliuwujin.core.bind_chem_hint": "Right-click Mekanism chemical tank to bind chemical",
+  "tooltip.yuanliuwujin.core.bound_chemical": "Bound Chemical: %s",
+  "tooltip.yuanliuwujin.core.text3_chem": "Chemical bound: ",
   "tooltip.yuanliuwujin.core.text1": "This fluid is already bound.",
   "tooltip.yuanliuwujin.core.text2": "A fluid is already bound. Sneak and right-click to clear before rebinding.",
   "tooltip.yuanliuwujin.core.text3": "Bound:",
