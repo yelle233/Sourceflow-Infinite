@@ -1,14 +1,9 @@
 package com.yelle233.yuanliuwujin.block;
 
 import com.yelle233.yuanliuwujin.blockentity.InfiniteFluidMachineBlockEntity;
-import com.yelle233.yuanliuwujin.item.InfiniteCoreItem;
 import com.yelle233.yuanliuwujin.registry.ModBlockEntities;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.Containers;
-import net.minecraft.world.InteractionHand;
-import net.minecraft.world.InteractionResult;
-import net.minecraft.world.ItemInteractionResult;
-import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
@@ -19,27 +14,32 @@ import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.level.block.state.properties.BooleanProperty;
-import net.minecraft.world.phys.BlockHitResult;
 
 import javax.annotation.Nullable;
 
+/**
+ * 无限流体机器方块。
+ * <p>
+ * 实现 {@link EntityBlock} 以关联 {@link InfiniteFluidMachineBlockEntity}。
+ * 包含一个 {@link #DIRTY} 布尔属性，用于在切换面模式时翻转状态以触发
+ * 周围方块的 capability 重新查询。
+ */
 public class InfiniteFluidMachineBlock extends Block implements EntityBlock {
 
-
-    //脏标记，用于方块变化时重置周围方块状态
+    /** 脏标记：翻转此属性可强制使周围方块的 capability 缓存失效 */
     public static final BooleanProperty DIRTY = BooleanProperty.create("dirty");
-
 
     public InfiniteFluidMachineBlock(Properties properties) {
         super(properties);
         this.registerDefaultState(this.stateDefinition.any().setValue(DIRTY, false));
     }
 
-
     @Override
     protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder) {
         builder.add(DIRTY);
     }
+
+    /* ====== EntityBlock 实现 ====== */
 
     @Nullable
     @Override
@@ -50,31 +50,19 @@ public class InfiniteFluidMachineBlock extends Block implements EntityBlock {
     @Nullable
     @Override
     public <T extends BlockEntity> BlockEntityTicker<T> getTicker(Level level, BlockState state, BlockEntityType<T> type) {
+        // 仅服务端 tick
         if (level.isClientSide) return null;
-        return type == ModBlockEntities.INFINITE_FLUID_MACHINE.get()
-                ? (lvl, pos, st, be) -> InfiniteFluidMachineBlockEntity.serverTick(lvl, pos, st, (InfiniteFluidMachineBlockEntity) be)
-                : null;
+        if (type != ModBlockEntities.INFINITE_FLUID_MACHINE.get()) return null;
+        return (lvl, pos, st, be) ->
+                InfiniteFluidMachineBlockEntity.serverTick(lvl, pos, st, (InfiniteFluidMachineBlockEntity) be);
     }
 
-    @Override
-    protected InteractionResult useWithoutItem(BlockState state, Level level, BlockPos pos, Player player, BlockHitResult hitResult) {
-        return InteractionResult.PASS;
-    }
-
-    @Override
-    protected ItemInteractionResult useItemOn(ItemStack stack, BlockState state, Level level, BlockPos pos, Player player,
-                                              InteractionHand hand, BlockHitResult hitResult) {
-
-        return ItemInteractionResult.PASS_TO_DEFAULT_BLOCK_INTERACTION;
-    }
+    /* ====== 方块被破坏时掉落核心 ====== */
 
     @Override
     public void onRemove(BlockState state, Level level, BlockPos pos, BlockState newState, boolean isMoving) {
         if (!state.is(newState.getBlock())) {
-            BlockEntity be = level.getBlockEntity(pos);
-            if (be instanceof InfiniteFluidMachineBlockEntity machine) {
-
-                // 把核心槽里的物品丢出来
+            if (level.getBlockEntity(pos) instanceof InfiniteFluidMachineBlockEntity machine) {
                 ItemStack core = machine.getCoreSlot().getStackInSlot(0);
                 if (!core.isEmpty()) {
                     Containers.dropItemStack(level, pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5, core);
@@ -82,9 +70,6 @@ public class InfiniteFluidMachineBlock extends Block implements EntityBlock {
                 }
             }
         }
-
         super.onRemove(state, level, pos, newState, isMoving);
     }
-
-
 }

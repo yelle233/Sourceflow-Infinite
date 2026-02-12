@@ -9,10 +9,13 @@ import net.neoforged.neoforge.registries.DeferredRegister;
 
 import java.util.function.Supplier;
 
+/** 创造模式物品栏注册表 */
 public class ModTab {
 
-    public static final DeferredRegister<CreativeModeTab> TABS=DeferredRegister.create(Registries.CREATIVE_MODE_TAB, SourceflowInfinite.MODID);
+    public static final DeferredRegister<CreativeModeTab> TABS =
+            DeferredRegister.create(Registries.CREATIVE_MODE_TAB, SourceflowInfinite.MODID);
 
+    /** 源流无尽 创造模式标签页 */
     public static final Supplier<CreativeModeTab> INFINITE_WATER_TAB =
             TABS.register("infinite_water_tab", () -> CreativeModeTab.builder()
                     .icon(() -> new ItemStack(ModItems.INFINITE_CORE.get()))
