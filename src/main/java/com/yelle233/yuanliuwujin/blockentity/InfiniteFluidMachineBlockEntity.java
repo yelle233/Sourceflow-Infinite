@@ -265,6 +265,16 @@ public class InfiniteFluidMachineBlockEntity extends BlockEntity {
         return count;
     }
 
+
+    /** 是否有有效绑定（用于决定 capability 是否暴露，不检查电量） */
+    public boolean hasValidBinding() {
+        if (coreSlot.getStackInSlot(0).isEmpty()) return false;
+        BindType type = getCoreBindType();
+        if (type == BindType.FLUID) return getBoundSourceFluid() != null;
+        if (type == BindType.CHEMICAL) return getBoundChemicalId() != null;
+        return false;
+    }
+
     /* ====== 构造器 ====== */
 
     public InfiniteFluidMachineBlockEntity(BlockPos pos, BlockState state) {
@@ -281,17 +291,16 @@ public class InfiniteFluidMachineBlockEntity extends BlockEntity {
 
         if (be.getCoreSlot().getStackInSlot(0).isEmpty()) return;
 
-        // =========================================================
-        // 检测工作状态突变 (解决 Mekanism 管道连接滞后问题)
-        // =========================================================
-        // 判断当前是否满足工作条件 (有核心 + 已绑定 + 电量足够)
-        boolean canWorkNow = be.canWorkNow();
+        // 解决 Mekanism 管道连接滞后问题
+        // 判断当前是否满足连接条件 (有核心 + 已绑定 + 电量足够)
+        boolean validNow = be.hasValidBinding();
         // 如果 "现在的状态" 和 "上一 tick 的状态" 不一样
-        if (canWorkNow != be.lastTickCanWork) {
+        if (validNow != be.lastTickCanWork) {
             // 更新记录
-            be.lastTickCanWork = canWorkNow;
-            // 关键：通知周围邻居（包括管道）这里发生了变化
-            // 这会让 Mekanism 管道清除“无法连接”的缓存，重新尝试连接
+            be.lastTickCanWork = validNow;
+            // 清除 capability 缓存，让 Mekanism 管道重新查询
+            level.invalidateCapabilities(pos);
+            // 通知周围邻居（包括管道）这里发生了变化
             level.updateNeighborsAt(pos, state.getBlock());
         }
 

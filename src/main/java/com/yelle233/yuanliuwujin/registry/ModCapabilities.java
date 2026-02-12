@@ -29,7 +29,7 @@ public class ModCapabilities {
                 (level, pos, state, be, ctx) -> {
                     if (!(be instanceof InfiniteFluidMachineBlockEntity machine)) return null;
                     if (ctx == null || ctx == Direction.UP) return null;
-                    if (!machine.canWorkNow()) return null;
+                    if (!machine.hasValidBinding()) return null;
                     // 仅当绑定的是流体时才暴露流体 Handler
                     if (machine.getCoreBindType() != BindType.FLUID) return null;
 
@@ -68,7 +68,7 @@ public class ModCapabilities {
                 (level, pos, state, be, ctx) -> {
                     if (!(be instanceof InfiniteFluidMachineBlockEntity machine)) return null;
                     if (ctx == null || ctx == Direction.UP) return null;
-                    if (!machine.canWorkNow()) return null;
+                    if (!machine.hasValidBinding()) return null;
                     // 仅当绑定的是化学品时才暴露化学品 Handler
                     if (machine.getCoreBindType() != BindType.CHEMICAL) return null;
 
