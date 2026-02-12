@@ -12,7 +12,6 @@
 		"11": "yuanliuwujin:block/side4",
 		"14": "yuanliuwujin:block/co",
 		"particle": "yuanliuwujin:block/glass"
-
 	},
 	"elements": [
 		{
@@ -212,7 +211,7 @@
 		},
 		{
 			"from": [6, 2, 6],
-			"to": [10, 4, 10],
+			"to": [10, 3, 10],
 			"rotation": {"angle": 0, "axis": "y", "origin": [2, 2, 8]},
 			"faces": {
 				"north": {"uv": [10, 2, 6, 4], "texture": "#7"},
