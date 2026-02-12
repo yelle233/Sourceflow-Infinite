@@ -77,8 +77,12 @@ public class InfiniteFluidMachineBER implements BlockEntityRenderer<InfiniteFlui
         poseStack.translate(0.5, 0.5, 0.5);
 
         // Y 轴持续旋转（每 tick 旋转 2°）
-        float time = level.getGameTime() + partialTick;
-        poseStack.mulPose(Axis.YP.rotationDegrees((time * 2.0f) % 360.0f));
+        float time1 = level.getGameTime() + partialTick;
+        poseStack.mulPose(Axis.YP.rotationDegrees((time1 * 2.0f) % 360.0f));
+        float time2 = level.getGameTime() + partialTick;
+        poseStack.mulPose(Axis.XP.rotationDegrees((time2 * 2.0f) % 360.0f));
+        float time3 = level.getGameTime() + partialTick;
+        poseStack.mulPose(Axis.ZP.rotationDegrees((time3 * 2.0f) % 360.0f));
 
         // 放大到 2x
         poseStack.scale(2.0f, 2.0f, 2.0f);

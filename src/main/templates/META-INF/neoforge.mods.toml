@@ -93,3 +93,10 @@ Added an infinite liquid machine
 # stop your mod loading on the server for example.
 #[features.${mod_id}]
 #openGLVersion="[3.2,)"
+
+[[dependencies.yuanliuwujin]]
+modId = "mekanism"
+type = "optional"
+versionRange = "[10.7,)"
+ordering = "AFTER"
+side = "BOTH"

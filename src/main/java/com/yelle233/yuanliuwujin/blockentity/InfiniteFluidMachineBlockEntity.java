@@ -272,6 +272,18 @@ public class InfiniteFluidMachineBlockEntity extends BlockEntity {
             }
         }
 
+        /* 机器是否发光判断,只有在有无限核心的时候才发光 */
+        // 检查核心槽位是否有物品
+        boolean hasCore = !be.getCoreSlot().getStackInSlot(0).isEmpty();
+        // 获取当前方块状态中的 LIT 值
+        boolean isLit = state.getValue(InfiniteFluidMachineBlock.LIT);
+        // 如果 "实际是否有核心" 和 "方块是否发光" 不一致，则更新方块状态
+        if (hasCore != isLit) {
+            // 更新 BlockState，保持 LIT 属性与 hasCore 一致
+            // flag 3 = Block.UPDATE_ALL (通知客户端更新渲染 + 通知邻居方块)
+            level.setBlock(pos, state.setValue(InfiniteFluidMachineBlock.LIT, hasCore), 3);
+        }
+
         be.trySyncEnergyToClient();
     }
 

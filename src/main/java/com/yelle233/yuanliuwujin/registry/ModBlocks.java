@@ -27,6 +27,7 @@ public class ModBlocks {
                             Block.Properties.of()
                                     .mapColor(MapColor.METAL)
                                     .strength(3.0F, 6.0F)
+                                    .lightLevel(state -> state.getValue(InfiniteFluidMachineBlock.LIT) ? 8 : 0)
                                     .noOcclusion()
                                     .requiresCorrectToolForDrops()
                     ));
@@ -34,7 +35,8 @@ public class ModBlocks {
     /** 无限核心装饰方块（仅用于 BER 渲染机器内部的旋转核心） */
     public static final DeferredBlock<Block> INFINITE_CORE_BLOCK =
             registerBlock("infinite_core_block",
-                    () -> new Block(Block.Properties.of()));
+                    () -> new Block(Block.Properties.of()
+                    ));
 
     /* ====== 辅助方法：同时注册方块和 BlockItem ====== */
 

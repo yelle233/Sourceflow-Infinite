@@ -13,6 +13,7 @@ import net.minecraft.world.level.block.entity.BlockEntityTicker;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition;
+import net.minecraft.world.level.block.state.properties.BlockStateProperties;
 import net.minecraft.world.level.block.state.properties.BooleanProperty;
 
 import javax.annotation.Nullable;
@@ -29,14 +30,23 @@ public class InfiniteFluidMachineBlock extends Block implements EntityBlock {
     /** 脏标记：翻转此属性可强制使周围方块的 capability 缓存失效 */
     public static final BooleanProperty DIRTY = BooleanProperty.create("dirty");
 
+    // 定义一个 LIT 属性 (直接复用原版的 LIT 属性),用于让机器发光
+    public static final BooleanProperty LIT = BlockStateProperties.LIT;
+
     public InfiniteFluidMachineBlock(Properties properties) {
         super(properties);
         this.registerDefaultState(this.stateDefinition.any().setValue(DIRTY, false));
+
+        // 设置发光状态为(false为不发光)
+        this.registerDefaultState(this.stateDefinition.any().setValue(LIT, false));
     }
+
+
 
     @Override
     protected void createBlockStateDefinition(StateDefinition.Builder<Block, BlockState> builder) {
         builder.add(DIRTY);
+        builder.add(LIT);
     }
 
     /* ====== EntityBlock 实现 ====== */
