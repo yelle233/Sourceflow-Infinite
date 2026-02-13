@@ -46,7 +46,7 @@ authors="yelle233"
 
 # The description text for the mod (multi line!) (#mandatory)
 description='''
-Added an infinite liquid machine
+This mod adds a machine that produces unlimited amounts of any fluid or gas by consuming FE (Forge Energy).
 '''
 
 # The [[mixins]] block allows you to declare your mixin config to FML so that it gets loaded.
