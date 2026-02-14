@@ -1,0 +1,14 @@
+{
+  "parent": "item/generated",
+  "textures": {
+    "layer0": "yuanliuwujin:item/infinite_core_empty"
+  },
+  "overrides": [
+    {
+      "predicate": {
+        "yuanliuwujin:filled": 1.0
+      },
+      "model": "yuanliuwujin:item/infinite_core_filled"
+    }
+  ]
+}

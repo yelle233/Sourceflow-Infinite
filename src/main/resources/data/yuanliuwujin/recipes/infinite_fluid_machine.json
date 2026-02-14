@@ -1,0 +1,26 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "IFI",
+    "CBC",
+    "IFI"
+  ],
+  "key": {
+    "I": {
+      "item": "minecraft:obsidian"
+    },
+    "F": {
+      "item": "minecraft:glass"
+    },
+    "C": {
+      "item": "minecraft:quartz"
+    },
+    "B": {
+      "item": "yuanliuwujin:infinite_core"
+    }
+  },
+  "result": {
+    "item": "yuanliuwujin:infinite_fluid_machine",
+    "count": 1
+  }
+}
