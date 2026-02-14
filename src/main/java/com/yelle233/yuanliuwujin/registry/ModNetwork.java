@@ -18,7 +18,6 @@ import net.neoforged.neoforge.network.registration.PayloadRegistrar;
  * 网络包注册。
  * <p>
  * 注意：{@link RegisterPayloadHandlersEvent} 在 MOD 总线上触发，
- * 因此必须指定 {@code bus = EventBusSubscriber.Bus.MOD}。
  */
 @EventBusSubscriber(modid = SourceflowInfinite.MODID)
 public class ModNetwork {
