@@ -197,7 +197,7 @@ public class InfiniteCoreItem extends Item {
             tooltip.add(Component.translatable("tooltip.yuanliuwujin.core.bound", fluidName).withStyle(ChatFormatting.GRAY));
 
             if (Modconfigs.isFluidBanned(boundFluidId)) {
-                tooltip.add(Component.literal("BANNED by config").withStyle(ChatFormatting.RED));
+                tooltip.add(Component.translatable("tooltip.yuanliuwujin.core.banned_by_config").withStyle(ChatFormatting.RED));
             }
         } else {
             // 绑定了化学品
