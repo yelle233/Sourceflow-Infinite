@@ -28,11 +28,13 @@ public class ModCapabilities {
                 Capabilities.FluidHandler.BLOCK,
                 (level, pos, state, be, ctx) -> {
                     if (!(be instanceof InfiniteFluidMachineBlockEntity machine)) return null;
-                    if (ctx == null || ctx == Direction.UP) return null;
                     if (!machine.hasValidBinding()) return null;
-                    // 仅当绑定的是流体时才暴露流体 Handler
                     if (machine.getCoreBindType() != BindType.FLUID) return null;
 
+                    // ctx == null：信息查询（Jade 等），直接返回 handler 供读取
+                    if (ctx == null) return machine.getInfiniteOutput();
+
+                    if (ctx == Direction.UP) return null;
                     return switch (machine.getSideMode(ctx)) {
                         case OFF -> null;
                         case PULL, BOTH -> machine.getInfiniteOutput();
@@ -46,7 +48,8 @@ public class ModCapabilities {
                 Capabilities.EnergyStorage.BLOCK,
                 (level, pos, state, be, ctx) -> {
                     if (!(be instanceof InfiniteFluidMachineBlockEntity machine)) return null;
-                    return ctx == Direction.UP ? machine.getEnergyStorage() : null;
+                    // ctx == null：信息查询（Jade 等），也返回 energyStorage
+                    return (ctx == null || ctx == Direction.UP) ? machine.getEnergyStorage() : null;
                 },
                 ModBlocks.INFINITE_FLUID_MACHINE.get()
         );
@@ -67,11 +70,13 @@ public class ModCapabilities {
                 MekChemicalHelper.CHEMICAL_HANDLER_CAP,
                 (level, pos, state, be, ctx) -> {
                     if (!(be instanceof InfiniteFluidMachineBlockEntity machine)) return null;
-                    if (ctx == null || ctx == Direction.UP) return null;
                     if (!machine.hasValidBinding()) return null;
-                    // 仅当绑定的是化学品时才暴露化学品 Handler
                     if (machine.getCoreBindType() != BindType.CHEMICAL) return null;
 
+                    // ctx == null：信息查询（Jade 等），直接返回 handler 供读取
+                    if (ctx == null) return (IChemicalHandler) machine.getInfiniteChemicalOutput();
+
+                    if (ctx == Direction.UP) return null;
                     return switch (machine.getSideMode(ctx)) {
                         case OFF -> null;
                         case PULL, BOTH -> (IChemicalHandler) machine.getInfiniteChemicalOutput();
