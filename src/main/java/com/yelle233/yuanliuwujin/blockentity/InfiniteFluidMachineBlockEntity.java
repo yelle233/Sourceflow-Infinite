@@ -214,7 +214,7 @@ public class InfiniteFluidMachineBlockEntity extends BlockEntity {
 
     /* ====== 能量系统 ====== */
 
-    private static final int ENERGY_CAPACITY = Integer.MAX_VALUE;
+    private static final int ENERGY_CAPACITY = 1_000_000_000;
     private int energy = 0;
 
     private final IEnergyStorage energyStorage = new IEnergyStorage() {
