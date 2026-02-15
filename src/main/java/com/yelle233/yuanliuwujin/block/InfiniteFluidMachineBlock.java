@@ -4,6 +4,7 @@ import com.yelle233.yuanliuwujin.blockentity.InfiniteFluidMachineBlockEntity;
 import com.yelle233.yuanliuwujin.registry.ModBlockEntities;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.Containers;
+import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.BlockGetter;
 import net.minecraft.world.level.Level;
@@ -98,17 +99,38 @@ public class InfiniteFluidMachineBlock extends Block implements EntityBlock {
 
     /* ====== 方块被破坏时掉落核心 ====== */
 
+    @SuppressWarnings("deprecation")
     @Override
     public void onRemove(BlockState state, Level level, BlockPos pos, BlockState newState, boolean isMoving) {
-        if (!state.is(newState.getBlock())&& !isMoving) {
-            if (level.getBlockEntity(pos) instanceof InfiniteFluidMachineBlockEntity machine) {
-                ItemStack core = machine.getCoreSlot().getStackInSlot(0);
-                if (!core.isEmpty()) {
-                    Containers.dropItemStack(level, pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5, core);
-                    machine.getCoreSlot().setStackInSlot(0, ItemStack.EMPTY);
-                }
-            }
-        }
         super.onRemove(state, level, pos, newState, isMoving);
+    }
+
+    private static void dropCore(Level level, BlockPos pos) {
+        if (level.isClientSide) return;
+
+        BlockEntity be = level.getBlockEntity(pos);
+        if (!(be instanceof InfiniteFluidMachineBlockEntity machine)) return;
+
+        ItemStack core = machine.getCoreSlot().getStackInSlot(0);
+        if (core.isEmpty()) return;
+
+        Containers.dropItemStack(level,
+                pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5,
+                core.copy());
+
+        machine.getCoreSlot().setStackInSlot(0, ItemStack.EMPTY);
+    }
+
+    @Override
+    public BlockState playerWillDestroy(Level level, BlockPos pos, BlockState state, Player player) {
+        dropCore(level, pos);
+        super.playerWillDestroy(level, pos, state, player);
+        return state;
+    }
+
+    @Override
+    public void onBlockExploded(BlockState state, Level level, BlockPos pos, net.minecraft.world.level.Explosion explosion) {
+        dropCore(level, pos);
+        super.onBlockExploded(state, level, pos, explosion);
     }
 }
