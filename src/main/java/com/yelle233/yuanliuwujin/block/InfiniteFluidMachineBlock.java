@@ -86,15 +86,37 @@ public class InfiniteFluidMachineBlock extends Block implements EntityBlock {
     @SuppressWarnings("deprecation")
     @Override
     public void onRemove(BlockState state, Level level, BlockPos pos, BlockState newState, boolean isMoving) {
-        if (!state.is(newState.getBlock())) {
-            if (level.getBlockEntity(pos) instanceof InfiniteFluidMachineBlockEntity machine) {
-                ItemStack core = machine.getCoreSlot().getStackInSlot(0);
-                if (!core.isEmpty()) {
-                    Containers.dropItemStack(level, pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5, core);
-                    machine.getCoreSlot().setStackInSlot(0, ItemStack.EMPTY);
-                }
-            }
-        }
         super.onRemove(state, level, pos, newState, isMoving);
     }
+
+    private static void dropCore(Level level, BlockPos pos) {
+        if (level.isClientSide) return;
+
+        BlockEntity be = level.getBlockEntity(pos);
+        if (!(be instanceof InfiniteFluidMachineBlockEntity machine)) return;
+
+        ItemStack core = machine.getCoreSlot().getStackInSlot(0);
+        if (core.isEmpty()) return;
+
+        Containers.dropItemStack(level,
+                pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5,
+                core.copy());
+
+        machine.getCoreSlot().setStackInSlot(0, ItemStack.EMPTY);
+    }
+
+    @Override
+    public void playerWillDestroy(Level level, BlockPos pos, BlockState state, net.minecraft.world.entity.player.Player player) {
+        dropCore(level, pos);
+        super.playerWillDestroy(level, pos, state, player);
+    }
+
+    @Override
+    public void onBlockExploded(BlockState state, Level level, BlockPos pos, net.minecraft.world.level.Explosion explosion) {
+        dropCore(level, pos);
+        super.onBlockExploded(state, level, pos, explosion);
+    }
+
+
+
 }
