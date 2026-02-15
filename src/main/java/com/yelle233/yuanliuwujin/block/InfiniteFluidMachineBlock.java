@@ -100,7 +100,7 @@ public class InfiniteFluidMachineBlock extends Block implements EntityBlock {
 
     @Override
     public void onRemove(BlockState state, Level level, BlockPos pos, BlockState newState, boolean isMoving) {
-        if (!state.is(newState.getBlock())) {
+        if (!state.is(newState.getBlock())&& !isMoving) {
             if (level.getBlockEntity(pos) instanceof InfiniteFluidMachineBlockEntity machine) {
                 ItemStack core = machine.getCoreSlot().getStackInSlot(0);
                 if (!core.isEmpty()) {
