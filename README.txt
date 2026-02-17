@@ -1,46 +1,149 @@
+# 源流无尽 (Sourceflow Infinite)
 
-Source installation information for modders
--------------------------------------------
-This code follows the Minecraft Forge installation methodology. It will apply
-some small patches to the vanilla MCP source code, giving you and it access 
-to some of the data and functions you need to build a successful mod.
+**源流无尽** 是一个以「无限液体 × 能量消耗 × 配置」为核心的 NeoForge 模组。
+它提供了一种**可配置、可限制、需要能量驱动**的无限液体解决方案，适合科技向、自动化向整合包。
 
-Note also that the patches are built against "un-renamed" MCP source code (aka
-SRG Names) - this means that you will not be able to read them directly against
-normal code.
 
-Setup Process:
-==============================
+##  核心内容
 
-Step 1: Open your command-line and browse to the folder where you extracted the zip file.
+###  无限核心（Infinite Core）
+- 一个可绑定液体的核心物品
+- 右键任意液体即可绑定该液体
+- 可以绑定容器内液体
+- 可以绑定气体
+- 插入无限液体机器后，机器即可无限生成该液体
+- 一个核心只绑定一种液体或气体
 
-Step 2: You're left with a choice.
-If you prefer to use Eclipse:
-1. Run the following command: `./gradlew genEclipseRuns`
-2. Open Eclipse, Import > Existing Gradle Project > Select Folder 
-   or run `gradlew eclipse` to generate the project.
+###  无限液体机器（Infinite Fluid Machine）
+- 可插入 **无限核心**
+- 通过 **能量（FE）** 驱动
+- 支持对 **每个侧面进行独立配置**
+- 可与其他模组的流体管道、泵进行联动
 
-If you prefer to use IntelliJ:
-1. Open IDEA, and import project.
-2. Select your build.gradle file and have it import.
-3. Run the following command: `./gradlew genIntellijRuns`
-4. Refresh the Gradle Project in IDEA if required.
+###  扳手（Wrench）
+- 机器的主要交互工具
+- 用于 **装卸核心**、**配置侧面模式**
+- 潜行 + 鼠标滚轮切换工作模式
 
-If at any point you are missing libraries in your IDE, or you've run into problems you can 
-run `gradlew --refresh-dependencies` to refresh the local cache. `gradlew clean` to reset everything 
-(this does not affect your code) and then start the process again.
+---
 
-Mapping Names:
-=============================
-By default, the MDK is configured to use the official mapping names from Mojang for methods and fields 
-in the Minecraft codebase. These names are covered by a specific license. All modders should be aware of this
-license, if you do not agree with it you can change your mapping names to other crowdsourced names in your 
-build.gradle. For the latest license text, refer to the mapping file itself, or the reference copy here:
-https://github.com/MinecraftForge/MCPConfig/blob/master/Mojang.md
+##  能量系统（FE）
 
-Additional Resources: 
-=========================
-Community Documentation: https://docs.minecraftforge.net/en/1.20.1/gettingstarted/
-LexManos' Install Video: https://youtu.be/8VEdtQLuLO0
-Forge Forums: https://forums.minecraftforge.net/
-Forge Discord: https://discord.minecraftforge.net/
+- 机器需要 **FE 能量** 才能工作
+- **能量为 0 时，机器完全不工作**
+    - 无法主动输出液体
+    - 无法被其他模组抽取液体
+- 能量消耗规则：
+    - 所有侧面为 `OFF`：仍有极低的待机能耗
+    - 每启用一个侧面（`PULL` 或 `BOTH`）：
+        - 每 tick 的 FE 消耗都会增加
+- 面越多、系统越强 → 能量需求越高
+
+---
+
+##  侧面模式说明
+
+无限液体机器除顶面外，其余五个面都可以设置为以下三种模式：
+
+| 模式 | 说明 |
+|----|----|
+| **OFF** | 关闭该面，不输出也不可被抽取 |
+| **PULL** | 不主动输出，但允许其他模组从该面抽取液体 |
+| **BOTH** | 主动向相邻容器输出液体 |
+
+> 每个面当前的模式会通过缩写字母小字直接显示在机器表面。
+
+---
+
+##  扳手使用说明
+
+###  切换扳手模式
+- **潜行 + 鼠标滚轮**
+- 可在以下两种模式间切换：
+    - **装卸模式**
+    - **配置模式**
+
+---
+
+###  装卸模式
+
+- **右手持扳手 + 左手持无限核心**
+    - 右键机器：将核心插入机器
+- **潜行 + 右手持扳手右键机器**
+    - 取出已插入的无限核心
+
+---
+
+###  配置模式
+
+- **右键机器某一侧面**
+    - 在 `OFF → PULL → BOTH` 间循环切换该面的模式
+- 顶面不可配置（用于能量输入）
+
+---
+
+##  HUD 信息显示
+
+当你将准星对准无限液体机器时，会在屏幕上显示：
+
+- 当前储存的能量（FE）
+- 每秒 / 每 tick 的能量消耗
+- 是否已插入无限核心
+- 核心绑定的液体类型
+- 当前启用的侧面
+
+
+
+---
+## 配置文件说明
+
+本模组支持配置文件修改，位于 `config/yuanliuwujin-server.toml`,可修改内容如下。
+- 机器默认待机消耗的FE
+- 每tick主动输出的液体量
+- 每增加一个启用的面额外消耗的FE
+- 禁用液体列表
+- 每tick可抽取的液体量
+
+---
+## 后续更新计划
+- 后续版本可能加入：
+    - 联动机械动力
+    - 更多自动化功能
+    - 与其他模组的联动
+
+---
+## 目前已经的联动
+- Mekanism 通用机械
+
+---
+
+##  常见问题（FAQ）
+
+### Q：这算是白给的无限液体吗？
+A：不完全是
+机器需要能量驱动，启用供应面越多，能量消耗越高。
+
+### Q：没接电但机器里还有能量，能工作吗？
+A：可以,只要机器内部存下的能量还能支撑消耗，就能继续工作。
+
+### Q：能不能自动化插入无限核心？
+A：不行
+无限核心只能通过 **扳手的装卸模式** 手动装卸。
+
+### Q：本模组支持KubeJS修改配方吗？
+A：支持
+你可以通过KubeJS轻松修改本模组的配方
+
+---
+
+## 📦 模组信息
+
+- **模组名**：源流无尽 (Sourceflow Infinite)
+- **模组 ID**：`yuanliuwujin`
+- **加载器**：NeoForge
+- **Minecraft 版本**：1.21.1
+
+---
+
+
+欢迎反馈与建议，祝你玩的开心！
