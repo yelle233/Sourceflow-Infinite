@@ -393,6 +393,15 @@ public class InfiniteFluidMachineBlockEntity extends BlockEntity {
         be.pullBudgetRemaining = Modconfigs.BASE_PULL_PER_TICK.get();
         be.chemPullBudgetRemaining = Modconfigs.BASE_PULL_PER_TICK.get();
 
+
+
+        // LIT 发光状态
+        boolean hasCore = !be.getCoreSlot().getStackInSlot(0).isEmpty();
+        boolean isLit = state.getValue(InfiniteFluidMachineBlock.LIT);
+        if (hasCore != isLit) {
+            level.setBlock(pos, state.setValue(InfiniteFluidMachineBlock.LIT, hasCore), 3);
+        }
+
         if (be.getCoreSlot().getStackInSlot(0).isEmpty()) return;
 
         // 检测状态变化，通知邻居刷新
@@ -403,12 +412,7 @@ public class InfiniteFluidMachineBlockEntity extends BlockEntity {
             level.updateNeighborsAt(pos, state.getBlock());
         }
 
-        // LIT 发光状态
-        boolean hasCore = !be.getCoreSlot().getStackInSlot(0).isEmpty();
-        boolean isLit = state.getValue(InfiniteFluidMachineBlock.LIT);
-        if (hasCore != isLit) {
-            level.setBlock(pos, state.setValue(InfiniteFluidMachineBlock.LIT, hasCore), 3);
-        }
+
 
         BindType bindType = be.getCoreBindType();
         if (bindType == BindType.NONE) return;
