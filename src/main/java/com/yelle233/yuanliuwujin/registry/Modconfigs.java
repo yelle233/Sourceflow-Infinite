@@ -37,8 +37,22 @@ public class Modconfigs {
                         "Format:",
                         "  - \"namespace:path\"  (fluid id)",
                         "  - \"#namespace:path\" (fluid tag)",
-                        "Examples: \"minecraft:lava\", \"#c:toxic_fluids\"")
+                        "Examples: \"minecraft:lava\", \"#c:toxic_fluids\"",
+                        "无限核心绑定及无限液体机器输出的禁用列表",
+                        "支持直接填写流体 ID 或流体标签",
+                        "格式:",
+                        "  - \"namespace:path\"  (流体ID)",
+                        "  - \"#namespace:path\" (流体标签)",
+                        "示例: \"minecraft:lava\", \"#c:toxic_fluids\""
+                )
                 .defineList("banlist", new ArrayList<>(), o -> o instanceof String s && isValidBanEntry(s));
+
+        ALLOW_UNBIND_SURVIVAL = b.comment(
+                        "Whether players in survival mode can unbind a core (shift+right-click).",
+                        "Creative mode is always allowed regardless of this setting.",
+                        "生存模式下是否允许取消核心绑定，创造模式不受此设置影响")
+                .define("allow_unbind_in_survival", true);
+
         b.pop();
 
         // ===== 无限流体机器 =====
@@ -60,11 +74,6 @@ public class Modconfigs {
                         "每启用一个面额外增加的 FE/tick 消耗")
                 .defineInRange("fePerEnableFacePerTick", 8, 0, Integer.MAX_VALUE - 1);
 
-        ALLOW_UNBIND_SURVIVAL = b.comment(
-                        "Whether players in survival mode can unbind a core (shift+right-click).",
-                        "Creative mode is always allowed regardless of this setting.",
-                        "生存模式下是否允许取消核心绑定，创造模式不受此设置影响")
-                .define("allow_unbind_in_survival", true);
 
         b.pop();
         SPEC = b.build();
