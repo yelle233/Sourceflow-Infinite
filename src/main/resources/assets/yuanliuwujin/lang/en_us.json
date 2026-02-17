@@ -30,7 +30,7 @@
   "tooltip.yuanliuwujin.core.clear_hint": "Sneak-right-click to clear",
   "tooltip.yuanliuwujin.core.bound": "Bound: %s",
   "tooltip.fluid_banned": "banned: %s",
-  "tooltip.yuanliuwujin.core.banned_by_config": "banned by config"
+  "tooltip.yuanliuwujin.core.unbind_disabled": "Unbinding is not allowed in Survival mode."
 
 
 }

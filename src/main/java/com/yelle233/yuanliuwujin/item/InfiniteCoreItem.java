@@ -106,6 +106,13 @@ public class InfiniteCoreItem extends Item {
 
         // 潜行右键：清除绑定
         if (player.isShiftKeyDown()) {
+            // 检查生存模式是否允许解绑
+            if (!player.isCreative() && !Modconfigs.ALLOW_UNBIND_SURVIVAL.get()) {
+                player.displayClientMessage(
+                        Component.translatable("tooltip.yuanliuwujin.core.unbind_disabled")
+                                .withStyle(ChatFormatting.RED), true);
+                return InteractionResult.CONSUME;
+            }
             unbindOneCore(player, stack);
             forceUpdateStack(player, ctx.getHand(), stack);
             player.displayClientMessage(
@@ -124,6 +131,13 @@ public class InfiniteCoreItem extends Item {
         if (level.isClientSide) return InteractionResultHolder.pass(stack);
 
         if (player.isShiftKeyDown()) {
+            // 检查生存模式是否允许解绑
+            if (!player.isCreative() && !Modconfigs.ALLOW_UNBIND_SURVIVAL.get()) {
+                player.displayClientMessage(
+                        Component.translatable("tooltip.yuanliuwujin.core.unbind_disabled")
+                                .withStyle(ChatFormatting.RED), true);
+                return InteractionResultHolder.consume(stack);
+            }
             unbindOneCore(player, stack);
             forceUpdateStack(player, hand, stack);
             player.displayClientMessage(
