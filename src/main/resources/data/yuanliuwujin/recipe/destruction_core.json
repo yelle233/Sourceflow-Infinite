@@ -1,0 +1,23 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    " D ",
+    "ENE",
+    " D "
+  ],
+  "key": {
+    "D": {
+      "item": "minecraft:obsidian"
+    },
+    "E": {
+      "item": "minecraft:glass"
+    },
+    "N": {
+      "item": "minecraft:ender_eye"
+    }
+  },
+  "result": {
+    "id": "yuanliuwujin:destruction_core",
+    "count": 1
+  }
+}

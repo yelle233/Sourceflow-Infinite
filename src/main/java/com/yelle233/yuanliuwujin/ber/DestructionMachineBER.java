@@ -29,23 +29,18 @@ import org.joml.Matrix4f;
  *   <li>各激活面的模式覆盖层贴图（BOTH / PUSH）</li>
  * </ol>
  * <p>
- * 注意：需在资源包中提供以下贴图：
- * <ul>
- *   <li>{@code textures/block/overlay_accept.png} - BOTH 模式面标识（可复制 overlay_pull.png）</li>
- *   <li>{@code textures/block/overlay_destroy_pull.png} - PUSH 模式面标识（可复制 overlay_both.png）</li>
- * </ul>
  */
 public class DestructionMachineBER implements BlockEntityRenderer<DestructionMachineBlockEntity> {
 
-    /** BOTH 模式的面贴图（被动接受流体） */
-    private static final ResourceLocation OVERLAY_ACCEPT =
+    /** BOTH 模式的面贴图 */
+    private static final ResourceLocation OVERLAY_BOTH =
             ResourceLocation.fromNamespaceAndPath(SourceflowInfinite.MODID,
-                    "textures/block/overlay_accept.png");
+                    "textures/block/overlay_both.png");
 
-    /** PULL 模式的面贴图（主动抽取流体） */
-    private static final ResourceLocation OVERLAY_PULL_DESTROY =
+    /** PULL 模式的面贴图 */
+    private static final ResourceLocation OVERLAY_PUSH =
             ResourceLocation.fromNamespaceAndPath(SourceflowInfinite.MODID,
-                    "textures/block/overlay_destroy_pull.png");
+                    "textures/block/overlay_push.png");
 
     public DestructionMachineBER(BlockEntityRendererProvider.Context ctx) {}
 
@@ -62,7 +57,7 @@ public class DestructionMachineBER implements BlockEntityRenderer<DestructionMac
             SideMode mode = be.getSideMode(dir);
             if (mode == SideMode.OFF) continue;
 
-            ResourceLocation tex = (mode == SideMode.BOTH) ? OVERLAY_ACCEPT : OVERLAY_PULL_DESTROY;
+            ResourceLocation tex = (mode == SideMode.BOTH) ? OVERLAY_BOTH : OVERLAY_PUSH;
             renderFaceOverlay(poseStack, bufferSource, dir, tex,
                     LightTexture.FULL_BRIGHT, packedOverlay);
         }
