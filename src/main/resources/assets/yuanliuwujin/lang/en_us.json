@@ -4,6 +4,8 @@
   "item.yuanliuwujin.infinite_core": "Infinite Core",
   "block.yuanliuwujin.infinite_fluid_machine": "Infinite Fluid Machine",
   "item.yuanliuwujin.wrench": "Wrench",
+  "block.yuanliuwujin.destruction_machine": "Destruction Machine",
+  "item.yuanliuwujin.destruction_core": "Destruction Core",
 
   "msg.yourmod.wrench_mode": "Mode",
   "mode.yourmod.wrench.io": "Assembly Mode",
@@ -29,7 +31,15 @@
   "tooltip.yuanliuwujin.core.bind_hint": "Right-click a fluid block to bind",
   "tooltip.yuanliuwujin.core.clear_hint": "Sneak-right-click to clear",
   "tooltip.yuanliuwujin.core.bound": "Bound: %s",
-  "tooltip.fluid_banned": "banned: %s"
+  "tooltip.fluid_banned": "banned: %s",
+
+  "tooltip.yuanliuwujin.destruction_core.desc": "Voids any fluid",
+  "tooltip.yuanliuwujin.destruction_core.hint": "Insert into Destruction Machine with Wrench",
+  "hud.yuanliuwujin.destruction.active": "Running",
+  "hud.yuanliuwujin.destruction.no_power": "Insufficient Power",
+  "hud.yuanliuwujin.destruction.no_core": "No Core",
+  "hud.yuanliuwujin.destruction.status_label": "Status: %s"
+
 
 
 }

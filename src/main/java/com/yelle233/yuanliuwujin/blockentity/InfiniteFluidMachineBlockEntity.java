@@ -43,7 +43,7 @@ import java.util.EnumMap;
  *   <li>支持 Mekanism 化学品（可选联动，Mekanism 不在时自动跳过）</li>
  * </ul>
  */
-public class InfiniteFluidMachineBlockEntity extends BlockEntity {
+public class InfiniteFluidMachineBlockEntity extends BlockEntity implements ICoreMachine {
 
     /* ====== 类成员变量区域 ====== */
 
@@ -98,6 +98,12 @@ public class InfiniteFluidMachineBlockEntity extends BlockEntity {
     public ItemStackHandler getCoreSlot() {
         return coreSlot;
     }
+
+    @Override
+    public boolean isValidCoreItem(net.minecraft.world.item.Item item) {
+        return item instanceof InfiniteCoreItem;
+    }
+
 
     /* ====== 绑定类型查询 ====== */
 

@@ -21,8 +21,15 @@ public class ModTab {
                     .icon(() -> new ItemStack(ModItems.INFINITE_CORE.get()))
                     .title(Component.translatable("itemgroup.infinitewater"))
                     .displayItems((parameters, output) -> {
+                        // ── 无限流体机器相关 ──
                         output.accept(ModItems.INFINITE_CORE.get());
                         output.accept(ModBlocks.INFINITE_FLUID_MACHINE.get());
+
+                        // ── 销毁机器相关（新增） ──
+                        output.accept(ModItems.DESTRUCTION_CORE.get());
+                        output.accept(ModBlocks.DESTRUCTION_MACHINE.get());
+
+                        // ── 工具 ──
                         output.accept(ModItems.WRENCH.get());
                     }).build());
 }

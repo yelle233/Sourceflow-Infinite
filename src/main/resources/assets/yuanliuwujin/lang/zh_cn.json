@@ -2,8 +2,10 @@
   "itemgroup.infinitewater": "源流无尽",
 
   "item.yuanliuwujin.infinite_core": "无限核心",
-  "block.yuanliuwujin.infinite_fluid_machine": "无限液体机器",
+  "block.yuanliuwujin.infinite_fluid_machine": "无限流体机器",
   "item.yuanliuwujin.wrench": "扳手",
+  "block.yuanliuwujin.destruction_machine": "销毁机器",
+  "item.yuanliuwujin.destruction_core": "销毁核心",
 
   "msg.yourmod.wrench_mode": "模式",
   "mode.yourmod.wrench.io": "装配模式",
@@ -21,15 +23,22 @@
   "tooltip.yuanliuwujin.core.bind_chem_hint": "右键 Mekanism 化学品储罐绑定化学品",
   "tooltip.yuanliuwujin.core.bound_chemical": "已绑定化学品: %s",
   "tooltip.yuanliuwujin.core.text3_chem": "已绑定化学品: ",
-  "tooltip.yuanliuwujin.core.text1": "已绑定该液体",
-  "tooltip.yuanliuwujin.core.text2": "已绑定液体，潜行右键清除后才能重新绑定",
+  "tooltip.yuanliuwujin.core.text1": "已绑定该流体",
+  "tooltip.yuanliuwujin.core.text2": "已绑定流体，潜行右键清除后才能重新绑定",
   "tooltip.yuanliuwujin.core.text3": "已绑定:",
   "tooltip.yuanliuwujin.core.text4": "已清除绑定",
-  "tooltip.yuanliuwujin.core.unbound": "未绑定液体",
-  "tooltip.yuanliuwujin.core.bind_hint": "右键液体方块进行绑定",
+  "tooltip.yuanliuwujin.core.unbound": "未绑定流体",
+  "tooltip.yuanliuwujin.core.bind_hint": "右键流体方块进行绑定",
   "tooltip.yuanliuwujin.core.clear_hint": "潜行右键清除绑定",
   "tooltip.yuanliuwujin.core.bound": "已绑定：%s",
-  "tooltip.fluid_banned": "已禁用：%s"
+  "tooltip.fluid_banned": "已禁用：%s",
+
+  "tooltip.yuanliuwujin.destruction_core.desc": "销毁任意流体",
+  "tooltip.yuanliuwujin.destruction_core.hint": "使用扳手插入至销毁机器",
+  "hud.yuanliuwujin.destruction.active": "运行中",
+  "hud.yuanliuwujin.destruction.no_power": "能量不足",
+  "hud.yuanliuwujin.destruction.no_core": "未插入核心",
+  "hud.yuanliuwujin.destruction.status_label": "状态：%s"
 
 
 }

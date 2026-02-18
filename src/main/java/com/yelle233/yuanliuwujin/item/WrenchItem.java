@@ -1,6 +1,6 @@
 package com.yelle233.yuanliuwujin.item;
 
-import com.yelle233.yuanliuwujin.blockentity.InfiniteFluidMachineBlockEntity;
+import com.yelle233.yuanliuwujin.blockentity.ICoreMachine;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.component.DataComponents;
@@ -14,14 +14,16 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.component.CustomData;
 import net.minecraft.world.item.context.UseOnContext;
 import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.entity.BlockEntity;
 
 /**
- * 扳手物品，用于操作无限流体机器。
+ * 扳手物品，用于操作无限流体机器和销毁机器。
  * <p>
+ * 通过 {@link ICoreMachine} 接口统一处理两种机器，无需重复逻辑。
  * 两种模式（通过潜行+滚轮切换）：
  * <ul>
- *   <li><b>IO 模式</b>：非潜行右键插入核心（副手持有核心），潜行右键取出核心</li>
- *   <li><b>CONFIG 模式</b>：右键点击面循环切换该面的输出模式（OFF → PULL → BOTH）</li>
+ *   <li><b>IO 模式</b>：非潜行右键从副手插入对应核心，潜行右键取出核心</li>
+ *   <li><b>CONFIG 模式</b>：右键点击面循环切换该面的模式</li>
  * </ul>
  */
 public class WrenchItem extends Item {
@@ -33,12 +35,9 @@ public class WrenchItem extends Item {
     /* ====== 扳手模式枚举 ====== */
 
     public enum WrenchMode {
-        /** IO 模式：插入/取出核心 */
         IO,
-        /** 配置模式：切换面的输出模式 */
         CONFIG;
 
-        /** 根据滚轮方向切换到下一个模式 */
         public WrenchMode next(int delta) {
             int i = (this.ordinal() + (delta > 0 ? 1 : -1) + values().length) % values().length;
             return values()[i];
@@ -47,14 +46,11 @@ public class WrenchItem extends Item {
 
     private static final String TAG_MODE = "WrenchMode";
 
-    /** 从物品的 CustomData 中读取当前模式，默认 IO */
     public static WrenchMode getMode(ItemStack stack) {
         CustomData data = stack.get(DataComponents.CUSTOM_DATA);
         if (data == null) return WrenchMode.IO;
-
         CompoundTag tag = data.copyTag();
         if (!tag.contains(TAG_MODE)) return WrenchMode.IO;
-
         try {
             return WrenchMode.valueOf(tag.getString(TAG_MODE));
         } catch (IllegalArgumentException e) {
@@ -62,7 +58,6 @@ public class WrenchItem extends Item {
         }
     }
 
-    /** 将模式写入物品的 CustomData */
     public static void setMode(ItemStack stack, WrenchMode mode) {
         stack.update(DataComponents.CUSTOM_DATA, CustomData.EMPTY, data -> {
             CompoundTag tag = data.copyTag();
@@ -79,7 +74,10 @@ public class WrenchItem extends Item {
         if (level.isClientSide) return InteractionResult.SUCCESS;
 
         BlockPos pos = ctx.getClickedPos();
-        if (!(level.getBlockEntity(pos) instanceof InfiniteFluidMachineBlockEntity machine)) {
+        BlockEntity be = level.getBlockEntity(pos);
+
+        // ── 通过 ICoreMachine 接口统一处理两种机器 ──
+        if (!(be instanceof ICoreMachine machine)) {
             return InteractionResult.PASS;
         }
 
@@ -87,7 +85,7 @@ public class WrenchItem extends Item {
         if (player == null) return InteractionResult.PASS;
 
         WrenchMode mode = getMode(ctx.getItemInHand());
-        Direction face = ctx.getClickedFace();
+        Direction face  = ctx.getClickedFace();
 
         return (mode == WrenchMode.IO)
                 ? handleIOMode(level, pos, player, machine)
@@ -96,16 +94,21 @@ public class WrenchItem extends Item {
 
     /* ====== IO 模式：插入/取出核心 ====== */
 
+    /**
+     * 处理 IO 模式交互。
+     * <p>
+     * 利用 {@link ICoreMachine#isValidCoreItem(Item)} 判断副手物品是否为
+     * 当前机器对应的核心类型，实现两种机器的差异化核心插入限制。
+     */
     private InteractionResult handleIOMode(Level level, BlockPos pos, Player player,
-                                           InfiniteFluidMachineBlockEntity machine) {
+                                            ICoreMachine machine) {
         if (player.isShiftKeyDown()) {
             // 潜行：取出核心
             ItemStack core = machine.getCoreSlot().getStackInSlot(0);
             if (core.isEmpty()) return InteractionResult.PASS;
 
             machine.getCoreSlot().setStackInSlot(0, ItemStack.EMPTY);
-            machine.setChanged();
-            machine.onCoreChanged();
+            machine.onCoreChanged(); // 内部已调用 setChanged()
             player.addItem(core);
 
             level.playSound(null, pos, SoundEvents.ITEM_PICKUP, SoundSource.BLOCKS, 0.6f, 1.0f);
@@ -114,13 +117,15 @@ public class WrenchItem extends Item {
 
         // 非潜行：从副手插入核心
         ItemStack offhand = player.getOffhandItem();
-        if (!(offhand.getItem() instanceof InfiniteCoreItem)) return InteractionResult.PASS;
+
+        // isValidCoreItem() 由各机器自行实现，确保类型匹配：
+        // 无限流体机器 → InfiniteCoreItem；销毁机器 → DestructionCoreItem
+        if (!machine.isValidCoreItem(offhand.getItem())) return InteractionResult.PASS;
         if (!machine.getCoreSlot().getStackInSlot(0).isEmpty()) return InteractionResult.PASS;
 
         ItemStack toInsert = offhand.copy();
         toInsert.setCount(1);
         machine.getCoreSlot().setStackInSlot(0, toInsert);
-        machine.setChanged();
         machine.onCoreChanged();
         offhand.shrink(1);
 
@@ -131,11 +136,12 @@ public class WrenchItem extends Item {
     /* ====== CONFIG 模式：切换面模式 ====== */
 
     private InteractionResult handleConfigMode(Level level, BlockPos pos, Player player,
-                                               InfiniteFluidMachineBlockEntity machine, Direction face) {
+                                               ICoreMachine machine, Direction face) {
+        // 顶面不可配置（用于接收能量）
         if (face == Direction.UP) return InteractionResult.PASS;
 
         machine.cycleSideMode(face);
-        level.playSound(null, pos, SoundEvents.WOODEN_TRAPDOOR_OPEN, SoundSource.BLOCKS, 0.5f, 1.0f);
+        level.playSound(null, pos, SoundEvents.WOODEN_TRAPDOOR_OPEN, SoundSource.PLAYERS, 0.5f, 1.0f);
         return InteractionResult.SUCCESS;
     }
 }
