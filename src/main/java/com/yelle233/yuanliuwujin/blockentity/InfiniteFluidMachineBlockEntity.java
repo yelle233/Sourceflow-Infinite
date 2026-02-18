@@ -272,7 +272,7 @@ public class InfiniteFluidMachineBlockEntity extends BlockEntity {
 
     public boolean canWorkNow() {
         int cost = calcFePerTick();
-        return cost > 0 && energy >= cost;
+        return cost <=0 || energy >= cost;
     }
 
     public int countEnabledFaces() {
