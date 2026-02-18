@@ -4,10 +4,12 @@
   "item.yuanliuwujin.infinite_core": "Infinite Core",
   "block.yuanliuwujin.infinite_fluid_machine": "Infinite Fluid Machine",
   "item.yuanliuwujin.wrench": "Wrench",
+  "item.yuanliuwujin.destruction_core": "Destruction Core",
+  "block.yuanliuwujin.destruction_machine": "Destruction Machine",
 
-  "msg.yourmod.wrench_mode": "Mode",
-  "mode.yourmod.wrench.io": "Assembly Mode",
-  "mode.yourmod.wrench.config": "Configuration Mode",
+  "msg.yuanliuwujin.wrench_mode": "Mode",
+  "mode.yuanliuwujin.wrench.io": "Assembly Mode",
+  "mode.yuanliuwujin.wrench.config": "Configuration Mode",
 
   "hud.sourceflowinfinite.none": "None",
   "hud.sourceflowinfinite.energy": "Energy %s/%s FE",
@@ -17,6 +19,11 @@
   "hud.sourceflowinfinite.core.missing": "Missing",
   "hud.sourceflowinfinite.fluid": "Fluid %s",
   "hud.sourceflowinfinite.faces": "Faces (%s) %s",
+
+  "hud.yuanliuwujin.destruction.active": "Running",
+  "hud.yuanliuwujin.destruction.no_power": "Insufficient Power",
+  "hud.yuanliuwujin.destruction.no_core": "No Core Inserted",
+  "hud.yuanliuwujin.destruction.status_label": "Status: %s",
 
   "tooltip.yuanliuwujin.core.bind_chem_hint": "Right-click Mekanism chemical tank to bind chemical",
   "tooltip.yuanliuwujin.core.bound_chemical": "Bound Chemical: %s",
@@ -30,7 +37,7 @@
   "tooltip.yuanliuwujin.core.clear_hint": "Sneak-right-click to clear",
   "tooltip.yuanliuwujin.core.bound": "Bound: %s",
   "tooltip.fluid_banned": "banned: %s",
-  "tooltip.yuanliuwujin.core.unbind_disabled": "Unbinding is not allowed in Survival mode."
-
-
+  "tooltip.yuanliuwujin.core.unbind_disabled": "Unbinding is not allowed in Survival mode.",
+  "tooltip.yuanliuwujin.destruction_core.desc": "Destroys any fluid",
+  "tooltip.yuanliuwujin.destruction_core.hint": "Use a wrench to insert into a Destruction Machine"
 }

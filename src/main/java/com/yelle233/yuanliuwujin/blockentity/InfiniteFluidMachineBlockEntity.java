@@ -14,6 +14,7 @@ import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket;
 import net.minecraft.resources.ResourceLocation;
+import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
@@ -38,7 +39,7 @@ import java.util.EnumMap;
  * 核心变化：使用 Forge 的 {@link LazyOptional} + {@code getCapability()} 暴露能力，
  * 替代 NeoForge 的 {@code RegisterCapabilitiesEvent} 注册方式。
  */
-public class InfiniteFluidMachineBlockEntity extends BlockEntity {
+public class InfiniteFluidMachineBlockEntity extends BlockEntity implements ICoreMachine{
 
     /* ====== 类成员变量 ====== */
 
@@ -62,6 +63,7 @@ public class InfiniteFluidMachineBlockEntity extends BlockEntity {
         return dir == Direction.UP ? SideMode.OFF : sideModes.getOrDefault(dir, SideMode.OFF);
     }
 
+    @Override
     public void cycleSideMode(Direction dir) {
         if (dir == Direction.UP) return;
         SideMode old = getSideMode(dir);
@@ -113,8 +115,14 @@ public class InfiniteFluidMachineBlockEntity extends BlockEntity {
         }
     };
 
+    @Override
     public ItemStackHandler getCoreSlot() {
         return coreSlot;
+    }
+
+    @Override
+    public boolean isValidCoreItem(Item item) {
+        return item instanceof InfiniteCoreItem;
     }
 
     /* ====== 绑定类型查询 ====== */
@@ -558,6 +566,7 @@ public class InfiniteFluidMachineBlockEntity extends BlockEntity {
 
     /* ====== 核心变更通知 ====== */
 
+    @Override
     public void onCoreChanged() {
         if (level == null || level.isClientSide) return;
         setChanged();

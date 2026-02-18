@@ -20,7 +20,11 @@ public class ModTab {
                     .title(Component.translatable("itemgroup.infinitewater"))
                     .displayItems((parameters, output) -> {
                         output.accept(ModItems.INFINITE_CORE.get());
+                        output.accept(ModItems.DESTRUCTION_CORE.get());
+
                         output.accept(ModBlocks.INFINITE_FLUID_MACHINE.get());
+                        output.accept(ModBlocks.DESTRUCTION_MACHINE.get());
+
                         output.accept(ModItems.WRENCH.get());
                     }).build());
 }
