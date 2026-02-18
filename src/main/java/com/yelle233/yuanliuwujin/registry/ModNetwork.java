@@ -43,15 +43,15 @@ public class ModNetwork {
 
                     // 发送 actionbar 消息
                     Component modeName = switch (next) {
-                        case IO -> Component.translatable("mode.yourmod.wrench.io")
+                        case IO -> Component.translatable("mode.yuanliuwujin.wrench.io")
                                 .withStyle(ChatFormatting.AQUA, ChatFormatting.BOLD);
-                        case CONFIG -> Component.translatable("mode.yourmod.wrench.config")
+                        case CONFIG -> Component.translatable("mode.yuanliuwujin.wrench.config")
                                 .withStyle(ChatFormatting.GOLD, ChatFormatting.BOLD);
                     };
 
                     player.displayClientMessage(
                             Component.literal(" ")
-                                    .append(Component.translatable("msg.yourmod.wrench_mode").withStyle(ChatFormatting.GRAY))
+                                    .append(Component.translatable("msg.yuanliuwujin.wrench_mode").withStyle(ChatFormatting.GRAY))
                                     .append(Component.literal(": ").withStyle(ChatFormatting.DARK_GRAY))
                                     .append(modeName),
                             true);

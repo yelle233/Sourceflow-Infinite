@@ -7,9 +7,9 @@
   "block.yuanliuwujin.destruction_machine": "销毁机器",
   "item.yuanliuwujin.destruction_core": "销毁核心",
 
-  "msg.yourmod.wrench_mode": "模式",
-  "mode.yourmod.wrench.io": "装配模式",
-  "mode.yourmod.wrench.config": "配置模式",
+  "msg.yuanliuwujin.wrench_mode": "模式",
+  "mode.yuanliuwujin.wrench.io": "装配模式",
+  "mode.yuanliuwujin.wrench.config": "配置模式",
 
   "hud.sourceflowinfinite.none": "无",
   "hud.sourceflowinfinite.energy": "能量 %s/%s FE",

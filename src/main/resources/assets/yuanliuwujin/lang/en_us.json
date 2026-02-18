@@ -7,9 +7,9 @@
   "block.yuanliuwujin.destruction_machine": "Destruction Machine",
   "item.yuanliuwujin.destruction_core": "Destruction Core",
 
-  "msg.yourmod.wrench_mode": "Mode",
-  "mode.yourmod.wrench.io": "Assembly Mode",
-  "mode.yourmod.wrench.config": "Configuration Mode",
+  "msg.yuanliuwujin.wrench_mode": "Mode",
+  "mode.yuanliuwujin.wrench.io": "Assembly Mode",
+  "mode.yuanliuwujin.wrench.config": "Configuration Mode",
 
   "hud.sourceflowinfinite.none": "None",
   "hud.sourceflowinfinite.energy": "Energy %s/%s FE",
