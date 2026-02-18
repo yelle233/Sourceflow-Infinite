@@ -221,25 +221,16 @@ public class DestructionMachineBlockEntity extends BlockEntity implements ICoreM
 
     @Override
     public @NotNull <T> LazyOptional<T> getCapability(@NotNull Capability<T> cap, @Nullable Direction side) {
-        // 能量：仅顶面
+        // 能量：仅顶面或 null 查询
         if (cap == ForgeCapabilities.ENERGY) {
             if (side == null || side == Direction.UP) return energyCap.cast();
             return LazyOptional.empty();
         }
 
-        // 流体虚空 Sink
+        // 流体虚空 Sink：null 查询直接返回空，屏蔽 Jade 等工具的探测
         if (cap == ForgeCapabilities.FLUID_HANDLER) {
+            if (side == null) return LazyOptional.empty();
             if (side == Direction.UP) return LazyOptional.empty();
-            if (side == null) {
-                // 任意侧面启用就提供
-                boolean anyEnabled = false;
-                for (Direction d : Direction.values()) {
-                    if (d == Direction.UP) continue;
-                    if (getSideMode(d) != SideMode.OFF) { anyEnabled = true; break; }
-                }
-                if (!anyEnabled) return LazyOptional.empty();
-                return getFluidCap().cast();
-            }
             if (getSideMode(side) == SideMode.OFF) return LazyOptional.empty();
             return getFluidCap().cast();
         }
@@ -253,6 +244,7 @@ public class DestructionMachineBlockEntity extends BlockEntity implements ICoreM
         return super.getCapability(cap, side);
     }
 
+
     private LazyOptional<IFluidHandler> getFluidCap() {
         if (!fluidCap.isPresent()) fluidCap = LazyOptional.of(() -> voidSink);
         return fluidCap;
@@ -260,10 +252,10 @@ public class DestructionMachineBlockEntity extends BlockEntity implements ICoreM
 
     @Nullable
     private <T> LazyOptional<T> getMekCapability(Capability<T> cap, @Nullable Direction side) {
-        if (side == Direction.UP) return null;
 
         // 检查面是否启用
-        if (side != null && getSideMode(side) == SideMode.OFF) return LazyOptional.empty();
+        if (side == Direction.UP) return LazyOptional.empty();
+        if (getSideMode(side) == SideMode.OFF) return LazyOptional.empty();
         if (side == null) {
             boolean anyEnabled = false;
             for (Direction d : Direction.values()) {
