@@ -58,7 +58,8 @@ public class DestructionMachineBlockEntity extends BlockEntity implements ICoreM
     };
 
     private FluidTank voidTank;
-    private DestructionChemicalSink chemSink;
+    /** 类型为 DestructionChemicalSink，声明为 Object 以避免无 Mekanism 时触发类加载 */
+    private Object chemSink;
 
     public DestructionMachineBlockEntity(BlockPos pos, BlockState state) {
         super(ModBlockEntities.DESTRUCTION_MACHINE.get(), pos, state);
@@ -316,7 +317,7 @@ public class DestructionMachineBlockEntity extends BlockEntity implements ICoreM
     public EnergyStorage getEnergyStorage() { return energyStorage; }
     public float getPressure() { return pressure; }
     public int getLastTickFEConsumed() { return lastTickFEConsumed; }
-    @Nullable public DestructionChemicalSink getChemSink() { return chemSink; }
+    @Nullable public Object getChemSink() { return chemSink; }
 
     private void notifyCapabilityChanged(Direction dir) { if (level == null) return; setChanged(); syncToClient(); boolean dirty = !getBlockState().getValue(DestructionMachineBlock.DIRTY); level.setBlock(worldPosition, getBlockState().setValue(DestructionMachineBlock.DIRTY, dirty), 3); }
 

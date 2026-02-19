@@ -64,7 +64,8 @@ public class InfiniteFluidMachineBlockEntity extends BlockEntity implements ICor
     };
 
     private FluidTank voidTank;
-    private InfiniteChemicalOutput chemOutput;
+    /** 类型为 InfiniteChemicalOutput，声明为 Object 以避免无 Mekanism 时触发类加载 */
+    private Object chemOutput;
     private int fluidBudgetRemaining = 0;
 
     public InfiniteFluidMachineBlockEntity(BlockPos pos, BlockState state) {
@@ -73,7 +74,7 @@ public class InfiniteFluidMachineBlockEntity extends BlockEntity implements ICor
         initFaceRates();
         if (MekanismChecker.isLoaded()) {
             chemOutput = new InfiniteChemicalOutput(
-                    this::getBoundChemical,
+                    () -> (mekanism.api.chemical.Chemical) this.getBoundChemical(),
                     this::canWork,
                     this::getVoidTank,
                     this::getCurrentRatio,
@@ -315,7 +316,8 @@ public class InfiniteFluidMachineBlockEntity extends BlockEntity implements ICor
         else if (type == BindType.CHEMICAL && MekanismChecker.isLoaded()) { ResourceLocation chemId = InfiniteCoreItem.getBoundChemical(coreSlot.getStackInSlot(0)); return chemId != null ? MekChemicalHelper.getChemicalName(chemId) : null; }
         return null;
     }
-    @Nullable public mekanism.api.chemical.Chemical getBoundChemical() { if (!MekanismChecker.isLoaded()) return null; ItemStack cs = coreSlot.getStackInSlot(0); if (cs.isEmpty()) return null; ResourceLocation id = InfiniteCoreItem.getBoundChemical(cs); return MekChemicalHelper.getChemical(id); }
+    /** 返回值实际类型为 mekanism.api.chemical.Chemical，声明为 Object 以避免类加载 */
+    @Nullable public Object getBoundChemical() { if (!MekanismChecker.isLoaded()) return null; ItemStack cs = coreSlot.getStackInSlot(0); if (cs.isEmpty()) return null; ResourceLocation id = InfiniteCoreItem.getBoundChemical(cs); return MekChemicalHelper.getChemical(id); }
     public boolean canWork() {
         if (level == null || level.isClientSide) return lastTickCanWork;
         boolean hasCore = !coreSlot.getStackInSlot(0).isEmpty();
@@ -349,7 +351,7 @@ public class InfiniteFluidMachineBlockEntity extends BlockEntity implements ICor
     public EnergyStorage getEnergyStorage() { return energyStorage; }
     public float getPressure() { return pressure; }
     public int getLastTickFEConsumed() { return lastTickFEConsumed; }
-    @Nullable public InfiniteChemicalOutput getInfiniteChemicalOutput() { return chemOutput; }
+    @Nullable public Object getInfiniteChemicalOutput() { return chemOutput; }
     public int getFluidBudgetRemaining() { return fluidBudgetRemaining; }
 
     private void notifyCapabilityChanged(Direction dir) { if (level == null) return; setChanged(); syncToClient(); boolean dirty = !getBlockState().getValue(InfiniteFluidMachineBlock.DIRTY); level.setBlock(worldPosition, getBlockState().setValue(InfiniteFluidMachineBlock.DIRTY, dirty), 3); }

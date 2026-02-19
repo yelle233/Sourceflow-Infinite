@@ -28,8 +28,6 @@ public class Modconfigs {
     public static final ModConfigSpec.IntValue VOID_DECAY_PER_20T;
     /** 虚空流体最大扩散半径（以浓度衰减层数计，默认 4） */
     public static final ModConfigSpec.IntValue VOID_MAX_SPREAD_RADIUS;
-    /** 虚空流体流动更新 tick 间隔（越大越慢，默认 60 = 3 秒，原版水为 5） */
-    public static final ModConfigSpec.IntValue VOID_FLUID_TICK_RATE;
     /** 虚空流体方块浓度衰减调度间隔（tick，默认 40） */
     public static final ModConfigSpec.IntValue VOID_DECAY_INTERVAL;
     /** 虚空流体活跃阶段（恩惠期）持续时间（tick，默认 200 = 10 秒），在此期间只扩散/销毁不衰减 */
@@ -108,10 +106,6 @@ public class Modconfigs {
                 "虚空流体最大扩散半径（范围 0-14，默认 4）",
                 "Max spread radius in concentration layers."
         ).defineInRange("maxSpreadRadius", 4, 0, 14);
-        VOID_FLUID_TICK_RATE = b.comment(
-                "虚空流体流动更新间隔（tick），越大流动越慢（默认 60，原版水为 5）",
-                "Void fluid flow tick rate. Higher = slower."
-        ).defineInRange("fluidTickRate", 60, 5, 200);
         VOID_DECAY_INTERVAL = b.comment(
                 "虚空流体方块浓度衰减调度间隔（tick，默认 40）",
                 "Void fluid block decay scheduled tick interval."

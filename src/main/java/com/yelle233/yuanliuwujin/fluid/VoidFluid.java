@@ -1,26 +1,22 @@
 package com.yelle233.yuanliuwujin.fluid;
 
-import com.yelle233.yuanliuwujin.block.VoidFluidBlock;
 import com.yelle233.yuanliuwujin.registry.ModFluids;
 import net.minecraft.core.BlockPos;
-import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.level.material.FluidState;
 import net.neoforged.neoforge.fluids.BaseFlowingFluid;
 
 /**
- * 虚空流体（Void Fluid）。
+ * 虚空流体（Void Fluid）—— 纯注册用空壳。
  * <p>
- * 虚空流体是两种机器之间的"货币"：
- * <ul>
- *   <li>销毁机器将普通流体转换为虚空流体并储存；底面向外输出虚空流体</li>
- *   <li>无限流体机器从底面吸入虚空流体，将其转换为绑定流体后输出</li>
- * </ul>
+ * 该流体类仅用于满足 NeoForge 流体注册系统的需要（桶、FluidType、方块关联等），
+ * <b>不执行任何原版流体逻辑</b>。所有的扩散、销毁、衰减行为均由
+ * {@link com.yelle233.yuanliuwujin.block.VoidFluidBlock} 的调度 tick 独立管理。
  * <p>
- * <b>重要</b>：恩惠期结束后，流体系统的 {@code tick()} 和 {@code spread()} 都会被阻止，
- * 防止原版流体逻辑通过 getNewLiquid() 重新计算流动方块状态，
- * 从而避免源方块不断重新生成已被衰减系统移除的流动方块。
+ * 这样做的原因：原版 {@code FlowingFluid.tick()} 内部的 {@code getNewLiquid()}
+ * 会根据相邻方块重新计算流动状态，导致源方块不断"补给"已进入衰减阶段的流动方块，
+ * 使虚空流体永远无法消失。彻底禁用原版逻辑后，两套系统不再冲突。
  */
 public abstract class VoidFluid extends BaseFlowingFluid {
 
@@ -33,18 +29,31 @@ public abstract class VoidFluid extends BaseFlowingFluid {
         return ModFluids.VOID_FLUID_TYPE.get();
     }
 
+    // ══════════════════════════════════════════════════════════════
+    //  彻底禁用原版流体逻辑
+    // ══════════════════════════════════════════════════════════════
+
     /**
-     * 检查指定位置的虚空流体是否仍在恩惠期内。
-     * 恩惠期内允许正常流体扩散；恩惠期结束后阻止扩散，让衰减系统接管。
+     * 完全跳过原版流体 tick。
+     * 原版 tick 会调用 getNewLiquid() 重新计算并覆写方块状态，
+     * 与 VoidFluidBlock 的衰减系统冲突。这里直接 return。
      */
-    protected boolean shouldAllowSpread(Level level, BlockPos pos) {
-        if (level instanceof ServerLevel sl) {
-            return VoidFluidBlock.isBlockInGracePeriod(sl, pos);
-        }
-        return true;
+    @Override
+    public void tick(Level level, BlockPos pos, FluidState state) {
+        // no-op: 所有逻辑由 VoidFluidBlock.tick() 管理
+    }
+
+    /**
+     * 完全跳过原版流体扩散。
+     * 扩散逻辑由 VoidFluidBlock 在恩惠期内自行处理。
+     */
+    @Override
+    protected void spread(Level level, BlockPos pos, FluidState state) {
+        // no-op: 所有逻辑由 VoidFluidBlock.tick() 管理
     }
 
     // ── 静止态（源方块） ──────────────────────────────────────────────
+
     public static class Source extends VoidFluid {
 
         public Source(Properties properties) {
@@ -77,35 +86,10 @@ public abstract class VoidFluid extends BaseFlowingFluid {
         protected boolean canConvertToSource(Level level) {
             return false;
         }
-
-        /**
-         * 【核心修复】恩惠期结束后，彻底跳过原版流体 tick 逻辑。
-         * <p>
-         * 原版 FlowingFluid.tick() 内部会调用 getNewLiquid() 根据相邻方块
-         * 重新计算流体状态，这会导致源方块持续"补给"已进入衰减阶段的流动方块。
-         * 恩惠期结束后，完全由 VoidFluidBlock.tick() 的衰减系统独立管理。
-         */
-        @Override
-        public void tick(Level level, BlockPos pos, FluidState state) {
-            if (!shouldAllowSpread(level, pos)) {
-                // 恩惠期结束 → 跳过全部原版流体逻辑（getNewLiquid + spread）
-                // VoidFluidBlock.tick() 会独立处理浓度衰减和方块移除
-                return;
-            }
-            super.tick(level, pos, state);
-        }
-
-        /**
-         * 恩惠期结束后阻止源方块扩散流动方块。
-         */
-        @Override
-        protected void spread(Level level, BlockPos pos, FluidState state) {
-            if (!shouldAllowSpread(level, pos)) return;
-            super.spread(level, pos, state);
-        }
     }
 
     // ── 流动态 ──────────────────────────────────────────────────────
+
     public static class Flowing extends VoidFluid {
 
         public Flowing(Properties properties) {
@@ -138,31 +122,6 @@ public abstract class VoidFluid extends BaseFlowingFluid {
         @Override
         protected boolean canConvertToSource(Level level) {
             return false;
-        }
-
-        /**
-         * 【核心修复】恩惠期结束后，彻底跳过原版流体 tick 逻辑。
-         * <p>
-         * 对于流动方块尤其关键：原版 tick 中 getNewLiquid() 会检测相邻源方块，
-         * 并将流动方块的等级"刷新"回源方块决定的值，导致衰减系统的效果被覆盖。
-         * 恩惠期结束后直接 return，让 VoidFluidBlock.tick() 全权负责衰减。
-         */
-        @Override
-        public void tick(Level level, BlockPos pos, FluidState state) {
-            if (!shouldAllowSpread(level, pos)) {
-                // 恩惠期结束 → 跳过全部原版流体逻辑
-                return;
-            }
-            super.tick(level, pos, state);
-        }
-
-        /**
-         * 恩惠期结束后也阻止流动方块继续扩散。
-         */
-        @Override
-        protected void spread(Level level, BlockPos pos, FluidState state) {
-            if (!shouldAllowSpread(level, pos)) return;
-            super.spread(level, pos, state);
         }
     }
 }
