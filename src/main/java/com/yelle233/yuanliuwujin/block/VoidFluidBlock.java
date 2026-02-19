@@ -17,7 +17,6 @@ import net.minecraft.world.level.block.state.BlockBehaviour;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition;
 import net.minecraft.world.level.block.state.properties.IntegerProperty;
-import net.minecraft.world.level.material.FlowingFluid;
 
 /**
  * 虚空流体方块（Void Fluid Block）。
@@ -26,12 +25,11 @@ import net.minecraft.world.level.material.FlowingFluid;
  * 特性：
  * <ol>
  *   <li><b>浓度衰减</b>：具有 CONCENTRATION 属性（1–15），每隔若干 tick 减 1，归零后消失</li>
- *   <li><b>方块销毁</b>：每次 scheduledTick 时，尝试删除相邻（6面）非基岩方块</li>
+ *   <li><b>方块销毁</b>：每次 randomTick 时，尝试删除相邻（6面）非基岩方块</li>
  *   <li><b>实体伤害</b>：实体进入时立即死亡（entityInside 触发），掉落物也被删除</li>
  *   <li><b>有限扩散</b>：源方块（浓度最高）会向相邻空气格扩散，最大扩散半径由配置控制</li>
+ *   <li><b>全面衰减</b>：无论源流还是流动态，虚空流体都会缓慢消失</li>
  * </ol>
- * <p>
- * <b>性能注意</b>：方块销毁每次最多删除 8 个相邻方块，防止大量虚空方块同时触发卡顿。
  */
 public class VoidFluidBlock extends LiquidBlock {
 
@@ -40,9 +38,6 @@ public class VoidFluidBlock extends LiquidBlock {
      * 初始浓度：15（源方块），扩散时浓度 = 源浓度 - 1（最小 1）。
      */
     public static final IntegerProperty CONCENTRATION = IntegerProperty.create("concentration", 1, 15);
-
-    /** 最大扩散距离（从源头算，半径内的空气格才能被感染） */
-    private static final int MAX_SPREAD_RADIUS = 4;
 
     public VoidFluidBlock(net.minecraft.world.level.material.FlowingFluid fluid,
                           BlockBehaviour.Properties properties) {
@@ -68,20 +63,29 @@ public class VoidFluidBlock extends LiquidBlock {
 
     @Override
     public void randomTick(BlockState state, ServerLevel level, BlockPos pos, RandomSource random) {
-        // 1) 销毁相邻方块（每次 randomTick 最多销毁 8 个）
-        destroyAdjacentBlocks(state, level, pos, 8);
-
-        // 2) 尝试向相邻空气格扩散（仅源方块，即 LEVEL=8 或 concentration > 1）
         int concentration = state.getValue(CONCENTRATION);
-        if (concentration > 1) {
+        int fluidLevel = state.getValue(LEVEL);
+        boolean isSource = (fluidLevel == 0 || fluidLevel >= 8);
+
+        // 1) 销毁相邻方块（加快速度：每次最多销毁 32 个，且流动态也会腐蚀）
+        destroyAdjacentBlocks(state, level, pos, 32);
+
+        // 2) 尝试向相邻空气格扩散（仅源方块，且浓度 > 1）
+        if (isSource && concentration > 1) {
             trySpread(state, level, pos, concentration);
         }
 
-        // 3) 衰减浓度
+        // 3) 衰减浓度——所有虚空流体都会衰减，无论源流还是流动态
         int decay = Modconfigs.VOID_DECAY_PER_20T.get();
+        // 流动态衰减更快（×2）
+        if (!isSource) {
+            decay = Math.max(decay * 2, 2);
+        }
+
         int newConc = concentration - decay;
         if (newConc <= 0) {
-            level.removeBlock(pos, false); // 浓度耗尽，方块消失
+            // 浓度耗尽，方块消失
+            level.removeBlock(pos, false);
         } else {
             level.setBlock(pos, state.setValue(CONCENTRATION, newConc), Block.UPDATE_ALL);
         }
@@ -119,8 +123,7 @@ public class VoidFluidBlock extends LiquidBlock {
         for (Direction dir : new Direction[]{Direction.NORTH, Direction.SOUTH,
                 Direction.EAST, Direction.WEST, Direction.DOWN}) {
             BlockPos target = pos.relative(dir);
-            // 超出最大扩散半径则跳过（使用块实体追踪较复杂，这里用简单的距离估算：
-            // 浓度越低，传播代次越多，当浓度从15降到 15-maxRadius 时停止扩散）
+            // 超出最大扩散半径则跳过
             if (concentration <= (15 - maxRadius)) continue;
 
             BlockState targetState = level.getBlockState(target);

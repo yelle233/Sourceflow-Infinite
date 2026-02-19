@@ -28,5 +28,6 @@ public class ModTab {
                         output.accept(ModBlocks.DESTRUCTION_MACHINE.get());
 
                         output.accept(ModItems.WRENCH.get());
+                        output.accept(ModItems.VOID_BUCKET.get());
                     }).build());
 }

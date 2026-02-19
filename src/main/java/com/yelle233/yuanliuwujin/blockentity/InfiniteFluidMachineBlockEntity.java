@@ -13,6 +13,7 @@ import net.minecraft.core.Direction;
 import net.minecraft.core.HolderLookup;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.network.chat.Component;
 import net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
@@ -362,6 +363,34 @@ public class InfiniteFluidMachineBlockEntity extends BlockEntity implements ICor
         return InfiniteCoreItem.getBoundFluid(cs);
     }
 
+    /** 获取绑定的源流体（解析注册表，处理 FlowingFluid） */
+    @Nullable
+    public Fluid getBoundSourceFluid() {
+        ResourceLocation boundId = getBoundFluidId();
+        if (boundId == null) return null;
+        if (Modconfigs.isFluidBanned(boundId)) return null;
+        Fluid fluid = BuiltInRegistries.FLUID.get(boundId);
+        if (fluid instanceof FlowingFluid ff) fluid = ff.getSource();
+        return fluid;
+    }
+
+    /**
+     * 获取绑定物质的显示名称（支持流体和化学品）。
+     * 供 HUD 使用。
+     */
+    @Nullable
+    public Component getBoundSubstanceName() {
+        BindType type = getCoreBindType();
+        if (type == BindType.FLUID) {
+            Fluid fluid = getBoundSourceFluid();
+            return fluid != null ? fluid.getFluidType().getDescription() : null;
+        } else if (type == BindType.CHEMICAL && MekanismChecker.isLoaded()) {
+            ResourceLocation chemId = InfiniteCoreItem.getBoundChemical(coreSlot.getStackInSlot(0));
+            return chemId != null ? MekChemicalHelper.getChemicalName(chemId) : null;
+        }
+        return null;
+    }
+
     @Nullable
     public mekanism.api.chemical.Chemical getBoundChemical() {
         if (!MekanismChecker.isLoaded()) return null;
@@ -458,6 +487,7 @@ public class InfiniteFluidMachineBlockEntity extends BlockEntity implements ICor
         tag.putInt("energy", energyStorage.getEnergyStored());
         tag.put("voidTank", voidTank.writeToNBT(registries, new CompoundTag()));
         tag.putFloat("pressure", pressure);
+        tag.putBoolean("lastCanWork", lastTickCanWork);
         CompoundTag modesTag = new CompoundTag();
         sideModes.forEach((d, m) -> modesTag.putString(d.getName(), m.name()));
         tag.put("sideModes", modesTag);
@@ -474,6 +504,7 @@ public class InfiniteFluidMachineBlockEntity extends BlockEntity implements ICor
         rebuildVoidTank();
         if (tag.contains("voidTank")) voidTank.readFromNBT(registries, tag.getCompound("voidTank"));
         pressure = tag.getFloat("pressure");
+        lastTickCanWork = tag.getBoolean("lastCanWork");
         CompoundTag modesTag = tag.getCompound("sideModes");
         for (Direction dir : Direction.values()) {
             if (dir == Direction.UP || dir == Direction.DOWN) continue;

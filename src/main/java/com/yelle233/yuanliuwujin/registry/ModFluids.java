@@ -34,26 +34,17 @@ public class ModFluids {
             FLUID_TYPES.register("void_fluid",
                     () -> new VoidFluidType(VoidFluidType.makeProperties()));
 
-//    // ── 虚空流体（静止态/源方块） ────────────────────────────────────
-//    public static final Supplier<VoidFluid.Source> VOID_FLUID_SOURCE =
-//            FLUIDS.register("void_fluid",
-//                    () -> new VoidFluid.Source());
-//
-//    // ── 虚空流体（流动态） ────────────────────────────────────────
-//    public static final Supplier<VoidFluid.Flowing> VOID_FLUID_FLOWING =
-//            FLUIDS.register("void_fluid_flowing",
-//                    () -> new VoidFluid.Flowing());
-
-    // ✅ 先注册流体（这里不直接引用 VOID_PROPS 字段）
+    // ── 虚空流体（静止态/源方块） ────────────────────────────────────
     public static final DeferredHolder<Fluid, VoidFluid.Source> VOID_FLUID_SOURCE =
             FLUIDS.register("void_fluid",
                     () -> new VoidFluid.Source(voidProps()));
 
+    // ── 虚空流体（流动态） ────────────────────────────────────────
     public static final DeferredHolder<Fluid, VoidFluid.Flowing> VOID_FLUID_FLOWING =
             FLUIDS.register("void_fluid_flowing",
                     () -> new VoidFluid.Flowing(voidProps()));
 
-    // ✅ 用懒加载缓存，避免每次 new 一个 Properties
+    // ── 懒加载缓存 ────────────────────────────────────────────────
     private static BaseFlowingFluid.Properties VOID_PROPS;
 
     private static BaseFlowingFluid.Properties voidProps() {
@@ -64,22 +55,11 @@ public class ModFluids {
                     VOID_FLUID_FLOWING
             )
                     .block(ModBlocks.VOID_FLUID_BLOCK)
-                    .bucket(ModItems.VOID_BUCKET);
+                    .bucket(ModItems.VOID_BUCKET)
+                    .slopeFindDistance(1)     // 限制流动寻路距离（默认4，水类）
+                    .levelDecreasePerBlock(2) // 每格流动减少2级（默认1），流得更短
+                    .tickRate(10);            // 流体更新间隔10 tick（比水的5更慢）
         }
         return VOID_PROPS;
     }
-
-
-    /**
-     * 返回虚空流体的 FluidProperties，供 BaseFlowingFluid 内部使用。
-     * 此方法在静态初始化后由 ModBlocks/ModItems 的 VOID_FLUID_BLOCK/BUCKET 引用。
-     */
-//    public static BaseFlowingFluid.Properties makeFluidProperties() {
-//        return new BaseFlowingFluid.Properties(
-//                VOID_FLUID_TYPE,
-//                VOID_FLUID_SOURCE,
-//                VOID_FLUID_FLOWING)
-//                .block(ModBlocks.VOID_FLUID_BLOCK)    // 关联方块（延迟引用）
-//                .bucket(ModItems.VOID_BUCKET);        // 关联桶物品（延迟引用）
-//    }
 }

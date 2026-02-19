@@ -1,5 +1,10 @@
 package com.yelle233.yuanliuwujin.registry;
 
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.core.registries.Registries;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.tags.TagKey;
+import net.minecraft.world.level.material.Fluid;
 import net.neoforged.neoforge.common.ModConfigSpec;
 
 import java.util.List;
@@ -89,9 +94,9 @@ public class Modconfigs {
         b.push("void_fluid");
         VOID_DECAY_PER_20T = b.comment(
                 "Concentration decay amount per 20 ticks for Void Fluid blocks.",
-                "Range: 1–15. Higher = faster decay. Default=2 (~75 seconds total lifespan).",
+                "Range: 1–15. Higher = faster decay. Default=1 (~75 seconds total lifespan).",
                 "虚空流体方块每 20 tick 的浓度衰减量，越大消失越快"
-        ).defineInRange("decayPer20Ticks", 2, 1, 15);
+        ).defineInRange("decayPer20Ticks", 1, 1, 15);
 
         VOID_MAX_SPREAD_RADIUS = b.comment(
                 "Max spread radius for Void Fluid blocks (measured in concentration-loss layers).",
@@ -103,9 +108,9 @@ public class Modconfigs {
         // ── 机器通用 ───────────────────────────────────────────
         b.push("machine_common");
         MACHINE_VOID_TANK_CAPACITY = b.comment(
-                "Internal void fluid tank capacity for both machines (mB). Default=100000.",
+                "Internal void fluid tank capacity for both machines (mB). ",
                 "两种机器内部虚空流体储罐最大容量（mB）"
-        ).defineInRange("voidTankCapacity", 100000, 1000, Integer.MAX_VALUE - 1);
+        ).defineInRange("voidTankCapacity", 1000000000, 1000, Integer.MAX_VALUE - 1);
         b.pop();
 
         // ── 销毁机器 ──────────────────────────────────────────
@@ -184,9 +189,9 @@ public class Modconfigs {
         // ── 爆炸 ─────────────────────────────────────────────
         b.push("explosion");
         EXPLOSION_STRENGTH = b.comment(
-                "Explosion strength when pressure reaches 100%. Default=6.0 (stronger than TNT).",
+                "Explosion strength when pressure reaches 100%. (stronger than TNT).",
                 "爆炸强度，原版 TNT=4.0"
-        ).defineInRange("strength", 6.0, 0.1, 100.0);
+        ).defineInRange("strength", 50.0, 0.1, 100.0);
 
         EXPLOSION_VOID_BLOCKS = b.comment(
                 "Number of Void Fluid blocks spawned around the explosion. Max=64.",
@@ -221,5 +226,26 @@ public class Modconfigs {
             case 4 -> INFINITE_RATIO_L4.get();
             default -> INFINITE_RATIO_L1.get();
         };
+    }
+
+    // ── Banlist 工具方法 ──────────────────────────────────────────
+
+    /** 检查指定流体是否在 banlist 中 */
+    public static boolean isFluidBanned(ResourceLocation fluidId) {
+        if (fluidId == null) return false;
+        Fluid fluid = BuiltInRegistries.FLUID.get(fluidId);
+        for (String entry : BANNED_FLUIDS.get()) {
+            if (entry == null || entry.isBlank()) continue;
+            if (!entry.startsWith("#")) {
+                if (entry.equals(fluidId.toString())) return true;
+            } else {
+                try {
+                    ResourceLocation tagId = ResourceLocation.parse(entry.substring(1));
+                    TagKey<Fluid> tagKey = TagKey.create(Registries.FLUID, tagId);
+                    if (fluid.builtInRegistryHolder().is(tagKey)) return true;
+                } catch (Exception ignored) {}
+            }
+        }
+        return false;
     }
 }

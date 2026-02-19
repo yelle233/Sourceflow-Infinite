@@ -465,6 +465,7 @@ public class DestructionMachineBlockEntity extends BlockEntity implements ICoreM
         tag.put("energy", serializeEnergy());
         tag.put("voidTank", voidTank.writeToNBT(registries, new CompoundTag()));
         tag.putFloat("pressure", pressure);
+        tag.putBoolean("lastCanWork", lastTickCanWork);
         // 面模式
         CompoundTag modesTag = new CompoundTag();
         sideModes.forEach((dir, mode) -> modesTag.putString(dir.getName(), mode.name()));
@@ -483,6 +484,7 @@ public class DestructionMachineBlockEntity extends BlockEntity implements ICoreM
         rebuildVoidTank();
         if (tag.contains("voidTank")) voidTank.readFromNBT(registries, tag.getCompound("voidTank"));
         pressure = tag.getFloat("pressure");
+        lastTickCanWork = tag.getBoolean("lastCanWork");
         // 面模式
         CompoundTag modesTag = tag.getCompound("sideModes");
         for (Direction dir : Direction.values()) {
