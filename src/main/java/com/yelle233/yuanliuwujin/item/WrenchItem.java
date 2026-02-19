@@ -19,25 +19,25 @@ import net.minecraft.world.level.block.entity.BlockEntity;
 /**
  * 扳手物品，用于操作无限流体机器和销毁机器。
  * <p>
- * 通过 {@link ICoreMachine} 接口统一处理两种机器，无需重复逻辑。
- * 两种模式（通过潜行+滚轮切换）：
+ * <b>两种模式（Shift+滚轮切换）：</b>
  * <ul>
- *   <li><b>IO 模式</b>：非潜行右键从副手插入对应核心，潜行右键取出核心</li>
- *   <li><b>CONFIG 模式</b>：右键点击面循环切换该面的模式</li>
+ *   <li><b>IO 模式</b>：非潜行右键 → 从副手插入核心；潜行右键 → 取出核心</li>
+ *   <li><b>CONFIG 模式</b>：右键侧面 → 循环切换面模式（OFF/PUSH/BOTH 或 OFF/PULL/BOTH）</li>
+ *   <li>CONFIG 模式下，潜行右键侧面 → 速率 +10（单击）或持续增加（长按）</li>
+ *   <li>CONFIG 模式下，Shift+滚轮上 → 速率 +1000；Shift+滚轮下 → 速率 -1000</li>
  * </ul>
+ * <p>
+ * 长按逻辑在客户端通过 {@link com.yelle233.yuanliuwujin.SourceflowInfiniteClient} 处理，
+ * 此处 {@code useOn} 只处理单次点击。
  */
 public class WrenchItem extends Item {
 
-    public WrenchItem(Properties props) {
-        super(props);
-    }
+    public WrenchItem(Properties props) { super(props); }
 
-    /* ====== 扳手模式枚举 ====== */
+    // ── 扳手模式枚举 ──────────────────────────────────────────
 
     public enum WrenchMode {
-        IO,
-        CONFIG;
-
+        IO, CONFIG;
         public WrenchMode next(int delta) {
             int i = (this.ordinal() + (delta > 0 ? 1 : -1) + values().length) % values().length;
             return values()[i];
@@ -51,11 +51,8 @@ public class WrenchItem extends Item {
         if (data == null) return WrenchMode.IO;
         CompoundTag tag = data.copyTag();
         if (!tag.contains(TAG_MODE)) return WrenchMode.IO;
-        try {
-            return WrenchMode.valueOf(tag.getString(TAG_MODE));
-        } catch (IllegalArgumentException e) {
-            return WrenchMode.IO;
-        }
+        try { return WrenchMode.valueOf(tag.getString(TAG_MODE)); }
+        catch (IllegalArgumentException e) { return WrenchMode.IO; }
     }
 
     public static void setMode(ItemStack stack, WrenchMode mode) {
@@ -66,7 +63,7 @@ public class WrenchItem extends Item {
         });
     }
 
-    /* ====== 右键交互 ====== */
+    // ── 右键交互 ──────────────────────────────────────────────
 
     @Override
     public InteractionResult useOn(UseOnContext ctx) {
@@ -75,73 +72,65 @@ public class WrenchItem extends Item {
 
         BlockPos pos = ctx.getClickedPos();
         BlockEntity be = level.getBlockEntity(pos);
-
-        // ── 通过 ICoreMachine 接口统一处理两种机器 ──
-        if (!(be instanceof ICoreMachine machine)) {
-            return InteractionResult.PASS;
-        }
+        if (!(be instanceof ICoreMachine machine)) return InteractionResult.PASS;
 
         Player player = ctx.getPlayer();
         if (player == null) return InteractionResult.PASS;
 
         WrenchMode mode = getMode(ctx.getItemInHand());
-        Direction face  = ctx.getClickedFace();
+        Direction face = ctx.getClickedFace();
 
         return (mode == WrenchMode.IO)
                 ? handleIOMode(level, pos, player, machine)
-                : handleConfigMode(level, pos, player, machine, face);
+                : handleConfigMode(level, pos, player, machine, face, player.isShiftKeyDown());
     }
 
-    /* ====== IO 模式：插入/取出核心 ====== */
+    // ── IO 模式 ────────────────────────────────────────────────
 
-    /**
-     * 处理 IO 模式交互。
-     * <p>
-     * 利用 {@link ICoreMachine#isValidCoreItem(Item)} 判断副手物品是否为
-     * 当前机器对应的核心类型，实现两种机器的差异化核心插入限制。
-     */
-    private InteractionResult handleIOMode(Level level, BlockPos pos, Player player,
-                                            ICoreMachine machine) {
+    private InteractionResult handleIOMode(Level level, BlockPos pos,
+                                            Player player, ICoreMachine machine) {
+        var coreSlot = machine.getCoreSlot();
+
         if (player.isShiftKeyDown()) {
-            // 潜行：取出核心
-            ItemStack core = machine.getCoreSlot().getStackInSlot(0);
-            if (core.isEmpty()) return InteractionResult.PASS;
-
-            machine.getCoreSlot().setStackInSlot(0, ItemStack.EMPTY);
-            machine.onCoreChanged(); // 内部已调用 setChanged()
-            player.addItem(core);
-
-            level.playSound(null, pos, SoundEvents.ITEM_PICKUP, SoundSource.BLOCKS, 0.6f, 1.0f);
+            // 取出核心
+            ItemStack inSlot = coreSlot.getStackInSlot(0);
+            if (inSlot.isEmpty()) return InteractionResult.FAIL;
+            if (!player.getInventory().add(inSlot.copy())) {
+                player.drop(inSlot.copy(), false);
+            }
+            coreSlot.setStackInSlot(0, ItemStack.EMPTY);
+            level.playSound(null, pos, SoundEvents.ITEM_PICKUP, SoundSource.BLOCKS, 1f, 1f);
+            return InteractionResult.SUCCESS;
+        } else {
+            // 从副手插入核心
+            ItemStack offhand = player.getOffhandItem();
+            if (offhand.isEmpty()) return InteractionResult.PASS;
+            if (!machine.isValidCoreItem(offhand.getItem())) return InteractionResult.PASS;
+            if (!coreSlot.getStackInSlot(0).isEmpty()) return InteractionResult.FAIL;
+            ItemStack toInsert = offhand.split(1);
+            coreSlot.setStackInSlot(0, toInsert);
+            level.playSound(null, pos, SoundEvents.ARMOR_EQUIP_IRON.value(), SoundSource.BLOCKS, 1f, 1f);
             return InteractionResult.SUCCESS;
         }
-
-        // 非潜行：从副手插入核心
-        ItemStack offhand = player.getOffhandItem();
-
-        // isValidCoreItem() 由各机器自行实现，确保类型匹配：
-        // 无限流体机器 → InfiniteCoreItem；销毁机器 → DestructionCoreItem
-        if (!machine.isValidCoreItem(offhand.getItem())) return InteractionResult.PASS;
-        if (!machine.getCoreSlot().getStackInSlot(0).isEmpty()) return InteractionResult.PASS;
-
-        ItemStack toInsert = offhand.copy();
-        toInsert.setCount(1);
-        machine.getCoreSlot().setStackInSlot(0, toInsert);
-        machine.onCoreChanged();
-        offhand.shrink(1);
-
-        level.playSound(null, pos, SoundEvents.IRON_TRAPDOOR_CLOSE, SoundSource.BLOCKS, 0.8f, 1.0f);
-        return InteractionResult.SUCCESS;
     }
 
-    /* ====== CONFIG 模式：切换面模式 ====== */
+    // ── CONFIG 模式 ────────────────────────────────────────────
 
-    private InteractionResult handleConfigMode(Level level, BlockPos pos, Player player,
-                                               ICoreMachine machine, Direction face) {
-        // 顶面不可配置（用于接收能量）
-        if (face == Direction.UP) return InteractionResult.PASS;
+    private InteractionResult handleConfigMode(Level level, BlockPos pos,
+                                                Player player, ICoreMachine machine,
+                                                Direction face, boolean sneaking) {
+        // 顶面、底面不参与 CONFIG 操作
+        if (face == Direction.UP || face == Direction.DOWN) return InteractionResult.PASS;
 
-        machine.cycleSideMode(face);
-        level.playSound(null, pos, SoundEvents.WOODEN_TRAPDOOR_OPEN, SoundSource.PLAYERS, 0.5f, 1.0f);
+        if (sneaking) {
+            // 潜行右键：速率 +10（单次点击；长按由客户端持续发包）
+            machine.adjustFaceRate(face, 10);
+            level.playSound(null, pos, SoundEvents.UI_BUTTON_CLICK.value(), SoundSource.BLOCKS, 0.3f, 1.2f);
+        } else {
+            // 非潜行右键：循环切换面模式
+            machine.cycleSideMode(face);
+            level.playSound(null, pos, SoundEvents.LEVER_CLICK, SoundSource.BLOCKS, 0.6f, 1.0f);
+        }
         return InteractionResult.SUCCESS;
     }
 }

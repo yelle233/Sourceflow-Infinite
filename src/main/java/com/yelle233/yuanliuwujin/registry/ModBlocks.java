@@ -3,9 +3,12 @@ package com.yelle233.yuanliuwujin.registry;
 import com.yelle233.yuanliuwujin.SourceflowInfinite;
 import com.yelle233.yuanliuwujin.block.DestructionMachineBlock;
 import com.yelle233.yuanliuwujin.block.InfiniteFluidMachineBlock;
+import com.yelle233.yuanliuwujin.block.VoidFluidBlock;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.SoundType;
+import net.minecraft.world.level.block.state.BlockBehaviour;
 import net.minecraft.world.level.material.MapColor;
 import net.neoforged.neoforge.registries.DeferredBlock;
 import net.neoforged.neoforge.registries.DeferredRegister;
@@ -20,54 +23,65 @@ public class ModBlocks {
     public static final DeferredRegister.Blocks BLOCKS =
             DeferredRegister.createBlocks(SourceflowInfinite.MODID);
 
-    /** 无限流体机器方块 */
+    // ── 无限流体机器 ──────────────────────────────────────────
     public static final DeferredBlock<Block> INFINITE_FLUID_MACHINE =
             registerBlock("infinite_fluid_machine",
                     () -> new InfiniteFluidMachineBlock(
                             Block.Properties.of()
                                     .mapColor(MapColor.METAL)
                                     .strength(3.0F, 6.0F)
-                                    .lightLevel(state -> state.getValue(InfiniteFluidMachineBlock.LIT) ? 8 : 0)
+                                    .lightLevel(s -> s.getValue(InfiniteFluidMachineBlock.LIT) ? 8 : 0)
                                     .noOcclusion()
-                                    .requiresCorrectToolForDrops()
-                    ));
+                                    .requiresCorrectToolForDrops()));
 
-    /** 无限核心装饰方块（仅用于 BER 渲染机器内部的旋转核心） */
     public static final DeferredBlock<Block> INFINITE_CORE_BLOCK =
-            registerBlock("infinite_core_block",
-                    () -> new Block(Block.Properties.of()));
+            registerBlock("infinite_core_block", () -> new Block(Block.Properties.of()));
 
-    // ===== 销毁机器（新增） =====
-
-    /**
-     * 销毁机器方块。
-     * 使用深色地图颜色与无限流体机器区分，同样在插入核心时发光。
-     */
+    // ── 销毁机器 ──────────────────────────────────────────────
     public static final DeferredBlock<Block> DESTRUCTION_MACHINE =
             registerBlock("destruction_machine",
                     () -> new DestructionMachineBlock(
                             Block.Properties.of()
-                                    .mapColor(MapColor.DEEPSLATE)  // 深色，视觉上区别于无限流体机器
+                                    .mapColor(MapColor.DEEPSLATE)
                                     .strength(3.0F, 6.0F)
-                                    .lightLevel(state -> state.getValue(DestructionMachineBlock.LIT) ? 4 : 0)
+                                    .lightLevel(s -> s.getValue(DestructionMachineBlock.LIT) ? 4 : 0)
                                     .noOcclusion()
-                                    .requiresCorrectToolForDrops()
+                                    .requiresCorrectToolForDrops()));
+
+    public static final DeferredBlock<Block> DESTRUCTION_CORE_BLOCK =
+            registerBlock("destruction_core_block", () -> new Block(Block.Properties.of()));
+
+    // ── 虚空流体方块 ──────────────────────────────────────────
+    /**
+     * 虚空流体的世界方块表现形式。
+     * <p>
+     * <b>注意</b>：此方块不应出现在创造栏，仅在机器爆炸时由代码生成。
+     * 玩家可用桶收集虚空流体（会填充 VOID_BUCKET），或让其自然消散。
+     */
+    public static final DeferredBlock<VoidFluidBlock> VOID_FLUID_BLOCK =
+            BLOCKS.register("void_fluid",
+                    () -> new VoidFluidBlock(
+                            (net.minecraft.world.level.material.FlowingFluid) ModFluids.VOID_FLUID_FLOWING.get(),
+                            BlockBehaviour.Properties.of()
+                                    .mapColor(MapColor.COLOR_PURPLE)
+                                    .replaceable()
+                                    .noCollission()
+                                    .strength(100.0F)
+                                    .pushReaction(net.minecraft.world.level.material.PushReaction.DESTROY)
+                                    .noLootTable()
+                                    .randomTicks()
+                                    .sound(SoundType.EMPTY)
+                                    .lightLevel(s -> 2)
                     ));
 
-    /**
-     * 销毁核心装饰方块（仅用于 BER 渲染销毁机器内部的旋转核心）。
-     * 不会出现在玩家背包中（通过 registerBlock 自动注册了 BlockItem，
-     * 但不会加入创造栏，可在 ModTab 中选择性添加）。
-     */
-    public static final DeferredBlock<Block> DESTRUCTION_CORE_BLOCK =
-            registerBlock("destruction_core_block",
-                    () -> new Block(Block.Properties.of()));
 
-    /* ====== 辅助方法：同时注册方块和 BlockItem ====== */
+    // 注意：VOID_FLUID_BLOCK 不注册 BlockItem，玩家不能在背包中持有方块形式
+
+    // ── 辅助方法 ──────────────────────────────────────────────
 
     private static <T extends Block> DeferredBlock<T> registerBlock(
-            String name, Supplier<T> blockSupplier) {
-        DeferredBlock<T> block = BLOCKS.register(name, blockSupplier);
+            String name, Supplier<T> supplier) {
+        DeferredBlock<T> block = BLOCKS.register(name, supplier);
         ModItems.ITEMS.register(name,
                 () -> new BlockItem(block.get(), new Item.Properties()));
         return block;
