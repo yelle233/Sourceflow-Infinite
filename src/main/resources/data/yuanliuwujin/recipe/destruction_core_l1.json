@@ -13,11 +13,11 @@
       "item": "minecraft:glass"
     },
     "N": {
-      "item": "minecraft:ender_pearl"
+      "item": "minecraft:ender_eye"
     }
   },
   "result": {
-    "id": "yuanliuwujin:infinite_core",
+    "id": "yuanliuwujin:destruction_core_l1",
     "count": 1
   }
 }

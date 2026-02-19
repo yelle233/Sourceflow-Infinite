@@ -12,44 +12,43 @@ import net.neoforged.neoforge.registries.DeferredRegister;
 
 /**
  * 物品注册表。
- * <p>
- * 核心物品各只注册一次，等级通过 DataComponent {@code CORE_LEVEL} 区分。
- * 创造栏（ModTab）应展示 1–4 级的核心（包括超频版本）。
+ * 各等级核心（含超频）均为独立注册物品。
  */
 public class ModItems {
 
     public static final DeferredRegister.Items ITEMS =
             DeferredRegister.createItems(SourceflowInfinite.MODID);
 
-    // ── 无限核心（绑定流体/化学品后产出） ────────────────────────
-    public static final DeferredItem<Item> INFINITE_CORE =
-            ITEMS.register("infinite_core",
-                    () -> new InfiniteCoreItem(new Item.Properties().stacksTo(1)));
+    // ── 无限核心（5 个独立物品） ────────────────────────
+    public static final DeferredItem<Item> INFINITE_CORE_L1 = ITEMS.register("infinite_core_l1",
+            () -> new InfiniteCoreItem(new Item.Properties().stacksTo(1), 1, false));
+    public static final DeferredItem<Item> INFINITE_CORE_L2 = ITEMS.register("infinite_core_l2",
+            () -> new InfiniteCoreItem(new Item.Properties().stacksTo(1), 2, false));
+    public static final DeferredItem<Item> INFINITE_CORE_L3 = ITEMS.register("infinite_core_l3",
+            () -> new InfiniteCoreItem(new Item.Properties().stacksTo(1), 3, false));
+    public static final DeferredItem<Item> INFINITE_CORE_L4 = ITEMS.register("infinite_core_l4",
+            () -> new InfiniteCoreItem(new Item.Properties().stacksTo(1), 4, false));
+    public static final DeferredItem<Item> INFINITE_CORE_L4_OC = ITEMS.register("infinite_core_l4_oc",
+            () -> new InfiniteCoreItem(new Item.Properties().stacksTo(1), 4, true));
 
-    // ── 销毁核心（销毁任意流体，转化为虚空流体） ─────────────────
-    public static final DeferredItem<Item> DESTRUCTION_CORE =
-            ITEMS.register("destruction_core",
-                    () -> new DestructionCoreItem(new Item.Properties().stacksTo(1)));
+    // ── 销毁核心（5 个独立物品） ────────────────────────
+    public static final DeferredItem<Item> DESTRUCTION_CORE_L1 = ITEMS.register("destruction_core_l1",
+            () -> new DestructionCoreItem(new Item.Properties().stacksTo(1), 1, false));
+    public static final DeferredItem<Item> DESTRUCTION_CORE_L2 = ITEMS.register("destruction_core_l2",
+            () -> new DestructionCoreItem(new Item.Properties().stacksTo(1), 2, false));
+    public static final DeferredItem<Item> DESTRUCTION_CORE_L3 = ITEMS.register("destruction_core_l3",
+            () -> new DestructionCoreItem(new Item.Properties().stacksTo(1), 3, false));
+    public static final DeferredItem<Item> DESTRUCTION_CORE_L4 = ITEMS.register("destruction_core_l4",
+            () -> new DestructionCoreItem(new Item.Properties().stacksTo(1), 4, false));
+    public static final DeferredItem<Item> DESTRUCTION_CORE_L4_OC = ITEMS.register("destruction_core_l4_oc",
+            () -> new DestructionCoreItem(new Item.Properties().stacksTo(1), 4, true));
 
-    // ── 扳手 ──────────────────────────────────────────────────
-    public static final DeferredItem<Item> WRENCH =
-            ITEMS.register("wrench",
-                    () -> new WrenchItem(new Item.Properties().stacksTo(1)));
+    // ── 扳手 ──
+    public static final DeferredItem<Item> WRENCH = ITEMS.register("wrench",
+            () -> new WrenchItem(new Item.Properties().stacksTo(1)));
 
-    /**
-     * 虚空流体桶。
-     * <p>
-     * 玩家可用空桶右键收集地面上的虚空流体，也可将桶内虚空流体倒入管道/储罐，
-     * 或用来手动填充机器的虚空储罐（虽然量较少）。
-     * <b>警告</b>：将虚空流体倒出到地面将产生有破坏性的虚空流体方块。
-     */
-    public static final DeferredItem<Item> VOID_BUCKET =
-            ITEMS.register("void_bucket",
-                    () -> new BucketItem(
-                            ModFluids.VOID_FLUID_SOURCE.get(),
-                            new Item.Properties()
-                                    .stacksTo(1)
-                                    .craftRemainder(Items.BUCKET)
-                    ));
-
+    // ── 虚空流体桶 ──
+    public static final DeferredItem<Item> VOID_BUCKET = ITEMS.register("void_bucket",
+            () -> new BucketItem(ModFluids.VOID_FLUID_SOURCE.get(),
+                    new Item.Properties().stacksTo(1).craftRemainder(Items.BUCKET)));
 }

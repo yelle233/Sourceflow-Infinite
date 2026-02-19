@@ -1,0 +1,10 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": ["DED", "ECE", "DED"],
+  "key": {
+    "C": {"item": "yuanliuwujin:infinite_core_l4"},
+    "D": {"item": "minecraft:dragon_breath"},
+    "E": {"item": "minecraft:end_crystal"}
+  },
+  "result": {"id": "yuanliuwujin:infinite_core_l4_oc", "count": 1}
+}

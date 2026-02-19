@@ -83,18 +83,24 @@ public final class MekChemicalHelper {
 
     public static void pushChemical(Level level, BlockPos pos, Direction dir,
                                      ResourceLocation chemId, long amount) {
+        pushChemicalWithLimit(level, pos, dir, chemId, amount);
+    }
+
+    /**
+     * 向相邻方块推送化学品，返回实际推送量。
+     */
+    public static long pushChemicalWithLimit(Level level, BlockPos pos, Direction dir,
+                                              ResourceLocation chemId, long amount) {
         Chemical chemical = getChemical(chemId);
-        if (chemical == null || amount <= 0) return;
+        if (chemical == null || amount <= 0) return 0;
 
         BlockPos neighborPos = pos.relative(dir);
         IChemicalHandler handler = level.getCapability(CHEMICAL_HANDLER_CAP, neighborPos, dir.getOpposite());
-        if (handler == null) return;
+        if (handler == null) return 0;
 
         ChemicalStack toInsert = chemical.getStack(amount);
-        ChemicalStack remainder = handler.insertChemical(toInsert, Action.SIMULATE);
-        if (remainder.isEmpty() || remainder.getAmount() < amount) {
-            handler.insertChemical(chemical.getStack(amount), Action.EXECUTE);
-        }
+        ChemicalStack remainder = handler.insertChemical(toInsert, Action.EXECUTE);
+        return amount - (remainder.isEmpty() ? 0 : remainder.getAmount());
     }
 
     /* ====== 化学品抽取并销毁（销毁机器 PULL 模式主动抽取） ====== */

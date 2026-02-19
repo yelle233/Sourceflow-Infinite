@@ -38,15 +38,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 
-/**
- * 客户端入口类。
- * <ul>
- *   <li>注册两种机器的 BER</li>
- *   <li>扳手滚轮模式切换</li>
- *   <li>两种机器的准星 HUD 信息面板（含面模式标注）</li>
- *   <li>CONFIG 模式长按/滚轮速率调整</li>
- * </ul>
- */
 @Mod(value = SourceflowInfinite.MODID, dist = Dist.CLIENT)
 @EventBusSubscriber(modid = SourceflowInfinite.MODID, value = Dist.CLIENT)
 public class SourceflowInfiniteClient {
@@ -55,17 +46,11 @@ public class SourceflowInfiniteClient {
         container.registerExtensionPoint(IConfigScreenFactory.class, ConfigurationScreen::new);
     }
 
-    /* ====== BER 注册 ====== */
-
     @SubscribeEvent
     public static void onRegisterRenderers(EntityRenderersEvent.RegisterRenderers event) {
-        event.registerBlockEntityRenderer(
-                ModBlockEntities.INFINITE_FLUID_MACHINE.get(), InfiniteFluidMachineBER::new);
-        event.registerBlockEntityRenderer(
-                ModBlockEntities.DESTRUCTION_MACHINE.get(), DestructionMachineBER::new);
+        event.registerBlockEntityRenderer(ModBlockEntities.INFINITE_FLUID_MACHINE.get(), InfiniteFluidMachineBER::new);
+        event.registerBlockEntityRenderer(ModBlockEntities.DESTRUCTION_MACHINE.get(), DestructionMachineBER::new);
     }
-
-    /* ====== 扳手滚轮 ====== */
 
     @SubscribeEvent
     public static void onMouseScroll(InputEvent.MouseScrollingEvent event) {
@@ -75,8 +60,6 @@ public class SourceflowInfiniteClient {
         if (!(player.getMainHandItem().getItem() instanceof WrenchItem)) return;
         double scrollY = event.getScrollDeltaY();
         if (scrollY == 0) return;
-
-        // CONFIG 模式下：调整面速率 ±1000
         if (WrenchItem.getMode(player.getMainHandItem()) == WrenchItem.WrenchMode.CONFIG) {
             HitResult hit = mc.hitResult;
             if (hit != null && hit.getType() == HitResult.Type.BLOCK) {
@@ -89,13 +72,9 @@ public class SourceflowInfiniteClient {
                 }
             }
         }
-
-        // 否则切换扳手模式
         PacketDistributor.sendToServer(new WrenchModeScrollPayload(scrollY > 0 ? 1 : -1));
         event.setCanceled(true);
     }
-
-    /* ====== 长按逻辑状态 ====== */
 
     private static boolean rightMouseHeld = false;
     private static int holdTicks = 0;
@@ -110,24 +89,16 @@ public class SourceflowInfiniteClient {
         if (!(player.getMainHandItem().getItem() instanceof WrenchItem)) return;
         if (WrenchItem.getMode(player.getMainHandItem()) != WrenchItem.WrenchMode.CONFIG) return;
         if (!player.isShiftKeyDown()) return;
-
         if (event.getButton() == 1) {
-            if (event.getAction() == 1) { // 按下
+            if (event.getAction() == 1) {
                 HitResult hit = mc.hitResult;
                 if (hit != null && hit.getType() == HitResult.Type.BLOCK) {
                     Direction face = ((BlockHitResult) hit).getDirection();
                     if (face != Direction.UP && face != Direction.DOWN) {
-                        rightMouseHeld = true;
-                        holdTicks = 0;
-                        lastSentTick = 0;
-                        heldFace = face;
+                        rightMouseHeld = true; holdTicks = 0; lastSentTick = 0; heldFace = face;
                     }
                 }
-            } else if (event.getAction() == 0) { // 松开
-                rightMouseHeld = false;
-                holdTicks = 0;
-                heldFace = null;
-            }
+            } else if (event.getAction() == 0) { rightMouseHeld = false; holdTicks = 0; heldFace = null; }
         }
     }
 
@@ -137,27 +108,15 @@ public class SourceflowInfiniteClient {
         Minecraft mc = Minecraft.getInstance();
         LocalPlayer player = mc.player;
         if (player == null) return;
-        if (!(player.getMainHandItem().getItem() instanceof WrenchItem)) {
-            rightMouseHeld = false;
-            return;
-        }
+        if (!(player.getMainHandItem().getItem() instanceof WrenchItem)) { rightMouseHeld = false; return; }
         if (!player.isShiftKeyDown()) return;
-
-        holdTicks++;
-        lastSentTick++;
-
-        int interval;
-        if (holdTicks < 20) interval = 10;
-        else if (holdTicks < 60) interval = 5;
-        else interval = 2;
-
+        holdTicks++; lastSentTick++;
+        int interval = holdTicks < 20 ? 10 : holdTicks < 60 ? 5 : 2;
         if (lastSentTick >= interval) {
             lastSentTick = 0;
             PacketDistributor.sendToServer(new FaceRateUpdatePayload(heldFace, 10));
         }
     }
-
-    /* ====== HUD（旧风格面板） ====== */
 
     @SubscribeEvent
     public static void onRenderGui(RenderGuiEvent.Post event) {
@@ -169,35 +128,22 @@ public class SourceflowInfiniteClient {
         if (!(hit instanceof BlockHitResult bhr)) return;
         BlockPos pos = bhr.getBlockPos();
         Object be = mc.level.getBlockEntity(pos);
-
-        if (be instanceof InfiniteFluidMachineBlockEntity inf) {
-            renderInfiniteMachineHud(event.getGuiGraphics(), mc, inf);
-        } else if (be instanceof DestructionMachineBlockEntity dest) {
-            renderDestructionMachineHud(event.getGuiGraphics(), mc, dest);
-        }
+        if (be instanceof InfiniteFluidMachineBlockEntity inf) renderInfiniteMachineHud(event.getGuiGraphics(), mc, inf);
+        else if (be instanceof DestructionMachineBlockEntity dest) renderDestructionMachineHud(event.getGuiGraphics(), mc, dest);
     }
 
-    /* ====== 无限流体机器 HUD ====== */
-
-    private static void renderInfiniteMachineHud(GuiGraphics gg, Minecraft mc,
-                                                  InfiniteFluidMachineBlockEntity machine) {
-        long energy     = machine.getEnergyStorage().getEnergyStored();
-        long capacity   = machine.getEnergyStorage().getMaxEnergyStored();
+    private static void renderInfiniteMachineHud(GuiGraphics gg, Minecraft mc, InfiniteFluidMachineBlockEntity machine) {
+        long energy = machine.getEnergyStorage().getEnergyStored();
+        long capacity = machine.getEnergyStorage().getMaxEnergyStored();
         boolean hasCore = !machine.getCoreSlot().getStackInSlot(0).isEmpty();
-        BindType bindType     = machine.getCoreBindType();
+        BindType bindType = machine.getCoreBindType();
         Component substanceName = machine.getBoundSubstanceName();
 
         Component displayName;
-        if (substanceName == null) {
-            displayName = Component.translatable("hud.sourceflowinfinite.none")
-                    .withStyle(ChatFormatting.DARK_GRAY);
-        } else if (bindType == BindType.CHEMICAL) {
-            displayName = substanceName.copy().withStyle(ChatFormatting.LIGHT_PURPLE);
-        } else {
-            displayName = substanceName.copy().withStyle(ChatFormatting.AQUA);
-        }
+        if (substanceName == null) displayName = Component.translatable("hud.sourceflowinfinite.none").withStyle(ChatFormatting.DARK_GRAY);
+        else if (bindType == BindType.CHEMICAL) displayName = substanceName.copy().withStyle(ChatFormatting.LIGHT_PURPLE);
+        else displayName = substanceName.copy().withStyle(ChatFormatting.AQUA);
 
-        // ── 统计激活面 ──
         StringBuilder facesShort = new StringBuilder();
         int enabledFaces = 0;
         for (Direction d : Direction.values()) {
@@ -206,83 +152,56 @@ public class SourceflowInfiniteClient {
             if (mode != SideMode.PULL && mode != SideMode.BOTH) continue;
             enabledFaces++;
             if (!facesShort.isEmpty()) facesShort.append(' ');
-            facesShort.append(dirShort(d))
-                      .append(mode == SideMode.PULL ? "(P)" : "(B)");
-            // 如果持有扳手，附加速率
+            facesShort.append(dirShort(d)).append(mode == SideMode.PULL ? "(P)" : "(B)");
             if (mc.player != null && mc.player.getMainHandItem().getItem() instanceof WrenchItem) {
-                facesShort.append(':').append(machine.getFaceRate(d));
+                facesShort.append(':').append(machine.getFaceRate(d)).append("/s");
             }
         }
 
-        String typeLabel = switch (bindType) {
-            case FLUID    -> "§b[Fluid]§r ";
-            case CHEMICAL -> "§d[Chemical]§r ";
-            default       -> "";
-        };
+        String typeLabel = switch (bindType) { case FLUID -> "§b[Fluid]§r "; case CHEMICAL -> "§d[Chemical]§r "; default -> ""; };
 
         List<Component> lines = new ArrayList<>();
-        lines.add(Component.translatable("hud.sourceflowinfinite.energy",
-                compactFE(energy), compactFE(capacity)).withStyle(ChatFormatting.WHITE));
+        lines.add(Component.translatable("hud.sourceflowinfinite.energy", compactFE(energy), compactFE(capacity)).withStyle(ChatFormatting.WHITE));
+
+        // ★ 实时耗电显示
+        int fePerTick = machine.getLastTickFEConsumed();
+        long fePerSecond = (long) fePerTick * 20;
+        lines.add(Component.translatable("hud.sourceflowinfinite.cost", compactFE(fePerSecond), compactFE(fePerTick)).withStyle(ChatFormatting.GOLD));
+
         lines.add(Component.translatable("hud.sourceflowinfinite.core",
-                Component.translatable(hasCore
-                        ? "hud.sourceflowinfinite.core.inserted"
-                        : "hud.sourceflowinfinite.core.missing")
+                Component.translatable(hasCore ? "hud.sourceflowinfinite.core.inserted" : "hud.sourceflowinfinite.core.missing")
                         .withStyle(hasCore ? ChatFormatting.GREEN : ChatFormatting.RED)));
-        lines.add(Component.translatable("hud.sourceflowinfinite.fluid",
-                Component.literal(typeLabel).append(displayName)));
+        lines.add(Component.translatable("hud.sourceflowinfinite.fluid", Component.literal(typeLabel).append(displayName)));
 
-        // 虚空流体储罐（新增）
         var vt = machine.getVoidTank();
-        lines.add(Component.translatable("hud.yuanliuwujin.void_tank",
-                compactFE(vt.getFluidAmount()), compactFE(vt.getCapacity()))
-                .withStyle(ChatFormatting.DARK_PURPLE));
+        lines.add(Component.translatable("hud.yuanliuwujin.void_tank", compactMB(vt.getFluidAmount()), compactMB(vt.getCapacity())).withStyle(ChatFormatting.DARK_PURPLE));
 
-        // 超频信息（新增）
         if (hasCore) {
             var cs = machine.getCoreSlot().getStackInSlot(0);
-            int lvl = InfiniteCoreItem.getLevel(cs);
             boolean oc = InfiniteCoreItem.isOverclocked(cs);
             if (oc) {
                 float p = machine.getPressure();
-                ChatFormatting pColor = p < 50 ? ChatFormatting.GREEN
-                        : p < 80 ? ChatFormatting.YELLOW : ChatFormatting.RED;
-                lines.add(Component.translatable("hud.yuanliuwujin.pressure",
-                        String.format("%.1f%%", p)).withStyle(pColor));
+                ChatFormatting pColor = p < 50 ? ChatFormatting.GREEN : p < 80 ? ChatFormatting.YELLOW : ChatFormatting.RED;
+                lines.add(Component.translatable("hud.yuanliuwujin.pressure", String.format("%.1f%%", p)).withStyle(pColor));
             }
         }
 
-        Component facesLine = Component.translatable("hud.sourceflowinfinite.faces",
-                enabledFaces,
-                enabledFaces == 0
-                        ? Component.translatable("hud.sourceflowinfinite.none")
-                                .withStyle(ChatFormatting.DARK_GRAY)
-                        : Component.literal(facesShort.toString()).withStyle(ChatFormatting.GREEN)
-        ).withStyle(ChatFormatting.WHITE);
+        Component facesLine = Component.translatable("hud.sourceflowinfinite.faces", enabledFaces,
+                enabledFaces == 0 ? Component.translatable("hud.sourceflowinfinite.none").withStyle(ChatFormatting.DARK_GRAY) : Component.literal(facesShort.toString()).withStyle(ChatFormatting.GREEN)).withStyle(ChatFormatting.WHITE);
 
         renderHudPanel(gg, mc, lines, facesLine);
     }
 
-    /* ====== 销毁机器 HUD ====== */
-
-    private static void renderDestructionMachineHud(GuiGraphics gg, Minecraft mc,
-                                                     DestructionMachineBlockEntity machine) {
-        long energy     = machine.getEnergyStorage().getEnergyStored();
-        long capacity   = machine.getEnergyStorage().getMaxEnergyStored();
+    private static void renderDestructionMachineHud(GuiGraphics gg, Minecraft mc, DestructionMachineBlockEntity machine) {
+        long energy = machine.getEnergyStorage().getEnergyStored();
+        long capacity = machine.getEnergyStorage().getMaxEnergyStored();
         boolean hasCore = !machine.getCoreSlot().getStackInSlot(0).isEmpty();
 
         Component statusComp;
-        if (!hasCore) {
-            statusComp = Component.translatable("hud.yuanliuwujin.destruction.no_core")
-                    .withStyle(ChatFormatting.GRAY);
-        } else if (energy <= 0) {
-            statusComp = Component.translatable("hud.yuanliuwujin.destruction.no_power")
-                    .withStyle(ChatFormatting.RED);
-        } else {
-            statusComp = Component.translatable("hud.yuanliuwujin.destruction.active")
-                    .withStyle(ChatFormatting.GREEN);
-        }
+        if (!hasCore) statusComp = Component.translatable("hud.yuanliuwujin.destruction.no_core").withStyle(ChatFormatting.GRAY);
+        else if (energy <= 0) statusComp = Component.translatable("hud.yuanliuwujin.destruction.no_power").withStyle(ChatFormatting.RED);
+        else statusComp = Component.translatable("hud.yuanliuwujin.destruction.active").withStyle(ChatFormatting.GREEN);
 
-        // ── 统计激活面 ──
         StringBuilder facesShort = new StringBuilder();
         int enabledFaces = 0;
         for (Direction d : Direction.values()) {
@@ -291,67 +210,53 @@ public class SourceflowInfiniteClient {
             if (mode == DestructionMachineBlockEntity.SideMode.OFF) continue;
             enabledFaces++;
             if (!facesShort.isEmpty()) facesShort.append(' ');
-            facesShort.append(dirShort(d))
-                      .append(mode == DestructionMachineBlockEntity.SideMode.PUSH ? "(P)" : "(B)");
+            facesShort.append(dirShort(d)).append(mode == DestructionMachineBlockEntity.SideMode.PUSH ? "(P)" : "(B)");
             if (mc.player != null && mc.player.getMainHandItem().getItem() instanceof WrenchItem) {
-                facesShort.append(':').append(machine.getFaceRate(d));
+                facesShort.append(':').append(machine.getFaceRate(d)).append("/s");
             }
         }
 
         List<Component> lines = new ArrayList<>();
-        lines.add(Component.translatable("hud.sourceflowinfinite.energy",
-                compactFE(energy), compactFE(capacity)).withStyle(ChatFormatting.WHITE));
+        lines.add(Component.translatable("hud.sourceflowinfinite.energy", compactFE(energy), compactFE(capacity)).withStyle(ChatFormatting.WHITE));
+
+        // ★ 实时耗电显示
+        int fePerTick = machine.getLastTickFEConsumed();
+        long fePerSecond = (long) fePerTick * 20;
+        lines.add(Component.translatable("hud.sourceflowinfinite.cost", compactFE(fePerSecond), compactFE(fePerTick)).withStyle(ChatFormatting.GOLD));
+
         lines.add(Component.translatable("hud.sourceflowinfinite.core",
-                Component.translatable(hasCore
-                        ? "hud.sourceflowinfinite.core.inserted"
-                        : "hud.sourceflowinfinite.core.missing")
+                Component.translatable(hasCore ? "hud.sourceflowinfinite.core.inserted" : "hud.sourceflowinfinite.core.missing")
                         .withStyle(hasCore ? ChatFormatting.GREEN : ChatFormatting.RED)));
         lines.add(Component.translatable("hud.yuanliuwujin.destruction.status_label", statusComp));
 
-        // 虚空流体储罐（新增）
         var vt = machine.getVoidTank();
-        lines.add(Component.translatable("hud.yuanliuwujin.void_tank",
-                compactFE(vt.getFluidAmount()), compactFE(vt.getCapacity()))
-                .withStyle(ChatFormatting.DARK_PURPLE));
+        lines.add(Component.translatable("hud.yuanliuwujin.void_tank", compactMB(vt.getFluidAmount()), compactMB(vt.getCapacity())).withStyle(ChatFormatting.DARK_PURPLE));
 
-        // 超频信息（新增）
         if (hasCore) {
             var cs = machine.getCoreSlot().getStackInSlot(0);
-            int lvl = com.yelle233.yuanliuwujin.item.DestructionCoreItem.getLevel(cs);
             boolean oc = com.yelle233.yuanliuwujin.item.DestructionCoreItem.isOverclocked(cs);
             if (oc) {
                 float p = machine.getPressure();
-                ChatFormatting pColor = p < 50 ? ChatFormatting.GREEN
-                        : p < 80 ? ChatFormatting.YELLOW : ChatFormatting.RED;
-                lines.add(Component.translatable("hud.yuanliuwujin.pressure",
-                        String.format("%.1f%%", p)).withStyle(pColor));
+                ChatFormatting pColor = p < 50 ? ChatFormatting.GREEN : p < 80 ? ChatFormatting.YELLOW : ChatFormatting.RED;
+                lines.add(Component.translatable("hud.yuanliuwujin.pressure", String.format("%.1f%%", p)).withStyle(pColor));
             }
         }
 
-        Component facesLine = Component.translatable("hud.sourceflowinfinite.faces",
-                enabledFaces,
-                enabledFaces == 0
-                        ? Component.translatable("hud.sourceflowinfinite.none")
-                                .withStyle(ChatFormatting.DARK_GRAY)
-                        : Component.literal(facesShort.toString()).withStyle(ChatFormatting.AQUA)
-        ).withStyle(ChatFormatting.WHITE);
+        Component facesLine = Component.translatable("hud.sourceflowinfinite.faces", enabledFaces,
+                enabledFaces == 0 ? Component.translatable("hud.sourceflowinfinite.none").withStyle(ChatFormatting.DARK_GRAY) : Component.literal(facesShort.toString()).withStyle(ChatFormatting.AQUA)).withStyle(ChatFormatting.WHITE);
 
         renderHudPanel(gg, mc, lines, facesLine);
     }
 
-    /* ====== HUD 面板绘制（两种机器共用，旧风格） ====== */
-
-    private static void renderHudPanel(GuiGraphics gg, Minecraft mc,
-                                        List<Component> mainLines, Component facesLine) {
+    private static void renderHudPanel(GuiGraphics gg, Minecraft mc, List<Component> mainLines, Component facesLine) {
         int padding = 4, gap = 2, maxWidth = 220, lh = mc.font.lineHeight;
         int innerMax = 0;
         for (Component c : mainLines) innerMax = Math.max(innerMax, mc.font.width(c));
         List<FormattedCharSequence> faceSeqs = mc.font.split(facesLine, maxWidth - padding * 2);
-        for (FormattedCharSequence seq : faceSeqs)
-            innerMax = Math.max(innerMax, mc.font.width(seq));
+        for (FormattedCharSequence seq : faceSeqs) innerMax = Math.max(innerMax, mc.font.width(seq));
         int panelW = Math.min(innerMax + padding * 2, maxWidth);
         faceSeqs = mc.font.split(facesLine, panelW - padding * 2);
-        int mainH  = mainLines.size() * lh + (mainLines.size() - 1) * gap;
+        int mainH = mainLines.size() * lh + (mainLines.size() - 1) * gap;
         int facesH = faceSeqs.size() * lh + (faceSeqs.size() - 1) * gap;
         int panelH = padding * 2 + mainH + 5 + facesH;
         int screenW = mc.getWindow().getGuiScaledWidth();
@@ -361,39 +266,34 @@ public class SourceflowInfiniteClient {
         gg.fill(x - 1, y - 1, x + panelW + 1, y + panelH + 1, 0x22FFFFFF);
         gg.fill(x, y, x + panelW, y + panelH, 0x55000000);
         int ty = y + padding;
-        for (Component c : mainLines) {
-            gg.drawString(mc.font, c, x + padding, ty, 0xFFFFFF, false);
-            ty += lh + gap;
-        }
+        for (Component c : mainLines) { gg.drawString(mc.font, c, x + padding, ty, 0xFFFFFF, false); ty += lh + gap; }
         ty += 1;
         gg.fill(x + padding, ty, x + panelW - padding, ty + 1, 0x22FFFFFF);
         ty += 3;
-        for (FormattedCharSequence seq : faceSeqs) {
-            gg.drawString(mc.font, seq, x + padding, ty, 0xFFFFFF, false);
-            ty += lh + gap;
-        }
+        for (FormattedCharSequence seq : faceSeqs) { gg.drawString(mc.font, seq, x + padding, ty, 0xFFFFFF, false); ty += lh + gap; }
     }
 
-    /* ====== 工具方法 ====== */
-
-    private static String dirShort(Direction d) {
-        return switch (d) {
-            case NORTH -> "N"; case SOUTH -> "S";
-            case WEST  -> "W"; case EAST  -> "E";
-            case DOWN  -> "D"; default    -> "?";
-        };
-    }
-
+    private static String dirShort(Direction d) { return switch (d) { case NORTH -> "N"; case SOUTH -> "S"; case WEST -> "W"; case EAST -> "E"; case DOWN -> "D"; default -> "?"; }; }
+    /** 紧凑 FE 显示（纯数值，不含单位） */
     private static String compactFE(long value) {
-        if (value < 1_000L)             return Long.toString(value);
-        if (value < 1_000_000L)         return formatDecimal(value / 1_000.0) + "k";
-        if (value < 1_000_000_000L)     return formatDecimal(value / 1_000_000.0) + "M";
+        if (value < 1_000L) return Long.toString(value);
+        if (value < 1_000_000L) return formatDecimal(value / 1_000.0) + "k";
+        if (value < 1_000_000_000L) return formatDecimal(value / 1_000_000.0) + "M";
         if (value < 1_000_000_000_000L) return formatDecimal(value / 1_000_000_000.0) + "G";
         return formatDecimal(value / 1_000_000_000_000.0) + "T";
     }
-
-    private static String formatDecimal(double d) {
-        String s = String.format(Locale.ROOT, "%.1f", d);
-        return s.endsWith(".0") ? s.substring(0, s.length() - 2) : s;
+    /**
+     * 紧凑流体量显示（mB 输入，以 B 桶为基础单位，与 Jade 一致）。
+     * < 1000 mB → 显示为 "X mB"
+     * >= 1000 mB → 转换为 B 桶再缩写：B, kB, MB, GB
+     */
+    private static String compactMB(long mb) {
+        if (mb < 1_000L) return mb + " mB";
+        double buckets = mb / 1_000.0;
+        if (buckets < 1_000.0) return formatDecimal(buckets) + " B";
+        if (buckets < 1_000_000.0) return formatDecimal(buckets / 1_000.0) + " kB";
+        if (buckets < 1_000_000_000.0) return formatDecimal(buckets / 1_000_000.0) + " MB";
+        return formatDecimal(buckets / 1_000_000_000.0) + " GB";
     }
+    private static String formatDecimal(double d) { String s = String.format(Locale.ROOT, "%.1f", d); return s.endsWith(".0") ? s.substring(0, s.length() - 2) : s; }
 }

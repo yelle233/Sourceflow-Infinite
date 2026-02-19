@@ -1,0 +1,10 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [" S ", "NCN", " S "],
+  "key": {
+    "C": {"item": "yuanliuwujin:destruction_core_l3"},
+    "S": {"item": "minecraft:nether_star"},
+    "N": {"item": "minecraft:netherite_ingot"}
+  },
+  "result": {"id": "yuanliuwujin:destruction_core_l4", "count": 1}
+}

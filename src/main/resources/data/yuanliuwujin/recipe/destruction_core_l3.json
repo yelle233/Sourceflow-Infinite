@@ -1,0 +1,10 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": ["BEB", "ECE", "BEB"],
+  "key": {
+    "C": {"item": "yuanliuwujin:destruction_core_l2"},
+    "E": {"item": "minecraft:emerald"},
+    "B": {"item": "minecraft:blaze_rod"}
+  },
+  "result": {"id": "yuanliuwujin:destruction_core_l3", "count": 1}
+}
