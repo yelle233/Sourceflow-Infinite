@@ -335,7 +335,7 @@ public class InfiniteFluidMachineBlockEntity extends BlockEntity implements ICor
         SideMode next = switch (getSideMode(dir)) { case OFF -> SideMode.PULL; case PULL -> SideMode.BOTH; case BOTH -> SideMode.OFF; };
         sideModes.put(dir, next); notifyCapabilityChanged(dir);
     }
-    @Override public void onCoreChanged() { if (level == null) return; pressure = 0.0f; setChanged(); syncToClient(); boolean dirty = !getBlockState().getValue(InfiniteFluidMachineBlock.DIRTY); level.setBlock(worldPosition, getBlockState().setValue(InfiniteFluidMachineBlock.DIRTY, dirty), 3); }
+    @Override public void onCoreChanged() { if (level == null) return; pressure = 0.0f; setChanged(); syncToClient(); level.invalidateCapabilities(worldPosition); boolean dirty = !getBlockState().getValue(InfiniteFluidMachineBlock.DIRTY); level.setBlock(worldPosition, getBlockState().setValue(InfiniteFluidMachineBlock.DIRTY, dirty), 3); }
     @Override public boolean isValidCoreItem(Item item) { return item instanceof InfiniteCoreItem; }
     @Override public int getFaceRate(Direction dir) { if (dir == Direction.UP || dir == Direction.DOWN) return Integer.MAX_VALUE - 1; return faceRates.getOrDefault(dir, 20); }
     @Override public void adjustFaceRate(Direction dir, int delta) {
@@ -354,7 +354,7 @@ public class InfiniteFluidMachineBlockEntity extends BlockEntity implements ICor
     @Nullable public Object getInfiniteChemicalOutput() { return chemOutput; }
     public int getFluidBudgetRemaining() { return fluidBudgetRemaining; }
 
-    private void notifyCapabilityChanged(Direction dir) { if (level == null) return; setChanged(); syncToClient(); boolean dirty = !getBlockState().getValue(InfiniteFluidMachineBlock.DIRTY); level.setBlock(worldPosition, getBlockState().setValue(InfiniteFluidMachineBlock.DIRTY, dirty), 3); }
+    private void notifyCapabilityChanged(Direction dir) { if (level == null) return; setChanged(); syncToClient(); level.invalidateCapabilities(worldPosition); boolean dirty = !getBlockState().getValue(InfiniteFluidMachineBlock.DIRTY); level.setBlock(worldPosition, getBlockState().setValue(InfiniteFluidMachineBlock.DIRTY, dirty), 3); }
 
     // ── NBT ──
     @Override protected void saveAdditional(CompoundTag tag, HolderLookup.Provider registries) {

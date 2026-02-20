@@ -301,7 +301,7 @@ public class DestructionMachineBlockEntity extends BlockEntity implements ICoreM
         SideMode next = switch (getSideMode(dir)) { case OFF -> SideMode.PUSH; case PUSH -> SideMode.BOTH; case BOTH -> SideMode.OFF; };
         sideModes.put(dir, next); notifyCapabilityChanged(dir);
     }
-    @Override public void onCoreChanged() { if (level == null) return; pressure = 0.0f; setChanged(); syncToClient(); boolean dirty = !getBlockState().getValue(DestructionMachineBlock.DIRTY); level.setBlock(worldPosition, getBlockState().setValue(DestructionMachineBlock.DIRTY, dirty), 3); }
+    @Override public void onCoreChanged() { if (level == null) return; pressure = 0.0f; setChanged(); syncToClient(); level.invalidateCapabilities(worldPosition); boolean dirty = !getBlockState().getValue(DestructionMachineBlock.DIRTY); level.setBlock(worldPosition, getBlockState().setValue(DestructionMachineBlock.DIRTY, dirty), 3); }
     @Override public boolean isValidCoreItem(Item item) { return item instanceof DestructionCoreItem; }
     @Override public int getFaceRate(Direction dir) { if (dir == Direction.UP || dir == Direction.DOWN) return Integer.MAX_VALUE - 1; return faceRates.getOrDefault(dir, 20); }
     @Override public void adjustFaceRate(Direction dir, int delta) {
@@ -319,7 +319,7 @@ public class DestructionMachineBlockEntity extends BlockEntity implements ICoreM
     public int getLastTickFEConsumed() { return lastTickFEConsumed; }
     @Nullable public Object getChemSink() { return chemSink; }
 
-    private void notifyCapabilityChanged(Direction dir) { if (level == null) return; setChanged(); syncToClient(); boolean dirty = !getBlockState().getValue(DestructionMachineBlock.DIRTY); level.setBlock(worldPosition, getBlockState().setValue(DestructionMachineBlock.DIRTY, dirty), 3); }
+    private void notifyCapabilityChanged(Direction dir) { if (level == null) return; setChanged(); syncToClient(); level.invalidateCapabilities(worldPosition); boolean dirty = !getBlockState().getValue(DestructionMachineBlock.DIRTY); level.setBlock(worldPosition, getBlockState().setValue(DestructionMachineBlock.DIRTY, dirty), 3); }
 
     // ── NBT ──
     @Override protected void saveAdditional(CompoundTag tag, HolderLookup.Provider registries) {
