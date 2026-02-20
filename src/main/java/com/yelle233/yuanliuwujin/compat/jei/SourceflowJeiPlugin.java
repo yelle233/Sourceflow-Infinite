@@ -23,13 +23,12 @@ import java.util.List;
 /**
  * 源流无尽 JEI 插件。
  * <p>
- * 注册配方分类：
+ * 分类栏：
  * <ul>
- *   <li>销毁机器：任意流体 → 虚空流体</li>
- *   <li>无限流体机器：虚空流体 → 任意流体</li>
- *   <li>（Mekanism 可选）销毁机器：化学品 → 虚空流体</li>
- *   <li>（Mekanism 可选）无限流体机器：虚空流体 → 化学品</li>
+ *   <li>销毁机器：任意流体或化学品 → 虚空流体</li>
+ *   <li>无限流体机器：虚空流体 → 任意流体或化学品</li>
  * </ul>
+ * 化学品配方（需要 Mekanism）合并进相同分类栏，无单独化学品栏。
  */
 @JeiPlugin
 public class SourceflowJeiPlugin implements IModPlugin {
@@ -45,15 +44,10 @@ public class SourceflowJeiPlugin implements IModPlugin {
     @Override
     public void registerCategories(IRecipeCategoryRegistration registration) {
         var guiHelper = registration.getJeiHelpers().getGuiHelper();
-
-        // 流体配方分类（始终注册）
+        // 只有两个分类栏，始终注册
         registration.addRecipeCategories(new DestructionCategory(guiHelper));
         registration.addRecipeCategories(new InfiniteCategory(guiHelper));
-
-        // Mekanism 化学品配方分类（仅在 Mekanism 加载时注册）
-        if (MekanismChecker.isLoaded()) {
-            com.yelle233.yuanliuwujin.compat.mekanism.MekJeiHelper.registerCategories(registration);
-        }
+        // 化学品配方合并进以上两栏，无需额外分类
     }
 
     @Override
@@ -62,32 +56,19 @@ public class SourceflowJeiPlugin implements IModPlugin {
                 DestructionCategory.RECIPE_TYPE);
         registration.addRecipeCatalyst(new ItemStack(ModBlocks.INFINITE_FLUID_MACHINE.get()),
                 InfiniteCategory.RECIPE_TYPE);
-
-        if (MekanismChecker.isLoaded()) {
-            com.yelle233.yuanliuwujin.compat.mekanism.MekJeiHelper.registerCatalysts(registration);
-        }
     }
 
     @Override
     public void registerRecipes(IRecipeRegistration registration) {
         // ── 流体配方 ──
-        registerFluidRecipes(registration);
+        List<ConversionRecipe> destructionRecipes = new ArrayList<>();
+        List<ConversionRecipe> infiniteRecipes    = new ArrayList<>();
 
-        // ── Mekanism 化学品配方（可选） ──
-        if (MekanismChecker.isLoaded()) {
-            com.yelle233.yuanliuwujin.compat.mekanism.MekJeiHelper.registerRecipes(registration);
-        }
-    }
-
-    private void registerFluidRecipes(IRecipeRegistration registration) {
-        List<FluidConversionRecipe> destructionRecipes = new ArrayList<>();
-        List<FluidConversionRecipe> infiniteRecipes = new ArrayList<>();
-
-        Fluid voidSource = ModFluids.VOID_FLUID_SOURCE.get();
+        Fluid voidSource  = ModFluids.VOID_FLUID_SOURCE.get();
         Fluid voidFlowing = ModFluids.VOID_FLUID_FLOWING.get();
 
-        int destroyRatio = safeGetRatio(Modconfigs.DESTROY_RATIO_L1, 1000);
-        int infiniteRatio = safeGetRatio(Modconfigs.INFINITE_RATIO_L1, 1000);
+        int destroyRatio  = Modconfigs.DESTROY_RATIO_L1.get();
+        int infiniteRatio = Modconfigs.INFINITE_RATIO_L1.get();
 
         for (Fluid fluid : BuiltInRegistries.FLUID) {
             if (fluid == Fluids.EMPTY) continue;
@@ -97,27 +78,22 @@ public class SourceflowJeiPlugin implements IModPlugin {
             ResourceLocation fluidId = BuiltInRegistries.FLUID.getKey(fluid);
             if (Modconfigs.isFluidBanned(fluidId)) continue;
 
-            destructionRecipes.add(new FluidConversionRecipe(
-                    new FluidStack(fluid, destroyRatio),
+            destructionRecipes.add(new ConversionRecipe(
+                    new FluidStack(fluid, destroyRatio), null,
                     new FluidStack(voidSource, 1)
             ));
-
-            infiniteRecipes.add(new FluidConversionRecipe(
-                    new FluidStack(voidSource, infiniteRatio),
-                    new FluidStack(fluid, 1)
+            infiniteRecipes.add(new ConversionRecipe(
+                    new FluidStack(fluid, 1), null,
+                    new FluidStack(voidSource, infiniteRatio)
             ));
         }
 
         registration.addRecipes(DestructionCategory.RECIPE_TYPE, destructionRecipes);
         registration.addRecipes(InfiniteCategory.RECIPE_TYPE, infiniteRecipes);
-    }
 
-    private static int safeGetRatio(Object configValue, int defaultValue) {
-        try {
-            if (configValue instanceof net.neoforged.neoforge.common.ModConfigSpec.IntValue intValue) {
-                return intValue.get();
-            }
-        } catch (Exception ignored) {}
-        return defaultValue;
+        // ── Mekanism 化学品配方（合并进同一分类栏） ──
+        if (MekanismChecker.isLoaded()) {
+            com.yelle233.yuanliuwujin.compat.mekanism.MekJeiHelper.registerRecipes(registration);
+        }
     }
 }

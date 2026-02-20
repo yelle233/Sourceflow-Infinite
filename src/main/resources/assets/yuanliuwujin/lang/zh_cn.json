@@ -3,7 +3,6 @@
   "block.yuanliuwujin.infinite_fluid_machine": "无限流体机器",
   "fluid_type.yuanliuwujin.void_fluid": "虚空流体",
   "block.yuanliuwujin.void_fluid": "虚空流体",
-
   "item.yuanliuwujin.infinite_core_l1": "无限核心 Lv.1",
   "item.yuanliuwujin.infinite_core_l2": "无限核心 Lv.2",
   "item.yuanliuwujin.infinite_core_l3": "无限核心 Lv.3",
@@ -16,15 +15,12 @@
   "item.yuanliuwujin.destruction_core_l4_oc": "销毁核心 Lv.4 ★超频",
   "item.yuanliuwujin.wrench": "扳手",
   "item.yuanliuwujin.void_bucket": "虚空流体桶",
-
   "itemgroup.infinitewater": "源流无尽",
-
   "msg.yuanliuwujin.wrench_mode": "模式",
   "mode.yuanliuwujin.wrench.io": "装配模式",
   "mode.yuanliuwujin.wrench.config": "配置模式",
   "msg.yuanliuwujin.face_rate": "%s 面速率：%d mB/s",
   "msg.yuanliuwujin.unbind_disabled": "生存模式下禁止取消绑定。",
-
   "hud.sourceflowinfinite.none": "无",
   "hud.sourceflowinfinite.energy": "能量 %s/%s FE",
   "hud.sourceflowinfinite.cost": "耗电 %s FE/s（%s FE/t）",
@@ -33,14 +29,12 @@
   "hud.sourceflowinfinite.core.missing": "缺失",
   "hud.sourceflowinfinite.fluid": "绑定流体 %s",
   "hud.sourceflowinfinite.faces": "启用面（%s）%s",
-
   "hud.yuanliuwujin.void_tank": "虚空储罐 %s / %s",
   "hud.yuanliuwujin.pressure": "压力 %s",
   "hud.yuanliuwujin.destruction.active": "运行中",
   "hud.yuanliuwujin.destruction.no_power": "能量不足",
   "hud.yuanliuwujin.destruction.no_core": "未插入核心",
   "hud.yuanliuwujin.destruction.status_label": "状态：%s",
-
   "tooltip.yuanliuwujin.core_level": "等级：%s",
   "tooltip.yuanliuwujin.core.unbound": "未绑定流体",
   "tooltip.yuanliuwujin.core.bound": "已绑定：%s",
@@ -59,13 +53,8 @@
   "tooltip.yuanliuwujin.destruction_core.hint": "使用扳手插入至销毁机器",
   "tooltip.yuanliuwujin.overclock_warning": "⚠ 超频状态：机器将积累压力并可能爆炸！",
   "tooltip.fluid_banned": "已禁用：%s",
-
   "death.attack.void_fluid": "%1$s 被虚空吞噬",
-
   "jei.yuanliuwujin.category.destruction": "销毁机器",
   "jei.yuanliuwujin.category.infinite": "无限流体机器",
-  "jei.yuanliuwujin.ratio_header": "转换比:",
-
-  "jei.yuanliuwujin.category.chemical_destruction": "销毁机器（化学品）",
-  "jei.yuanliuwujin.category.chemical_infinite": "无限流体机器（化学品）"
+  "jei.yuanliuwujin.ratio_header": "转换比:"
 }

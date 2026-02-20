@@ -64,8 +64,5 @@
 
   "jei.yuanliuwujin.category.destruction": "Destruction Machine",
   "jei.yuanliuwujin.category.infinite": "Infinite Fluid Machine",
-  "jei.yuanliuwujin.ratio_header": "Ratios:",
-
-  "jei.yuanliuwujin.category.chemical_destruction": "Destruction Machine (Chemical)",
-  "jei.yuanliuwujin.category.chemical_infinite": "Infinite Fluid Machine (Chemical)"
+  "jei.yuanliuwujin.ratio_header": "Ratios:"
 }
