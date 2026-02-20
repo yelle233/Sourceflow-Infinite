@@ -4,9 +4,13 @@ import com.yelle233.yuanliuwujin.registry.ModBlocks;
 import com.yelle233.yuanliuwujin.registry.Modconfigs;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.core.registries.Registries;
+import net.minecraft.resources.ResourceKey;
+import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.util.RandomSource;
 import net.minecraft.world.damagesource.DamageSource;
+import net.minecraft.world.damagesource.DamageType;
 import net.minecraft.world.entity.Entity;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.level.Level;
@@ -41,6 +45,12 @@ public class VoidFluidBlock extends LiquidBlock {
 
     /** 浓度属性（1-15），决定流体的"寿命"。恩惠期后逐步衰减至 0 时方块消失。 */
     public static final IntegerProperty CONCENTRATION = IntegerProperty.create("concentration", 1, 15);
+
+
+    /** 自定义伤害类型：虚空流体伤害 */
+    public static final ResourceKey<DamageType> VOID_FLUID_DAMAGE_TYPE =
+            ResourceKey.create(Registries.DAMAGE_TYPE,
+                    ResourceLocation.fromNamespaceAndPath("yuanliuwujin", "void_fluid"));
 
     /**
      * 记录每个虚空流体方块的"出生时间"（gameTime），用于判断恩惠期是否结束。
@@ -269,13 +279,13 @@ public class VoidFluidBlock extends LiquidBlock {
     @Override
     public void entityInside(BlockState state, Level level, BlockPos pos, Entity entity) {
         if (level.isClientSide) return;
-        if (entity instanceof ItemEntity) {
-            entity.discard();
-            return;
-        }
-        DamageSource voidDamage = level.damageSources().fellOutOfWorld();
+        if (entity instanceof ItemEntity) { entity.discard(); return; }
+        DamageSource voidDamage = new DamageSource(
+                level.registryAccess()
+                        .registryOrThrow(Registries.DAMAGE_TYPE)
+                        .getHolderOrThrow(VOID_FLUID_DAMAGE_TYPE));
         entity.hurt(voidDamage, Float.MAX_VALUE);
-        if (entity.isAlive()) entity.discard();
+        if (entity.isAlive()) entity.kill();  // 安全兜底，绝不用 discard() 以免卡死
     }
 
     // ═══════════════════════════════════════════════════════════════

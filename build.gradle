@@ -22,6 +22,7 @@ repositories {
     maven {
         url "https://cursemaven.com"
     }
+    maven { url "https://maven.blamejared.com" }
 }
 
 base {
@@ -139,6 +140,9 @@ dependencies {
 
     compileOnly "curse.maven:Mekanism-268560:7132168"
     runtimeOnly "curse.maven:Mekanism-268560:7132168"
+
+    compileOnly "curse.maven:jei-238222:7391682"
+    runtimeOnly "curse.maven:jei-238222:7391682"
 
 }
 

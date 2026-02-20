@@ -8,7 +8,7 @@
   "item.yuanliuwujin.infinite_core_l2": "Infinite Core Lv.2",
   "item.yuanliuwujin.infinite_core_l3": "Infinite Core Lv.3",
   "item.yuanliuwujin.infinite_core_l4": "Infinite Core Lv.4",
-  "item.yuanliuwujin.infinite_core_l4_oc": "Infinite Core Lv.4 ★OC",
+  "item.yuanliuwujin.infinite_core_l4_oc": "Infinite Core ★OC",
   "item.yuanliuwujin.destruction_core_l1": "Destruction Core Lv.1",
   "item.yuanliuwujin.destruction_core_l2": "Destruction Core Lv.2",
   "item.yuanliuwujin.destruction_core_l3": "Destruction Core Lv.3",
@@ -60,5 +60,12 @@
   "tooltip.yuanliuwujin.overclock_warning": "⚠ OVERCLOCKED: Machine will accumulate pressure!",
   "tooltip.fluid_banned": "Banned fluid: %s",
 
-  "death.attack.void_fluid": "%1$s was consumed by the void"
+  "death.attack.void_fluid": "%1$s was consumed by the void",
+
+  "jei.yuanliuwujin.category.destruction": "Destruction Machine",
+  "jei.yuanliuwujin.category.infinite": "Infinite Fluid Machine",
+  "jei.yuanliuwujin.ratio_header": "Ratios:",
+
+  "jei.yuanliuwujin.category.chemical_destruction": "Destruction Machine (Chemical)",
+  "jei.yuanliuwujin.category.chemical_infinite": "Infinite Fluid Machine (Chemical)"
 }

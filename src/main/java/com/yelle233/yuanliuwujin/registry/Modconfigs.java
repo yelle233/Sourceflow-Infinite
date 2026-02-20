@@ -103,21 +103,21 @@ public class Modconfigs {
                 "Concentration decay per scheduled tick."
         ).defineInRange("decayPer20Ticks", 1, 1, 15);
         VOID_MAX_SPREAD_RADIUS = b.comment(
-                "虚空流体最大扩散半径（范围 0-14，默认 4）",
+                "虚空流体最大扩散半径（范围 0-14，默认 14）",
                 "Max spread radius in concentration layers."
-        ).defineInRange("maxSpreadRadius", 4, 0, 14);
+        ).defineInRange("maxSpreadRadius", 14, 0, 14);
         VOID_DECAY_INTERVAL = b.comment(
                 "虚空流体方块浓度衰减调度间隔（tick，默认 40）",
                 "Void fluid block decay scheduled tick interval."
         ).defineInRange("decayInterval", 40, 10, 200);
         VOID_GRACE_PERIOD = b.comment(
-                "虚空流体活跃阶段（恩惠期）持续时间（tick，默认 200 = 10 秒）。在此期间虚空流体只扩散和销毁方块，不会衰减浓度。",
+                "虚空流体活跃阶段（恩惠期）持续时间（tick，默认 400 = 20 秒）。在此期间虚空流体只扩散和销毁方块，不会衰减浓度。",
                 "Grace period (ticks) before void fluid starts decaying. During this time it only spreads and destroys."
-        ).defineInRange("gracePeriod", 200, 0, 6000);
+        ).defineInRange("gracePeriod", 400, 0, 6000);
         VOID_SPREAD_INTERVAL = b.comment(
-                "虚空流体活跃阶段扩散/销毁的调度间隔（tick，默认 5），越小扩散和销毁方块越快",
+                "虚空流体活跃阶段扩散/销毁的调度间隔（tick，默认 10），越小扩散和销毁方块越快",
                 "Spread/destroy tick interval during grace period. Lower = faster."
-        ).defineInRange("spreadInterval", 5, 1, 100);
+        ).defineInRange("spreadInterval", 10, 1, 100);
         b.pop();
 
         b.comment("机器通用设置 / Machine Common Settings").push("machine_common");

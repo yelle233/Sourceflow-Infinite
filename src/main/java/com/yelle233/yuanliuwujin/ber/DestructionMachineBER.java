@@ -100,6 +100,8 @@ public class DestructionMachineBER implements BlockEntityRenderer<DestructionMac
                                            Direction face, ResourceLocation texture,
                                            int packedLight, int packedOverlay) {
         VertexConsumer vc = bufferSource.getBuffer(RenderType.entityCutoutNoCull(texture));
+        int fullBright = net.minecraft.client.renderer.LightTexture.FULL_BRIGHT;
+
 
         poseStack.pushPose();
         poseStack.translate(0.5, 0.5, 0.5);
@@ -111,13 +113,13 @@ public class DestructionMachineBER implements BlockEntityRenderer<DestructionMac
 
         // 绘制覆盖面（2x2 四边形）
         vc.addVertex(mat, -1, -1, 0).setColor(255, 255, 255, 255)
-                .setUv(0, 1).setOverlay(packedOverlay).setLight(packedLight).setNormal(pose, 0, 0, 1);
+                .setUv(0, 1).setOverlay(packedOverlay).setLight(fullBright).setNormal(pose, 0, 0, 1);
         vc.addVertex(mat,  1, -1, 0).setColor(255, 255, 255, 255)
-                .setUv(1, 1).setOverlay(packedOverlay).setLight(packedLight).setNormal(pose, 0, 0, 1);
+                .setUv(1, 1).setOverlay(packedOverlay).setLight(fullBright).setNormal(pose, 0, 0, 1);
         vc.addVertex(mat,  1,  1, 0).setColor(255, 255, 255, 255)
-                .setUv(1, 0).setOverlay(packedOverlay).setLight(packedLight).setNormal(pose, 0, 0, 1);
+                .setUv(1, 0).setOverlay(packedOverlay).setLight(fullBright).setNormal(pose, 0, 0, 1);
         vc.addVertex(mat, -1,  1, 0).setColor(255, 255, 255, 255)
-                .setUv(0, 0).setOverlay(packedOverlay).setLight(packedLight).setNormal(pose, 0, 0, 1);
+                .setUv(0, 0).setOverlay(packedOverlay).setLight(fullBright).setNormal(pose, 0, 0, 1);
 
         poseStack.popPose();
     }

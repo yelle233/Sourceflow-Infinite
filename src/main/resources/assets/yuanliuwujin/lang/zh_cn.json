@@ -8,7 +8,7 @@
   "item.yuanliuwujin.infinite_core_l2": "无限核心 Lv.2",
   "item.yuanliuwujin.infinite_core_l3": "无限核心 Lv.3",
   "item.yuanliuwujin.infinite_core_l4": "无限核心 Lv.4",
-  "item.yuanliuwujin.infinite_core_l4_oc": "无限核心 Lv.4 ★超频",
+  "item.yuanliuwujin.infinite_core_l4_oc": "无限核心 ★超频",
   "item.yuanliuwujin.destruction_core_l1": "销毁核心 Lv.1",
   "item.yuanliuwujin.destruction_core_l2": "销毁核心 Lv.2",
   "item.yuanliuwujin.destruction_core_l3": "销毁核心 Lv.3",
@@ -60,5 +60,12 @@
   "tooltip.yuanliuwujin.overclock_warning": "⚠ 超频状态：机器将积累压力并可能爆炸！",
   "tooltip.fluid_banned": "已禁用：%s",
 
-  "death.attack.void_fluid": "%1$s 被虚空吞噬"
+  "death.attack.void_fluid": "%1$s 被虚空吞噬",
+
+  "jei.yuanliuwujin.category.destruction": "销毁机器",
+  "jei.yuanliuwujin.category.infinite": "无限流体机器",
+  "jei.yuanliuwujin.ratio_header": "转换比:",
+
+  "jei.yuanliuwujin.category.chemical_destruction": "销毁机器（化学品）",
+  "jei.yuanliuwujin.category.chemical_infinite": "无限流体机器（化学品）"
 }
