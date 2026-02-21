@@ -13,7 +13,7 @@
   "item.yuanliuwujin.destruction_core_l2": "Destruction Core Lv.2",
   "item.yuanliuwujin.destruction_core_l3": "Destruction Core Lv.3",
   "item.yuanliuwujin.destruction_core_l4": "Destruction Core Lv.4",
-  "item.yuanliuwujin.destruction_core_l4_oc": "Destruction Core Lv.4 ★OC",
+  "item.yuanliuwujin.destruction_core_l4_oc": "Destruction Core ★OC",
   "item.yuanliuwujin.wrench": "Wrench",
   "item.yuanliuwujin.void_bucket": "Void Fluid Bucket",
 
@@ -59,8 +59,6 @@
   "tooltip.yuanliuwujin.destruction_core.hint": "Insert into Destruction Machine with Wrench",
   "tooltip.yuanliuwujin.overclock_warning": "⚠ OVERCLOCKED: Machine will accumulate pressure!",
   "tooltip.fluid_banned": "Banned fluid: %s",
-
-  "death.attack.void_fluid": "%1$s was consumed by the void",
 
   "jei.yuanliuwujin.category.destruction": "Destruction Machine",
   "jei.yuanliuwujin.category.infinite": "Infinite Fluid Machine",

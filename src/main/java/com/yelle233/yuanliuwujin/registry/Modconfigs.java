@@ -17,29 +17,42 @@ public class Modconfigs {
 
     public static final ModConfigSpec SPEC;
 
-    // ===== 通用 / 一般设置 =====
+    // =========================================================
+    // 通用设置
+    // =========================================================
+
     /** 核心绑定黑名单（支持流体 ID 和 #tag 格式） */
     public static final ModConfigSpec.ConfigValue<List<? extends String>> BANNED_FLUIDS;
     /** 生存模式下是否允许取消核心绑定 */
     public static final ModConfigSpec.BooleanValue ALLOW_UNBIND_SURVIVAL;
 
-    // ===== 虚空流体 =====
-    /** 虚空流体方块每次调度衰减的浓度值（默认 1，范围 1-15） */
-    public static final ModConfigSpec.IntValue VOID_DECAY_PER_20T;
-    /** 虚空流体最大扩散半径（以浓度衰减层数计，默认 4） */
-    public static final ModConfigSpec.IntValue VOID_MAX_SPREAD_RADIUS;
-    /** 虚空流体方块浓度衰减调度间隔（tick，默认 40） */
-    public static final ModConfigSpec.IntValue VOID_DECAY_INTERVAL;
+    // =========================================================
+    // 虚空流体
+    // =========================================================
+
+    /** 虚空流体流动更新 tick 间隔（越大越慢，默认 20，原版水为 5，岩浆为 40） */
+    public static final ModConfigSpec.IntValue VOID_FLUID_TICK_RATE;
     /** 虚空流体活跃阶段（恩惠期）持续时间（tick，默认 200 = 10 秒），在此期间只扩散/销毁不衰减 */
     public static final ModConfigSpec.IntValue VOID_GRACE_PERIOD;
-    /** 虚空流体活跃阶段扩散/销毁的调度间隔（tick，默认 5），越小扩散越快 */
-    public static final ModConfigSpec.IntValue VOID_SPREAD_INTERVAL;
 
-    // ===== 机器通用 =====
+    /** 虚空流体是否会吞噬相邻方块（默认 true） */
+    public static final ModConfigSpec.BooleanValue VOID_DESTROY_BLOCKS;
+    /** 虚空流体是否会销毁接触到的掉落物品（默认 true） */
+    public static final ModConfigSpec.BooleanValue VOID_KILL_ITEMS;
+    /** 虚空流体是否会杀死接触到的实体（默认 true） */
+    public static final ModConfigSpec.BooleanValue VOID_KILL_ENTITIES;
+
+    // =========================================================
+    // 机器通用
+    // =========================================================
+
     /** 两种机器内部虚空流体储罐最大容量（mB，默认 1000000 = 1000 桶） */
     public static final ModConfigSpec.IntValue MACHINE_VOID_TANK_CAPACITY;
 
-    // ===== 销毁机器 =====
+    // =========================================================
+    // 销毁机器
+    // =========================================================
+
     /** 销毁机器插入核心后每 tick 基础 FE 消耗 */
     public static final ModConfigSpec.IntValue DESTROY_FE_BASE;
     /** 销毁机器每 1 mB/s 面速率额外消耗的 FE/tick */
@@ -55,7 +68,10 @@ public class Modconfigs {
     /** 超频销毁核心转换比（默认 1:1） */
     public static final ModConfigSpec.IntValue DESTROY_RATIO_OC;
 
-    // ===== 无限流体机器 =====
+    // =========================================================
+    // 无限流体机器
+    // =========================================================
+
     /** 无限流体机器插入核心后每 tick 基础 FE 消耗 */
     public static final ModConfigSpec.IntValue INFINITE_FE_BASE;
     /** 无限流体机器每 1 mB/s 面速率额外消耗的 FE/tick */
@@ -71,13 +87,19 @@ public class Modconfigs {
     /** 超频无限核心转换比（默认 1:1） */
     public static final ModConfigSpec.IntValue INFINITE_RATIO_OC;
 
-    // ===== 超频压力 =====
+    // =========================================================
+    // 超频压力
+    // =========================================================
+
     /** 超频核心运行时每 tick 积累的压力百分比 */
     public static final ModConfigSpec.DoubleValue OVERCLOCK_PRESSURE_PER_TICK;
     /** 停机时每 tick 压力衰减百分比 */
     public static final ModConfigSpec.DoubleValue PRESSURE_DECAY_PER_TICK;
 
-    // ===== 爆炸 =====
+    // =========================================================
+    // 爆炸
+    // =========================================================
+
     /** 超频爆炸威力 */
     public static final ModConfigSpec.DoubleValue EXPLOSION_STRENGTH;
     /** 爆炸时生成的虚空流体方块数量 */
@@ -86,10 +108,11 @@ public class Modconfigs {
     static {
         ModConfigSpec.Builder b = new ModConfigSpec.Builder();
 
+        // ── 通用设置 ──────────────────────────────────────────
         b.comment("通用设置 / General Settings").push("common");
         BANNED_FLUIDS = b.comment(
                 "核心绑定黑名单，支持流体 ID（如 minecraft:water）和 tag（如 #forge:milk）",
-                "Ban list for Infinite Core binding. Supports fluid IDs and #tags."
+                "Ban list for core binding. Supports fluid IDs and #tags."
         ).defineListAllowEmpty("banlist", List.of(), o -> o instanceof String s && !s.isBlank());
         ALLOW_UNBIND_SURVIVAL = b.comment(
                 "生存模式下是否允许取消核心绑定（默认 true）",
@@ -97,29 +120,31 @@ public class Modconfigs {
         ).define("allow_unbind_in_survival", true);
         b.pop();
 
+        // ── 虚空流体 ──────────────────────────────────────────
         b.comment("虚空流体设置 / Void Fluid Settings").push("void_fluid");
-        VOID_DECAY_PER_20T = b.comment(
-                "虚空流体每次衰减减少的浓度值（范围 1-15，默认 1）",
-                "Concentration decay per scheduled tick."
-        ).defineInRange("decayPer20Ticks", 1, 1, 15);
-        VOID_MAX_SPREAD_RADIUS = b.comment(
-                "虚空流体最大扩散半径（范围 0-14，默认 14）",
-                "Max spread radius in concentration layers."
-        ).defineInRange("maxSpreadRadius", 14, 0, 14);
-        VOID_DECAY_INTERVAL = b.comment(
-                "虚空流体方块浓度衰减调度间隔（tick，默认 40）",
-                "Void fluid block decay scheduled tick interval."
-        ).defineInRange("decayInterval", 40, 10, 200);
+        VOID_FLUID_TICK_RATE = b.comment(
+                "虚空流体流动更新间隔（tick），越大流动越慢（默认 20，原版水为 5，岩浆为 40）",
+                "Void fluid flow tick rate. Higher = slower. Water=5, Lava=40."
+        ).defineInRange("fluidTickRate", 20, 5, 200);
         VOID_GRACE_PERIOD = b.comment(
-                "虚空流体活跃阶段（恩惠期）持续时间（tick，默认 400 = 20 秒）。在此期间虚空流体只扩散和销毁方块，不会衰减浓度。",
-                "Grace period (ticks) before void fluid starts decaying. During this time it only spreads and destroys."
-        ).defineInRange("gracePeriod", 400, 0, 6000);
-        VOID_SPREAD_INTERVAL = b.comment(
-                "虚空流体活跃阶段扩散/销毁的调度间隔（tick，默认 10），越小扩散和销毁方块越快",
-                "Spread/destroy tick interval during grace period. Lower = faster."
-        ).defineInRange("spreadInterval", 10, 1, 100);
+                "虚空流体活跃阶段（恩惠期）持续时间（tick，默认 200 = 10 秒）。在此期间虚空流体扩散并吞噬方块，之后自然消失。",
+                "Grace period (ticks) before void fluid disappears. During this time it spreads and destroys."
+        ).defineInRange("gracePeriod", 200, 0, 6000);
+        VOID_DESTROY_BLOCKS = b.comment(
+                "虚空流体活跃阶段是否吞噬相邻方块（默认 true）",
+                "Whether void fluid destroys adjacent blocks during grace period."
+        ).define("destroyBlocks", true);
+        VOID_KILL_ITEMS = b.comment(
+                "虚空流体是否销毁接触到的掉落物品（默认 true）",
+                "Whether void fluid destroys item entities on contact."
+        ).define("killItems", true);
+        VOID_KILL_ENTITIES = b.comment(
+                "虚空流体是否杀死接触到的实体（默认 true）",
+                "Whether void fluid kills entities on contact."
+        ).define("killEntities", true);
         b.pop();
 
+        // ── 机器通用 ──────────────────────────────────────────
         b.comment("机器通用设置 / Machine Common Settings").push("machine_common");
         MACHINE_VOID_TANK_CAPACITY = b.comment(
                 "两种机器内部虚空流体储罐最大容量（mB，默认 1000000 = 1000 桶）",
@@ -127,6 +152,7 @@ public class Modconfigs {
         ).defineInRange("voidTankCapacity", 1000000, 1000, Integer.MAX_VALUE - 1);
         b.pop();
 
+        // ── 销毁机器 ──────────────────────────────────────────
         b.comment("销毁机器设置 / Destruction Machine Settings").push("destruction_machine");
         DESTROY_FE_BASE = b.comment(
                 "插入核心后每 tick 基础 FE 消耗（默认 4）",
@@ -137,24 +163,22 @@ public class Modconfigs {
                 "Extra FE/tick per 1 mB/s face rate."
         ).defineInRange("fePerMbRate", 1, 0, Integer.MAX_VALUE - 1);
         DESTROY_RATIO_L1 = b.comment(
-                "Lv.1 销毁核心：消耗 X mB 任意流体 → 1 mB 虚空流体（默认 1000）",
+                "Lv.1：消耗 X mB 任意流体 → 1 mB 虚空流体（默认 1000）",
                 "L1: mB fluid consumed per 1 mB void produced."
         ).defineInRange("ratioLevel1", 1000, 1, Integer.MAX_VALUE - 1);
-        DESTROY_RATIO_L2 = b.comment(
-                "Lv.2 销毁核心转换比（默认 100）"
-        ).defineInRange("ratioLevel2", 100, 1, Integer.MAX_VALUE - 1);
-        DESTROY_RATIO_L3 = b.comment(
-                "Lv.3 销毁核心转换比（默认 10）"
-        ).defineInRange("ratioLevel3", 10, 1, Integer.MAX_VALUE - 1);
-        DESTROY_RATIO_L4 = b.comment(
-                "Lv.4 销毁核心转换比（默认 2）"
-        ).defineInRange("ratioLevel4", 2, 1, Integer.MAX_VALUE - 1);
+        DESTROY_RATIO_L2 = b.comment("Lv.2 转换比（默认 100）")
+                .defineInRange("ratioLevel2", 100, 1, Integer.MAX_VALUE - 1);
+        DESTROY_RATIO_L3 = b.comment("Lv.3 转换比（默认 10）")
+                .defineInRange("ratioLevel3", 10, 1, Integer.MAX_VALUE - 1);
+        DESTROY_RATIO_L4 = b.comment("Lv.4 转换比（默认 2）")
+                .defineInRange("ratioLevel4", 2, 1, Integer.MAX_VALUE - 1);
         DESTROY_RATIO_OC = b.comment(
                 "超频销毁核心转换比（默认 1，即 1:1）",
                 "OC ratio. Default 1 = 1:1 conversion."
         ).defineInRange("ratioOverclock", 1, 1, Integer.MAX_VALUE - 1);
         b.pop();
 
+        // ── 无限流体机器 ──────────────────────────────────────
         b.comment("无限流体机器设置 / Infinite Fluid Machine Settings").push("infinite_fluid_machine");
         INFINITE_FE_BASE = b.comment(
                 "插入核心后每 tick 基础 FE 消耗（默认 2）",
@@ -165,24 +189,22 @@ public class Modconfigs {
                 "Extra FE/tick per 1 mB/s face rate."
         ).defineInRange("fePerMbRate", 1, 0, Integer.MAX_VALUE - 1);
         INFINITE_RATIO_L1 = b.comment(
-                "Lv.1 无限核心：消耗 X mB 虚空流体 → 1 mB 任意流体（默认 1000）",
+                "Lv.1：消耗 X mB 虚空流体 → 1 mB 任意流体（默认 1000）",
                 "L1: mB void consumed per 1 mB fluid produced."
         ).defineInRange("ratioLevel1", 1000, 1, Integer.MAX_VALUE - 1);
-        INFINITE_RATIO_L2 = b.comment(
-                "Lv.2 无限核心转换比（默认 100）"
-        ).defineInRange("ratioLevel2", 100, 1, Integer.MAX_VALUE - 1);
-        INFINITE_RATIO_L3 = b.comment(
-                "Lv.3 无限核心转换比（默认 10）"
-        ).defineInRange("ratioLevel3", 10, 1, Integer.MAX_VALUE - 1);
-        INFINITE_RATIO_L4 = b.comment(
-                "Lv.4 无限核心转换比（默认 2）"
-        ).defineInRange("ratioLevel4", 2, 1, Integer.MAX_VALUE - 1);
+        INFINITE_RATIO_L2 = b.comment("Lv.2 转换比（默认 100）")
+                .defineInRange("ratioLevel2", 100, 1, Integer.MAX_VALUE - 1);
+        INFINITE_RATIO_L3 = b.comment("Lv.3 转换比（默认 10）")
+                .defineInRange("ratioLevel3", 10, 1, Integer.MAX_VALUE - 1);
+        INFINITE_RATIO_L4 = b.comment("Lv.4 转换比（默认 2）")
+                .defineInRange("ratioLevel4", 2, 1, Integer.MAX_VALUE - 1);
         INFINITE_RATIO_OC = b.comment(
                 "超频无限核心转换比（默认 1，即 1:1）",
                 "OC ratio. Default 1 = 1:1 conversion."
         ).defineInRange("ratioOverclock", 1, 1, Integer.MAX_VALUE - 1);
         b.pop();
 
+        // ── 超频压力 ──────────────────────────────────────────
         b.comment("超频压力设置 / Overclock Pressure Settings").push("overclock");
         OVERCLOCK_PRESSURE_PER_TICK = b.comment(
                 "超频核心运行时每 tick 积累的压力百分比（默认 0.006，约 166 秒满压）",
@@ -194,11 +216,12 @@ public class Modconfigs {
         ).defineInRange("pressureDecayPerTick", 0.05, 0.0001, 1.0);
         b.pop();
 
+        // ── 爆炸 ──────────────────────────────────────────────
         b.comment("爆炸设置 / Explosion Settings").push("explosion");
         EXPLOSION_STRENGTH = b.comment(
                 "超频爆炸威力（默认 80，TNT 为 4，末影水晶为 6）",
                 "Explosion strength when pressure reaches 100%. TNT=4, end crystal=6."
-        ).defineInRange("strength", 80.0, 0.1, 500.0);
+        ).defineInRange("strength", 80.0, 0.1, 100.0);
         EXPLOSION_VOID_BLOCKS = b.comment(
                 "爆炸时生成的虚空流体方块数量（默认 32）",
                 "Number of void fluid blocks spawned on explosion."

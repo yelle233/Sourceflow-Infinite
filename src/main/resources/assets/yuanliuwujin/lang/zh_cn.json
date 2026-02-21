@@ -12,7 +12,7 @@
   "item.yuanliuwujin.destruction_core_l2": "销毁核心 Lv.2",
   "item.yuanliuwujin.destruction_core_l3": "销毁核心 Lv.3",
   "item.yuanliuwujin.destruction_core_l4": "销毁核心 Lv.4",
-  "item.yuanliuwujin.destruction_core_l4_oc": "销毁核心 Lv.4 ★超频",
+  "item.yuanliuwujin.destruction_core_l4_oc": "销毁核心 ★超频",
   "item.yuanliuwujin.wrench": "扳手",
   "item.yuanliuwujin.void_bucket": "虚空流体桶",
   "itemgroup.infinitewater": "源流无尽",
@@ -53,7 +53,6 @@
   "tooltip.yuanliuwujin.destruction_core.hint": "使用扳手插入至销毁机器",
   "tooltip.yuanliuwujin.overclock_warning": "⚠ 超频状态：机器将积累压力并可能爆炸！",
   "tooltip.fluid_banned": "已禁用：%s",
-  "death.attack.void_fluid": "%1$s 被虚空吞噬",
   "jei.yuanliuwujin.category.destruction": "销毁机器",
   "jei.yuanliuwujin.category.infinite": "无限流体机器",
   "jei.yuanliuwujin.ratio_header": "转换比:"

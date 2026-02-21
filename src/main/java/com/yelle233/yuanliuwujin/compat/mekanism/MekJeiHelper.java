@@ -86,6 +86,7 @@ public final class MekJeiHelper {
             destructionRecipes.add(new ConversionRecipe(
                     null,
                     chemical.getStack(destroyRatio),
+                    destroyRatio,
                     new FluidStack(ModFluids.VOID_FLUID_SOURCE.get(), 1)
             ));
 
@@ -93,6 +94,7 @@ public final class MekJeiHelper {
             infiniteRecipes.add(new ConversionRecipe(
                     null,
                     chemical.getStack(1),
+                    1,
                     new FluidStack(ModFluids.VOID_FLUID_SOURCE.get(), infiniteRatio)
             ));
         }

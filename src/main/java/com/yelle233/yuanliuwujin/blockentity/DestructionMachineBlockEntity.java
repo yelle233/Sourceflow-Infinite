@@ -49,7 +49,7 @@ public class DestructionMachineBlockEntity extends BlockEntity implements ICoreM
         @Override public int getSlotLimit(int slot) { return 1; }
     };
 
-    private final EnergyStorage energyStorage = new EnergyStorage(1_000_000, 100_000, 0) {
+    private final EnergyStorage energyStorage = new EnergyStorage(Integer.MAX_VALUE, Integer.MAX_VALUE, 0) {
         @Override public int receiveEnergy(int maxReceive, boolean simulate) {
             int received = super.receiveEnergy(maxReceive, simulate);
             if (!simulate && received > 0) setChanged();
@@ -58,8 +58,7 @@ public class DestructionMachineBlockEntity extends BlockEntity implements ICoreM
     };
 
     private FluidTank voidTank;
-    /** 类型为 DestructionChemicalSink，声明为 Object 以避免无 Mekanism 时触发类加载 */
-    private Object chemSink;
+    private DestructionChemicalSink chemSink;
 
     public DestructionMachineBlockEntity(BlockPos pos, BlockState state) {
         super(ModBlockEntities.DESTRUCTION_MACHINE.get(), pos, state);
@@ -301,7 +300,7 @@ public class DestructionMachineBlockEntity extends BlockEntity implements ICoreM
         SideMode next = switch (getSideMode(dir)) { case OFF -> SideMode.PUSH; case PUSH -> SideMode.BOTH; case BOTH -> SideMode.OFF; };
         sideModes.put(dir, next); notifyCapabilityChanged(dir);
     }
-    @Override public void onCoreChanged() { if (level == null) return; pressure = 0.0f; setChanged(); syncToClient(); level.invalidateCapabilities(worldPosition); boolean dirty = !getBlockState().getValue(DestructionMachineBlock.DIRTY); level.setBlock(worldPosition, getBlockState().setValue(DestructionMachineBlock.DIRTY, dirty), 3); }
+    @Override public void onCoreChanged() { if (level == null) return; pressure = 0.0f; setChanged(); syncToClient(); boolean dirty = !getBlockState().getValue(DestructionMachineBlock.DIRTY); level.setBlock(worldPosition, getBlockState().setValue(DestructionMachineBlock.DIRTY, dirty), 3); }
     @Override public boolean isValidCoreItem(Item item) { return item instanceof DestructionCoreItem; }
     @Override public int getFaceRate(Direction dir) { if (dir == Direction.UP || dir == Direction.DOWN) return Integer.MAX_VALUE - 1; return faceRates.getOrDefault(dir, 20); }
     @Override public void adjustFaceRate(Direction dir, int delta) {
@@ -317,9 +316,21 @@ public class DestructionMachineBlockEntity extends BlockEntity implements ICoreM
     public EnergyStorage getEnergyStorage() { return energyStorage; }
     public float getPressure() { return pressure; }
     public int getLastTickFEConsumed() { return lastTickFEConsumed; }
-    @Nullable public Object getChemSink() { return chemSink; }
+    @Nullable public DestructionChemicalSink getChemSink() { return chemSink; }
 
-    private void notifyCapabilityChanged(Direction dir) { if (level == null) return; setChanged(); syncToClient(); level.invalidateCapabilities(worldPosition); boolean dirty = !getBlockState().getValue(DestructionMachineBlock.DIRTY); level.setBlock(worldPosition, getBlockState().setValue(DestructionMachineBlock.DIRTY, dirty), 3); }
+    private void notifyCapabilityChanged(Direction dir) {
+        if (level == null) return;
+        setChanged();
+        syncToClient();
+        // 翻转 DIRTY 触发方块更新（客户端渲染刷新）
+        boolean dirty = !getBlockState().getValue(DestructionMachineBlock.DIRTY);
+        level.setBlock(worldPosition, getBlockState().setValue(DestructionMachineBlock.DIRTY, dirty), 3);
+        // 通知 NeoForge Capability 系统本位置的 Capability 已变化，
+        // 使相邻的 Mekanism 管道重新检查连接状态（解决 OFF ↔ 启用时管道不自动连接的问题）
+        if (!level.isClientSide) {
+            level.invalidateCapabilities(worldPosition);
+        }
+    }
 
     // ── NBT ──
     @Override protected void saveAdditional(CompoundTag tag, HolderLookup.Provider registries) {

@@ -1,22 +1,33 @@
 package com.yelle233.yuanliuwujin.fluid;
 
+import com.yelle233.yuanliuwujin.block.VoidFluidBlock;
+import com.yelle233.yuanliuwujin.registry.Modconfigs;
 import com.yelle233.yuanliuwujin.registry.ModFluids;
 import net.minecraft.core.BlockPos;
-import net.minecraft.world.level.Level;
+import net.minecraft.core.Direction;
+import net.minecraft.world.level.BlockGetter;
+import net.minecraft.world.level.LevelAccessor;
+import net.minecraft.world.level.LevelReader;
+import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition;
+import net.minecraft.world.level.material.Fluid;
 import net.minecraft.world.level.material.FluidState;
 import net.neoforged.neoforge.fluids.BaseFlowingFluid;
 
 /**
- * 虚空流体（Void Fluid）—— 纯注册用空壳。
+ * 虚空流体（Void Fluid）。
  * <p>
- * 该流体类仅用于满足 NeoForge 流体注册系统的需要（桶、FluidType、方块关联等），
- * <b>不执行任何原版流体逻辑</b>。所有的扩散、销毁、衰减行为均由
- * {@link com.yelle233.yuanliuwujin.block.VoidFluidBlock} 的调度 tick 独立管理。
+ * v3.0 重构：恢复使用原版 FlowingFluid 扩散机制（不再 no-op tick/spread），
+ * 这样桶、Jade 等外部模组能正确识别流体状态。
  * <p>
- * 这样做的原因：原版 {@code FlowingFluid.tick()} 内部的 {@code getNewLiquid()}
- * 会根据相邻方块重新计算流动状态，导致源方块不断"补给"已进入衰减阶段的流动方块，
- * 使虚空流体永远无法消失。彻底禁用原版逻辑后，两套系统不再冲突。
+ * 改动点：
+ * <ul>
+ *   <li>扩散速度由 {@code VOID_FLUID_TICK_RATE} 配置控制（默认20tick，介于水5和岩浆40之间）</li>
+ *   <li>覆写 {@link #spreadTo}：扩散前先销毁目标方块（受 VOID_DESTROY_BLOCKS 配置控制）</li>
+ *   <li>覆写 {@link #canSpreadTo}：若 VOID_DESTROY_BLOCKS=true，允许流体扩散到可破坏方块</li>
+ *   <li>恩惠期结束 / 方块吞噬逻辑移入 {@link VoidFluidBlock}（scheduledTick + randomTick）</li>
+ * </ul>
  */
 public abstract class VoidFluid extends BaseFlowingFluid {
 
@@ -30,29 +41,69 @@ public abstract class VoidFluid extends BaseFlowingFluid {
     }
 
     // ══════════════════════════════════════════════════════════════
-    //  彻底禁用原版流体逻辑
+    //  扩散控制：速度 + 吞噬方块
     // ══════════════════════════════════════════════════════════════
 
     /**
-     * 完全跳过原版流体 tick。
-     * 原版 tick 会调用 getNewLiquid() 重新计算并覆写方块状态，
-     * 与 VoidFluidBlock 的衰减系统冲突。这里直接 return。
+     * 返回流体 tick 间隔（tick），由配置文件控制。
+     * 默认 20，比水（5）慢，比岩浆（40）快。
      */
     @Override
-    public void tick(Level level, BlockPos pos, FluidState state) {
-        // no-op: 所有逻辑由 VoidFluidBlock.tick() 管理
+    public int getTickDelay(LevelReader level) {
+        return Modconfigs.VOID_FLUID_TICK_RATE.get();
     }
 
     /**
-     * 完全跳过原版流体扩散。
-     * 扩散逻辑由 VoidFluidBlock 在恩惠期内自行处理。
+     * 判断虚空流体是否可以扩散到目标位置。
+     * <p>
+     * 若 {@code VOID_DESTROY_BLOCKS=true}，允许扩散到非基岩的可破坏固体方块；
+     * 否则只能扩散到空气和已有流体的位置（原版行为）。
      */
     @Override
-    protected void spread(Level level, BlockPos pos, FluidState state) {
-        // no-op: 所有逻辑由 VoidFluidBlock.tick() 管理
+    protected boolean canSpreadTo(BlockGetter level, BlockPos fromPos, BlockState fromBlockState,
+                                  Direction direction, BlockPos toPos, BlockState toBlockState,
+                                  FluidState toFluidState, Fluid fluid) {
+        // 永远不扩散到基岩
+        if (toBlockState.is(Blocks.BEDROCK)) return false;
+        // 不替换同类流体
+        if (toBlockState.getBlock() instanceof VoidFluidBlock) return false;
+
+        // 如果目标是可破坏的固体方块，且配置允许销毁方块，则可以扩散
+        if (!toBlockState.isAir() && toFluidState.isEmpty()) {
+            return Modconfigs.VOID_DESTROY_BLOCKS.get()
+                    && toBlockState.getDestroySpeed(level, toPos) >= 0;
+        }
+
+        // 其他情况走原版逻辑（空气、其他流体等）
+        return super.canSpreadTo(level, fromPos, fromBlockState, direction, toPos,
+                toBlockState, toFluidState, fluid);
     }
 
-    // ── 静止态（源方块） ──────────────────────────────────────────────
+    /**
+     * 实际扩散到目标位置。
+     * <p>
+     * 若目标是固体方块（非流体），且配置允许，先销毁目标方块（不掉落），再放置虚空流体。
+     * 这样确保"吞噬方块"和"扩散"同步发生，不会出现"先吞噬后流"的问题。
+     */
+    @Override
+    protected void spreadTo(LevelAccessor level, BlockPos pos, BlockState blockState,
+                            Direction direction, FluidState fluidState) {
+        // 如果目标是可破坏固体方块，先移除（无掉落）
+        if (!blockState.isAir() && blockState.getFluidState().isEmpty()) {
+            if (Modconfigs.VOID_DESTROY_BLOCKS.get()
+                    && !blockState.is(Blocks.BEDROCK)
+                    && blockState.getDestroySpeed(level, pos) >= 0) {
+                level.destroyBlock(pos, false); // false = 不掉落物品
+            } else {
+                return; // 无法销毁（可能是基岩或配置关闭），放弃扩散
+            }
+        }
+        super.spreadTo(level, pos, level.getBlockState(pos), direction, fluidState);
+    }
+
+    // ══════════════════════════════════════════════════════════════
+    //  源方块
+    // ══════════════════════════════════════════════════════════════
 
     public static class Source extends VoidFluid {
 
@@ -67,40 +118,31 @@ public abstract class VoidFluid extends BaseFlowingFluid {
         public int getAmount(FluidState state) { return 8; }
 
         @Override
-        protected void createFluidStateDefinition(StateDefinition.Builder<
-                net.minecraft.world.level.material.Fluid, FluidState> builder) {
+        public Fluid getFlowing() { return ModFluids.VOID_FLUID_FLOWING.get(); }
+
+        @Override
+        public Fluid getSource() { return ModFluids.VOID_FLUID_SOURCE.get(); }
+
+        @Override
+        protected boolean canConvertToSource(net.minecraft.world.level.Level level) {
+            return false; // 禁止源方块自动生成（2格流体合并成源）
+        }
+
+        @Override
+        protected void createFluidStateDefinition(
+                StateDefinition.Builder<Fluid, FluidState> builder) {
             super.createFluidStateDefinition(builder);
-        }
-
-        @Override
-        public net.minecraft.world.level.material.Fluid getFlowing() {
-            return ModFluids.VOID_FLUID_FLOWING.get();
-        }
-
-        @Override
-        public net.minecraft.world.level.material.Fluid getSource() {
-            return ModFluids.VOID_FLUID_SOURCE.get();
-        }
-
-        @Override
-        protected boolean canConvertToSource(Level level) {
-            return false;
         }
     }
 
-    // ── 流动态 ──────────────────────────────────────────────────────
+    // ══════════════════════════════════════════════════════════════
+    //  流动方块
+    // ══════════════════════════════════════════════════════════════
 
     public static class Flowing extends VoidFluid {
 
         public Flowing(Properties properties) {
             super(properties);
-        }
-
-        @Override
-        protected void createFluidStateDefinition(StateDefinition.Builder<
-                net.minecraft.world.level.material.Fluid, FluidState> builder) {
-            super.createFluidStateDefinition(builder);
-            builder.add(LEVEL);
         }
 
         @Override
@@ -110,18 +152,21 @@ public abstract class VoidFluid extends BaseFlowingFluid {
         public int getAmount(FluidState state) { return state.getValue(LEVEL); }
 
         @Override
-        public net.minecraft.world.level.material.Fluid getFlowing() {
-            return ModFluids.VOID_FLUID_FLOWING.get();
-        }
+        public Fluid getFlowing() { return ModFluids.VOID_FLUID_FLOWING.get(); }
 
         @Override
-        public net.minecraft.world.level.material.Fluid getSource() {
-            return ModFluids.VOID_FLUID_SOURCE.get();
-        }
+        public Fluid getSource() { return ModFluids.VOID_FLUID_SOURCE.get(); }
 
         @Override
-        protected boolean canConvertToSource(Level level) {
+        protected boolean canConvertToSource(net.minecraft.world.level.Level level) {
             return false;
+        }
+
+        @Override
+        protected void createFluidStateDefinition(
+                StateDefinition.Builder<Fluid, FluidState> builder) {
+            super.createFluidStateDefinition(builder);
+            builder.add(LEVEL);
         }
     }
 }

@@ -79,11 +79,11 @@ public class SourceflowJeiPlugin implements IModPlugin {
             if (Modconfigs.isFluidBanned(fluidId)) continue;
 
             destructionRecipes.add(new ConversionRecipe(
-                    new FluidStack(fluid, destroyRatio), null,
+                    new FluidStack(fluid, destroyRatio), null, 0,
                     new FluidStack(voidSource, 1)
             ));
             infiniteRecipes.add(new ConversionRecipe(
-                    new FluidStack(fluid, 1), null,
+                    new FluidStack(fluid, 1), null, 0,
                     new FluidStack(voidSource, infiniteRatio)
             ));
         }

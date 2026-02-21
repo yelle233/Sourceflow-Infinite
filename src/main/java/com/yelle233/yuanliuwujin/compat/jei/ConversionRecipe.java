@@ -17,10 +17,19 @@ import javax.annotation.Nullable;
 public record ConversionRecipe(
         @Nullable FluidStack fluidOther,
         @Nullable Object chemicalOther,
+        long chemicalAmount,
         FluidStack voidFluid
 ) {
     /** 是否为化学品配方 */
     public boolean isChemical() {
         return chemicalOther != null;
+    }
+
+    /**
+     * 非虚空侧的数量（mB）。流体配方返回 fluidOther 的数量，化学品配方返回 chemicalAmount。
+     * 统一供 draw() 使用，避免在 jei 包中引入 Mekanism 类型。
+     */
+    public long otherAmount() {
+        return isChemical() ? chemicalAmount : (fluidOther != null ? fluidOther.getAmount() : 0);
     }
 }

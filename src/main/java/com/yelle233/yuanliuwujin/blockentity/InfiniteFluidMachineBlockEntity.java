@@ -55,7 +55,7 @@ public class InfiniteFluidMachineBlockEntity extends BlockEntity implements ICor
         @Override public int getSlotLimit(int slot) { return 1; }
     };
 
-    private final EnergyStorage energyStorage = new EnergyStorage(1_000_000, 100_000, 0) {
+    private final EnergyStorage energyStorage = new EnergyStorage(Integer.MAX_VALUE, Integer.MAX_VALUE, 0) {
         @Override public int receiveEnergy(int maxReceive, boolean simulate) {
             int r = super.receiveEnergy(maxReceive, simulate);
             if (!simulate && r > 0) setChanged();
@@ -64,8 +64,7 @@ public class InfiniteFluidMachineBlockEntity extends BlockEntity implements ICor
     };
 
     private FluidTank voidTank;
-    /** 类型为 InfiniteChemicalOutput，声明为 Object 以避免无 Mekanism 时触发类加载 */
-    private Object chemOutput;
+    private InfiniteChemicalOutput chemOutput;
     private int fluidBudgetRemaining = 0;
 
     public InfiniteFluidMachineBlockEntity(BlockPos pos, BlockState state) {
@@ -74,7 +73,7 @@ public class InfiniteFluidMachineBlockEntity extends BlockEntity implements ICor
         initFaceRates();
         if (MekanismChecker.isLoaded()) {
             chemOutput = new InfiniteChemicalOutput(
-                    () -> (mekanism.api.chemical.Chemical) this.getBoundChemical(),
+                    this::getBoundChemical,
                     this::canWork,
                     this::getVoidTank,
                     this::getCurrentRatio,
@@ -316,8 +315,7 @@ public class InfiniteFluidMachineBlockEntity extends BlockEntity implements ICor
         else if (type == BindType.CHEMICAL && MekanismChecker.isLoaded()) { ResourceLocation chemId = InfiniteCoreItem.getBoundChemical(coreSlot.getStackInSlot(0)); return chemId != null ? MekChemicalHelper.getChemicalName(chemId) : null; }
         return null;
     }
-    /** 返回值实际类型为 mekanism.api.chemical.Chemical，声明为 Object 以避免类加载 */
-    @Nullable public Object getBoundChemical() { if (!MekanismChecker.isLoaded()) return null; ItemStack cs = coreSlot.getStackInSlot(0); if (cs.isEmpty()) return null; ResourceLocation id = InfiniteCoreItem.getBoundChemical(cs); return MekChemicalHelper.getChemical(id); }
+    @Nullable public mekanism.api.chemical.Chemical getBoundChemical() { if (!MekanismChecker.isLoaded()) return null; ItemStack cs = coreSlot.getStackInSlot(0); if (cs.isEmpty()) return null; ResourceLocation id = InfiniteCoreItem.getBoundChemical(cs); return MekChemicalHelper.getChemical(id); }
     public boolean canWork() {
         if (level == null || level.isClientSide) return lastTickCanWork;
         boolean hasCore = !coreSlot.getStackInSlot(0).isEmpty();
@@ -335,7 +333,7 @@ public class InfiniteFluidMachineBlockEntity extends BlockEntity implements ICor
         SideMode next = switch (getSideMode(dir)) { case OFF -> SideMode.PULL; case PULL -> SideMode.BOTH; case BOTH -> SideMode.OFF; };
         sideModes.put(dir, next); notifyCapabilityChanged(dir);
     }
-    @Override public void onCoreChanged() { if (level == null) return; pressure = 0.0f; setChanged(); syncToClient(); level.invalidateCapabilities(worldPosition); boolean dirty = !getBlockState().getValue(InfiniteFluidMachineBlock.DIRTY); level.setBlock(worldPosition, getBlockState().setValue(InfiniteFluidMachineBlock.DIRTY, dirty), 3); }
+    @Override public void onCoreChanged() { if (level == null) return; pressure = 0.0f; setChanged(); syncToClient(); boolean dirty = !getBlockState().getValue(InfiniteFluidMachineBlock.DIRTY); level.setBlock(worldPosition, getBlockState().setValue(InfiniteFluidMachineBlock.DIRTY, dirty), 3); }
     @Override public boolean isValidCoreItem(Item item) { return item instanceof InfiniteCoreItem; }
     @Override public int getFaceRate(Direction dir) { if (dir == Direction.UP || dir == Direction.DOWN) return Integer.MAX_VALUE - 1; return faceRates.getOrDefault(dir, 20); }
     @Override public void adjustFaceRate(Direction dir, int delta) {
@@ -351,10 +349,22 @@ public class InfiniteFluidMachineBlockEntity extends BlockEntity implements ICor
     public EnergyStorage getEnergyStorage() { return energyStorage; }
     public float getPressure() { return pressure; }
     public int getLastTickFEConsumed() { return lastTickFEConsumed; }
-    @Nullable public Object getInfiniteChemicalOutput() { return chemOutput; }
+    @Nullable public InfiniteChemicalOutput getInfiniteChemicalOutput() { return chemOutput; }
     public int getFluidBudgetRemaining() { return fluidBudgetRemaining; }
 
-    private void notifyCapabilityChanged(Direction dir) { if (level == null) return; setChanged(); syncToClient(); level.invalidateCapabilities(worldPosition); boolean dirty = !getBlockState().getValue(InfiniteFluidMachineBlock.DIRTY); level.setBlock(worldPosition, getBlockState().setValue(InfiniteFluidMachineBlock.DIRTY, dirty), 3); }
+    private void notifyCapabilityChanged(Direction dir) {
+        if (level == null) return;
+        setChanged();
+        syncToClient();
+        // 翻转 DIRTY 触发方块更新（客户端渲染刷新）
+        boolean dirty = !getBlockState().getValue(InfiniteFluidMachineBlock.DIRTY);
+        level.setBlock(worldPosition, getBlockState().setValue(InfiniteFluidMachineBlock.DIRTY, dirty), 3);
+        // 通知 NeoForge Capability 系统本位置的 Capability 已变化，
+        // 使相邻的 Mekanism 管道重新检查连接状态（解决 OFF ↔ 启用时管道不自动连接的问题）
+        if (!level.isClientSide) {
+            level.invalidateCapabilities(worldPosition);
+        }
+    }
 
     // ── NBT ──
     @Override protected void saveAdditional(CompoundTag tag, HolderLookup.Provider registries) {

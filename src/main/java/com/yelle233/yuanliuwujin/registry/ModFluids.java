@@ -17,8 +17,9 @@ public class ModFluids {
     public static final DeferredRegister<FluidType> FLUID_TYPES =
             DeferredRegister.create(NeoForgeRegistries.FLUID_TYPES, SourceflowInfinite.MODID);
 
-    public static final DeferredRegister<net.minecraft.world.level.material.Fluid> FLUIDS =
-            DeferredRegister.create(net.minecraft.core.registries.BuiltInRegistries.FLUID, SourceflowInfinite.MODID);
+    public static final DeferredRegister<Fluid> FLUIDS =
+            DeferredRegister.create(net.minecraft.core.registries.BuiltInRegistries.FLUID,
+                    SourceflowInfinite.MODID);
 
     public static final Supplier<VoidFluidType> VOID_FLUID_TYPE =
             FLUID_TYPES.register("void_fluid", () -> new VoidFluidType(VoidFluidType.makeProperties()));
@@ -38,9 +39,12 @@ public class ModFluids {
             )
                     .block(ModBlocks.VOID_FLUID_BLOCK)
                     .bucket(ModItems.VOID_BUCKET)
-                    .slopeFindDistance(1)
-                    .levelDecreasePerBlock(3)   // 每格减3级，流得更短
-                    .tickRate(60);              // 非常慢的扩散（60 tick = 3秒）
+                    // slopeFindDistance=2：水=4（流得很远），岩浆=2，虚空流体对标岩浆
+                    .slopeFindDistance(2)
+                    // levelDecreasePerBlock=2：水=1（流7格），岩浆=2（流3格），虚空流体流3-4格
+                    .levelDecreasePerBlock(2)
+                    // tickRate 由 VoidFluid.getTickDelay() 从配置读取，此处的值作为备用
+                    .tickRate(20);
         }
         return VOID_PROPS;
     }

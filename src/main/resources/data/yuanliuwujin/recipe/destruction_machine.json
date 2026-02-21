@@ -1,26 +1,15 @@
 {
   "type": "minecraft:crafting_shaped",
   "pattern": [
-    "IFI",
     "CBC",
-    "IFI"
+    "ADA",
+    "CBC"
   ],
   "key": {
-    "I": {
-      "item": "minecraft:obsidian"
-    },
-    "F": {
-      "item": "minecraft:glass"
-    },
-    "C": {
-      "item": "minecraft:quartz"
-    },
-    "B": {
-      "item": "minecraft:bucket"
-    }
+    "A": { "item": "minecraft:glass" },
+    "B": { "item": "minecraft:quartz" },
+    "C": { "item": "minecraft:obsidian" },
+    "D": { "tag": "yuanliuwujin:destruction_cores" }
   },
-  "result": {
-    "id": "yuanliuwujin:destruction_machine",
-    "count": 1
-  }
+  "result": { "id": "yuanliuwujin:destruction_machine", "count": 1 }
 }
