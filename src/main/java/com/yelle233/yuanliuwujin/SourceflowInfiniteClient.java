@@ -169,8 +169,19 @@ public class SourceflowInfiniteClient {
         lines.add(Component.translatable("hud.sourceflowinfinite.cost", compactFE(fePerSecond), compactFE(fePerTick)).withStyle(ChatFormatting.GOLD));
 
         lines.add(Component.translatable("hud.sourceflowinfinite.core",
-                Component.translatable(hasCore ? "hud.sourceflowinfinite.core.inserted" : "hud.sourceflowinfinite.core.missing")
-                        .withStyle(hasCore ? ChatFormatting.GREEN : ChatFormatting.RED)));
+                hasCore
+                    ? Component.translatable("hud.sourceflowinfinite.core.inserted").withStyle(ChatFormatting.GREEN)
+                        .append(Component.literal(" Lv." + InfiniteCoreItem.getLevel(machine.getCoreSlot().getStackInSlot(0))
+                            + (InfiniteCoreItem.isOverclocked(machine.getCoreSlot().getStackInSlot(0)) ? " ★" : ""))
+                            .withStyle(ChatFormatting.YELLOW))
+                    : Component.translatable("hud.sourceflowinfinite.core.missing").withStyle(ChatFormatting.RED)));
+        {   // 状态行
+            Component statusComp;
+            if (!hasCore) statusComp = Component.translatable("hud.yuanliuwujin.destruction.no_core").withStyle(ChatFormatting.GRAY);
+            else if (energy <= 0) statusComp = Component.translatable("hud.yuanliuwujin.destruction.no_power").withStyle(ChatFormatting.RED);
+            else statusComp = Component.translatable("hud.yuanliuwujin.destruction.active").withStyle(ChatFormatting.GREEN);
+            lines.add(Component.translatable("hud.yuanliuwujin.destruction.status_label", statusComp));
+        }
         lines.add(Component.translatable("hud.sourceflowinfinite.fluid", Component.literal(typeLabel).append(displayName)));
 
         var vt = machine.getVoidTank();
@@ -225,8 +236,12 @@ public class SourceflowInfiniteClient {
         lines.add(Component.translatable("hud.sourceflowinfinite.cost", compactFE(fePerSecond), compactFE(fePerTick)).withStyle(ChatFormatting.GOLD));
 
         lines.add(Component.translatable("hud.sourceflowinfinite.core",
-                Component.translatable(hasCore ? "hud.sourceflowinfinite.core.inserted" : "hud.sourceflowinfinite.core.missing")
-                        .withStyle(hasCore ? ChatFormatting.GREEN : ChatFormatting.RED)));
+                hasCore
+                    ? Component.translatable("hud.sourceflowinfinite.core.inserted").withStyle(ChatFormatting.GREEN)
+                        .append(Component.literal(" Lv." + com.yelle233.yuanliuwujin.item.DestructionCoreItem.getLevel(machine.getCoreSlot().getStackInSlot(0))
+                            + (com.yelle233.yuanliuwujin.item.DestructionCoreItem.isOverclocked(machine.getCoreSlot().getStackInSlot(0)) ? " ★" : ""))
+                            .withStyle(ChatFormatting.YELLOW))
+                    : Component.translatable("hud.sourceflowinfinite.core.missing").withStyle(ChatFormatting.RED)));
         lines.add(Component.translatable("hud.yuanliuwujin.destruction.status_label", statusComp));
 
         var vt = machine.getVoidTank();

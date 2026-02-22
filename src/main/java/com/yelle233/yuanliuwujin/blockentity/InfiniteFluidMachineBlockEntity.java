@@ -125,18 +125,15 @@ public class InfiniteFluidMachineBlockEntity extends BlockEntity implements ICor
         boolean canWork = hasCore && voidNotEmpty && anyFaceEnabled && hasValidBinding() && hasEnoughEnergy;
 
         // ── 三档耗电逻辑 ──
+        // HUD 始终显示满载耗电（有核心就显示 requiredFE），方便玩家查看所需电量
+        lastTickFEConsumed = hasCore ? requiredFE : 0;
         if (canWork) {
-            // 工作中：消耗满载电量，HUD 显示满载耗电
+            // 工作中：消耗满载电量
             energyStorage.extractEnergy(requiredFE, false);
-            lastTickFEConsumed = requiredFE;
         } else if (hasCore) {
-            // 待机中（有核心但无法工作）：消耗待机电量，HUD 显示待机耗电
+            // 待机中（有核心但无法工作）：消耗待机电量
             int standbyConsume = Math.min(baseFE, energyStorage.getEnergyStored());
             if (standbyConsume > 0) energyStorage.extractEnergy(standbyConsume, false);
-            lastTickFEConsumed = baseFE;
-        } else {
-            // 无核心：不耗电，HUD 显示 0
-            lastTickFEConsumed = 0;
         }
 
         fluidBudgetRemaining = canWork ? calcTotalOutputBudgetThisTick() : 0;
