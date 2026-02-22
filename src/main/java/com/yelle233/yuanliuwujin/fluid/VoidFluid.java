@@ -100,7 +100,7 @@ public abstract class VoidFluid extends BaseFlowingFluid {
     /**
      * 判断虚空流体是否可以扩散到目标位置。
      * <p>
-     * 若 {@code VOID_DESTROY_BLOCKS=true}，允许扩散到非基岩的可破坏固体方块；
+     * 若 {@code VOID_DESTROY_BLOCKS=true}，允许扩散到非基岩的可破坏固体方块和其他流体方块；
      * 否则只能扩散到空气和已有流体的位置（原版行为）。
      */
     @Override
@@ -111,6 +111,11 @@ public abstract class VoidFluid extends BaseFlowingFluid {
         if (toBlockState.is(Blocks.BEDROCK)) return false;
         // 不替换同类流体
         if (toBlockState.getBlock() instanceof VoidFluidBlock) return false;
+
+        // 目标是其他流体（水、岩浆等）→ 允许吞噬（配置控制）
+        if (!toFluidState.isEmpty()) {
+            return Modconfigs.VOID_DESTROY_BLOCKS.get();
+        }
 
         // 如果目标是可破坏的固体方块，且配置允许销毁方块，则可以扩散
         if (!toBlockState.isAir() && toFluidState.isEmpty()) {
@@ -126,18 +131,22 @@ public abstract class VoidFluid extends BaseFlowingFluid {
     /**
      * 实际扩散到目标位置。
      * <p>
-     * 若目标是固体方块（非流体），且配置允许，先销毁目标方块（不掉落），再放置虚空流体。
-     * 这样确保"吞噬方块"和"扩散"同步发生，不会出现"先吞噬后流"的问题。
+     * 若目标是固体方块（非流体）或其他流体方块，且配置允许，先移除目标，再放置虚空流体。
+     * 这样确保"吞噬方块/流体"和"扩散"同步发生。
      */
     @Override
     protected void spreadTo(LevelAccessor level, BlockPos pos, BlockState blockState,
                             Direction direction, FluidState fluidState) {
-        // 如果目标是可破坏固体方块，先移除（无掉落）
-        if (!blockState.isAir() && blockState.getFluidState().isEmpty()) {
-            if (Modconfigs.VOID_DESTROY_BLOCKS.get()
+        if (!blockState.isAir() && !(blockState.getBlock() instanceof VoidFluidBlock)) {
+            if (!blockState.getFluidState().isEmpty()) {
+                // 目标是其他流体（水、岩浆等）→ 强制设为 AIR 后再放置虚空流体
+                // destroyBlock 对流体方块无效（MC 会用流体状态回填），必须显式设为 AIR
+                level.setBlock(pos, Blocks.AIR.defaultBlockState(), Block.UPDATE_ALL);
+            } else if (Modconfigs.VOID_DESTROY_BLOCKS.get()
                     && !blockState.is(Blocks.BEDROCK)
                     && blockState.getDestroySpeed(level, pos) >= 0) {
-                level.destroyBlock(pos, false); // false = 不掉落物品
+                // 固体方块 → 销毁（无掉落）
+                level.destroyBlock(pos, false);
             } else {
                 return; // 无法销毁（可能是基岩或配置关闭），放弃扩散
             }

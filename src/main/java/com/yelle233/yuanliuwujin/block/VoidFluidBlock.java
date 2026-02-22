@@ -140,7 +140,13 @@ public class VoidFluidBlock extends LiquidBlock {
         if (neighborState.getBlock() instanceof VoidFluidBlock) return;
         if (neighborState.getDestroySpeed(level, neighbor) < 0) return;
 
-        level.destroyBlock(neighbor, false); // 无掉落
+        // 流体方块（水、岩浆等）用 destroyBlock 无效（MC 会用流体状态回填），
+        // 必须显式设为 AIR 才能真正移除
+        if (!neighborState.getFluidState().isEmpty()) {
+            level.setBlock(neighbor, Blocks.AIR.defaultBlockState(), Block.UPDATE_ALL);
+        } else {
+            level.destroyBlock(neighbor, false); // 固体方块无掉落
+        }
     }
 
     // ═══════════════════════════════════════════════════════════

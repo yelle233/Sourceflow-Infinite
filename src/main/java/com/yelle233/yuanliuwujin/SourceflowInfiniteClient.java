@@ -310,5 +310,5 @@ public class SourceflowInfiniteClient {
         if (buckets < 1_000_000_000.0) return formatDecimal(buckets / 1_000_000.0) + " MB";
         return formatDecimal(buckets / 1_000_000_000.0) + " GB";
     }
-    private static String formatDecimal(double d) { String s = String.format(Locale.ROOT, "%.1f", d); return s.endsWith(".0") ? s.substring(0, s.length() - 2) : s; }
+    private static String formatDecimal(double d) { String s = String.format(Locale.ROOT, "%.2f", d); if (s.endsWith("0")) s = s.substring(0, s.length() - 1); if (s.endsWith(".0")) s = s.substring(0, s.length() - 2); return s; }
 }
