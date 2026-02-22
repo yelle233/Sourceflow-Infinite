@@ -147,35 +147,21 @@ public class Modconfigs {
         // ── 机器通用 ──────────────────────────────────────────
         b.comment("机器通用设置 / Machine Common Settings").push("machine_common");
         MACHINE_VOID_TANK_CAPACITY = b.comment(
-                "两种机器内部虚空流体储罐最大容量（mB，默认 1000000 = 1000 桶）",
+                "两种机器内部虚空流体储罐最大容量（mB，默认 1000 = 1 桶）",
                 "Void tank capacity in mB. 1000 mB = 1 bucket."
-        ).defineInRange("voidTankCapacity", 1000000, 1000, Integer.MAX_VALUE - 1);
+        ).defineInRange("voidTankCapacity", 1000, 1000, Integer.MAX_VALUE - 1);
         b.pop();
 
         // ── 销毁机器 ──────────────────────────────────────────
         b.comment("销毁机器设置 / Destruction Machine Settings").push("destruction_machine");
         DESTROY_FE_BASE = b.comment(
-                "插入核心后每 tick 基础 FE 消耗（默认 4）",
+                "插入核心后每 tick 基础 FE 消耗（默认 2）",
                 "Base FE/tick when core is inserted."
-        ).defineInRange("feBase", 4, 0, Integer.MAX_VALUE - 1);
+        ).defineInRange("feBase", 2, 0, Integer.MAX_VALUE - 1);
         DESTROY_FE_PER_MB_RATE = b.comment(
                 "每 1 mB/s 面速率额外消耗的 FE/tick（默认 1）",
                 "Extra FE/tick per 1 mB/s face rate."
         ).defineInRange("fePerMbRate", 1, 0, Integer.MAX_VALUE - 1);
-        DESTROY_RATIO_L1 = b.comment(
-                "Lv.1：消耗 X mB 任意流体 → 1 mB 虚空流体（默认 1000）",
-                "L1: mB fluid consumed per 1 mB void produced."
-        ).defineInRange("ratioLevel1", 1000, 1, Integer.MAX_VALUE - 1);
-        DESTROY_RATIO_L2 = b.comment("Lv.2 转换比（默认 100）")
-                .defineInRange("ratioLevel2", 100, 1, Integer.MAX_VALUE - 1);
-        DESTROY_RATIO_L3 = b.comment("Lv.3 转换比（默认 10）")
-                .defineInRange("ratioLevel3", 10, 1, Integer.MAX_VALUE - 1);
-        DESTROY_RATIO_L4 = b.comment("Lv.4 转换比（默认 2）")
-                .defineInRange("ratioLevel4", 2, 1, Integer.MAX_VALUE - 1);
-        DESTROY_RATIO_OC = b.comment(
-                "超频销毁核心转换比（默认 1，即 1:1）",
-                "OC ratio. Default 1 = 1:1 conversion."
-        ).defineInRange("ratioOverclock", 1, 1, Integer.MAX_VALUE - 1);
         b.pop();
 
         // ── 无限流体机器 ──────────────────────────────────────
@@ -188,20 +174,6 @@ public class Modconfigs {
                 "每 1 mB/s 面速率额外消耗的 FE/tick（默认 1）",
                 "Extra FE/tick per 1 mB/s face rate."
         ).defineInRange("fePerMbRate", 1, 0, Integer.MAX_VALUE - 1);
-        INFINITE_RATIO_L1 = b.comment(
-                "Lv.1：消耗 X mB 虚空流体 → 1 mB 任意流体（默认 1000）",
-                "L1: mB void consumed per 1 mB fluid produced."
-        ).defineInRange("ratioLevel1", 1000, 1, Integer.MAX_VALUE - 1);
-        INFINITE_RATIO_L2 = b.comment("Lv.2 转换比（默认 100）")
-                .defineInRange("ratioLevel2", 100, 1, Integer.MAX_VALUE - 1);
-        INFINITE_RATIO_L3 = b.comment("Lv.3 转换比（默认 10）")
-                .defineInRange("ratioLevel3", 10, 1, Integer.MAX_VALUE - 1);
-        INFINITE_RATIO_L4 = b.comment("Lv.4 转换比（默认 2）")
-                .defineInRange("ratioLevel4", 2, 1, Integer.MAX_VALUE - 1);
-        INFINITE_RATIO_OC = b.comment(
-                "超频无限核心转换比（默认 1，即 1:1）",
-                "OC ratio. Default 1 = 1:1 conversion."
-        ).defineInRange("ratioOverclock", 1, 1, Integer.MAX_VALUE - 1);
         b.pop();
 
         // ── 超频压力 ──────────────────────────────────────────
@@ -226,6 +198,38 @@ public class Modconfigs {
                 "爆炸时生成的虚空流体方块数量（默认 32）",
                 "Number of void fluid blocks spawned on explosion."
         ).defineInRange("voidBlockCount", 32, 0, 256);
+        b.pop();
+
+        // ── 核心等级 ──────────────────────────────────────────────
+        b.comment("核心等级设置 / Core Settings").push("core");
+        DESTROY_RATIO_L1 = b.comment(
+                "Lv.1：消耗 X mB 任意流体 → 1 mB 虚空流体（默认 1000）",
+                "L1: mB fluid consumed per 1 mB void produced."
+        ).defineInRange("destruction_core_l1", 1000, 1, Integer.MAX_VALUE - 1);
+        DESTROY_RATIO_L2 = b.comment("Lv.2 转换比（默认 100）")
+                .defineInRange("destruction_core_l2", 100, 1, Integer.MAX_VALUE - 1);
+        DESTROY_RATIO_L3 = b.comment("Lv.3 转换比（默认 10）")
+                .defineInRange("destruction_core_l3", 10, 1, Integer.MAX_VALUE - 1);
+        DESTROY_RATIO_L4 = b.comment("Lv.4 转换比（默认 2）")
+                .defineInRange("destruction_core_l4", 2, 1, Integer.MAX_VALUE - 1);
+        DESTROY_RATIO_OC = b.comment(
+                "超频销毁核心转换比（默认 1，即 1:1）",
+                "OC ratio. Default 1 = 1:1 conversion."
+        ).defineInRange("destruction_core_l4OC", 1, 1, Integer.MAX_VALUE - 1);
+        INFINITE_RATIO_L1 = b.comment(
+                "Lv.1：消耗 X mB 虚空流体 → 1 mB 任意流体（默认 1000）",
+                "L1: mB void consumed per 1 mB fluid produced."
+        ).defineInRange("infinite_core_l1", 1000, 1, Integer.MAX_VALUE - 1);
+        INFINITE_RATIO_L2 = b.comment("Lv.2 转换比（默认 100）")
+                .defineInRange("infinite_core_l2", 100, 1, Integer.MAX_VALUE - 1);
+        INFINITE_RATIO_L3 = b.comment("Lv.3 转换比（默认 10）")
+                .defineInRange("infinite_core_l3", 10, 1, Integer.MAX_VALUE - 1);
+        INFINITE_RATIO_L4 = b.comment("Lv.4 转换比（默认 2）")
+                .defineInRange("infinite_core_l4", 2, 1, Integer.MAX_VALUE - 1);
+        INFINITE_RATIO_OC = b.comment(
+                "超频无限核心转换比（默认 1，即 1:1）",
+                "OC ratio. Default 1 = 1:1 conversion."
+        ).defineInRange("infinite_core_l4OC", 1, 1, Integer.MAX_VALUE - 1);
         b.pop();
 
         SPEC = b.build();
