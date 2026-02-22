@@ -5,9 +5,12 @@ import com.yelle233.yuanliuwujin.registry.Modconfigs;
 import com.yelle233.yuanliuwujin.registry.ModFluids;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.level.BlockGetter;
+import net.minecraft.world.level.Level;
 import net.minecraft.world.level.LevelAccessor;
 import net.minecraft.world.level.LevelReader;
+import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.block.state.StateDefinition;
@@ -51,6 +54,47 @@ public abstract class VoidFluid extends BaseFlowingFluid {
     @Override
     public int getTickDelay(LevelReader level) {
         return Modconfigs.VOID_FLUID_TICK_RATE.get();
+    }
+
+    /**
+     * 【修复】在流体 tick 中检查恩惠期是否结束。
+     * <p>
+     * 原先的方案是通过 {@code VoidFluidBlock.onPlace} 安排 scheduled block tick，
+     * 但 block tick 和 fluid tick 是两套系统，LiquidBlock 的 block tick 可能不会可靠触发
+     * （流体系统更新方块状态时可能干扰 block tick 调度）。
+     * <p>
+     * 新方案：在每次流体 tick（由流体调度器可靠触发）时检查恩惠期，
+     * 超期则移除方块，未超期则正常扩散。
+     * <p>
+     * 关键修复：{@code FlowingFluid.tick()} 对<b>源方块</b>只调用 {@code spread()} 而
+     * <b>不会重新调度下一次流体 tick</b>。因此必须在 {@code super.tick()} 之后
+     * 显式重新调度流体 tick，否则恩惠期检查只会执行一次就永远不再触发。
+     */
+    @Override
+    public void tick(Level level, BlockPos pos, FluidState state) {
+        if (!level.isClientSide && level instanceof ServerLevel serverLevel) {
+            long key = VoidFluidBlock.makeKey(level, pos);
+            Long birthTime = VoidFluidBlock.getBirthTime(key);
+            long gracePeriod = Modconfigs.VOID_GRACE_PERIOD.get();
+
+            if (birthTime != null && (level.getGameTime() - birthTime) >= gracePeriod) {
+                VoidFluidBlock.removeBirthTime(key);
+                level.setBlock(pos, Blocks.AIR.defaultBlockState(), Block.UPDATE_ALL);
+                return; // 不再扩散
+            }
+        }
+        // 恩惠期内正常扩散
+        super.tick(level, pos, state);
+
+        // 【关键】显式重新调度流体 tick
+        // FlowingFluid.tick() 对源方块（isSource=true）只调用 spread() 后就结束，
+        // 不会重新 scheduleTick —— 导致恩惠期检查只执行一次后再也不触发。
+        // 对流动方块，super.tick() 会自行调度，hasScheduledTick 返回 true，此处是 no-op。
+        if (!level.isClientSide && level instanceof ServerLevel serverLevel) {
+            if (!serverLevel.getFluidTicks().hasScheduledTick(pos, state.getType())) {
+                serverLevel.scheduleTick(pos, state.getType(), getTickDelay(level));
+            }
+        }
     }
 
     /**

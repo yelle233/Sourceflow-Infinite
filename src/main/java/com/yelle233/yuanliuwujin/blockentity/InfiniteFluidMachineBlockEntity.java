@@ -3,8 +3,6 @@ package com.yelle233.yuanliuwujin.blockentity;
 import com.yelle233.yuanliuwujin.block.InfiniteFluidMachineBlock;
 import com.yelle233.yuanliuwujin.block.VoidFluidBlock;
 import com.yelle233.yuanliuwujin.compat.MekanismChecker;
-import com.yelle233.yuanliuwujin.compat.mekanism.InfiniteChemicalOutput;
-import com.yelle233.yuanliuwujin.compat.mekanism.MekChemicalHelper;
 import com.yelle233.yuanliuwujin.item.InfiniteCoreItem;
 import com.yelle233.yuanliuwujin.item.InfiniteCoreItem.BindType;
 import com.yelle233.yuanliuwujin.registry.*;
@@ -55,16 +53,11 @@ public class InfiniteFluidMachineBlockEntity extends BlockEntity implements ICor
         @Override public int getSlotLimit(int slot) { return 1; }
     };
 
-    private final EnergyStorage energyStorage = new EnergyStorage(Integer.MAX_VALUE, Integer.MAX_VALUE, 0) {
-        @Override public int receiveEnergy(int maxReceive, boolean simulate) {
-            int r = super.receiveEnergy(maxReceive, simulate);
-            if (!simulate && r > 0) setChanged();
-            return r;
-        }
-    };
+    private final EnergyStorage energyStorage = new MachineEnergyStorage(this::setChanged);
 
     private FluidTank voidTank;
-    private InfiniteChemicalOutput chemOutput;
+    /** Mekanism chemical output handler, stored as Object to avoid loading Mek classes when Mek is absent */
+    private Object chemOutput;
     private int fluidBudgetRemaining = 0;
 
     public InfiniteFluidMachineBlockEntity(BlockPos pos, BlockState state) {
@@ -72,7 +65,7 @@ public class InfiniteFluidMachineBlockEntity extends BlockEntity implements ICor
         rebuildVoidTank();
         initFaceRates();
         if (MekanismChecker.isLoaded()) {
-            chemOutput = new InfiniteChemicalOutput(
+            chemOutput = com.yelle233.yuanliuwujin.compat.mekanism.MekCompatBridge.createInfiniteChemicalOutput(
                     this::getBoundChemical,
                     this::canWork,
                     this::getVoidTank,
@@ -125,17 +118,30 @@ public class InfiniteFluidMachineBlockEntity extends BlockEntity implements ICor
 
         boolean hasCore = !coreSlot.getStackInSlot(0).isEmpty();
         boolean voidNotEmpty = !voidTank.isEmpty();
-        int requiredFE = calcRequiredFE();
-        boolean hasEnergy = energyStorage.getEnergyStored() >= requiredFE;
+        int baseFE = Modconfigs.INFINITE_FE_BASE.get();                   // 待机基础耗电
+        int requiredFE = calcRequiredFE();                                // 工作满载耗电（基础 + 面速率）
         boolean anyFaceEnabled = sideModes.values().stream().anyMatch(m -> m != SideMode.OFF);
-        boolean canWork = hasCore && voidNotEmpty && hasEnergy && anyFaceEnabled && hasValidBinding();
+        boolean hasEnoughEnergy = energyStorage.getEnergyStored() >= requiredFE;
+        boolean canWork = hasCore && voidNotEmpty && anyFaceEnabled && hasValidBinding() && hasEnoughEnergy;
+
+        // ── 三档耗电逻辑 ──
+        if (canWork) {
+            // 工作中：消耗满载电量，HUD 显示满载耗电
+            energyStorage.extractEnergy(requiredFE, false);
+            lastTickFEConsumed = requiredFE;
+        } else if (hasCore) {
+            // 待机中（有核心但无法工作）：消耗待机电量，HUD 显示待机耗电
+            int standbyConsume = Math.min(baseFE, energyStorage.getEnergyStored());
+            if (standbyConsume > 0) energyStorage.extractEnergy(standbyConsume, false);
+            lastTickFEConsumed = baseFE;
+        } else {
+            // 无核心：不耗电，HUD 显示 0
+            lastTickFEConsumed = 0;
+        }
 
         fluidBudgetRemaining = canWork ? calcTotalOutputBudgetThisTick() : 0;
 
         if (canWork) {
-            energyStorage.extractEnergy(requiredFE, false);
-            lastTickFEConsumed = requiredFE;
-
             // BOTH 模式推送流体
             for (Direction dir : new Direction[]{Direction.NORTH, Direction.SOUTH, Direction.EAST, Direction.WEST}) {
                 if (getSideMode(dir) != SideMode.BOTH) continue;
@@ -156,14 +162,16 @@ public class InfiniteFluidMachineBlockEntity extends BlockEntity implements ICor
                 if (pressure >= 100.0f) { triggerExplosion(level, pos); return; }
             }
         } else {
-            lastTickFEConsumed = 0;
             if (pressure > 0) pressure = (float) Math.max(0.0, pressure - Modconfigs.PRESSURE_DECAY_PER_TICK.get());
         }
 
-        if (canWork != lastTickCanWork) {
-            lastTickCanWork = canWork;
-            level.setBlock(pos, state.setValue(InfiniteFluidMachineBlock.LIT, canWork), 3);
+        // LIT 发光状态：有核心就亮，没核心就暗，不受工作状态影响
+        BlockState currentState = level.getBlockState(pos);
+        boolean currentLit = currentState.getValue(InfiniteFluidMachineBlock.LIT);
+        if (hasCore != currentLit) {
+            level.setBlock(pos, currentState.setValue(InfiniteFluidMachineBlock.LIT, hasCore), 3);
         }
+        lastTickCanWork = canWork;
         setChanged(); syncToClient();
     }
 
@@ -180,8 +188,9 @@ public class InfiniteFluidMachineBlockEntity extends BlockEntity implements ICor
         int voidAvail = voidTank.getFluidAmount();
         int actualChem = (int) Math.min(toBudget, voidAvail / (long) ratio);
         if (actualChem <= 0) return;
-        // 调用 MekChemicalHelper 推送
-        long pushed = MekChemicalHelper.pushChemicalWithLimit(level, pos, dir, chemId, actualChem);
+        // 通过桥接类推送化学品
+        long pushed = com.yelle233.yuanliuwujin.compat.mekanism.MekCompatBridge.pushChemicalToNeighbor(
+                level, pos, dir, chemId, actualChem);
         if (pushed > 0) {
             int voidConsumed = (int) (pushed * ratio);
             voidTank.drain(voidConsumed, IFluidHandler.FluidAction.EXECUTE);
@@ -312,18 +321,27 @@ public class InfiniteFluidMachineBlockEntity extends BlockEntity implements ICor
     @Nullable public Component getBoundSubstanceName() {
         BindType type = getCoreBindType();
         if (type == BindType.FLUID) { Fluid fluid = getBoundSourceFluid(); return fluid != null ? fluid.getFluidType().getDescription() : null; }
-        else if (type == BindType.CHEMICAL && MekanismChecker.isLoaded()) { ResourceLocation chemId = InfiniteCoreItem.getBoundChemical(coreSlot.getStackInSlot(0)); return chemId != null ? MekChemicalHelper.getChemicalName(chemId) : null; }
+        else if (type == BindType.CHEMICAL && MekanismChecker.isLoaded()) {
+            ResourceLocation chemId = InfiniteCoreItem.getBoundChemical(coreSlot.getStackInSlot(0));
+            return chemId != null ? com.yelle233.yuanliuwujin.compat.mekanism.MekChemicalHelper.getChemicalName(chemId) : null;
+        }
         return null;
     }
-    @Nullable public mekanism.api.chemical.Chemical getBoundChemical() { if (!MekanismChecker.isLoaded()) return null; ItemStack cs = coreSlot.getStackInSlot(0); if (cs.isEmpty()) return null; ResourceLocation id = InfiniteCoreItem.getBoundChemical(cs); return MekChemicalHelper.getChemical(id); }
+    /** 获取绑定的化学品（返回 Object 以避免 Mek 不存在时的类加载问题） */
+    @Nullable public Object getBoundChemical() {
+        if (!MekanismChecker.isLoaded()) return null;
+        ItemStack cs = coreSlot.getStackInSlot(0);
+        if (cs.isEmpty()) return null;
+        ResourceLocation id = InfiniteCoreItem.getBoundChemical(cs);
+        return com.yelle233.yuanliuwujin.compat.mekanism.MekChemicalHelper.getChemical(id);
+    }
     public boolean canWork() {
         if (level == null || level.isClientSide) return lastTickCanWork;
         boolean hasCore = !coreSlot.getStackInSlot(0).isEmpty();
         boolean voidNotEmpty = !voidTank.isEmpty();
-        int requiredFE = calcRequiredFE();
-        boolean hasEnergy = energyStorage.getEnergyStored() >= requiredFE;
         boolean anyFaceEnabled = sideModes.values().stream().anyMatch(m -> m != SideMode.OFF);
-        return hasCore && voidNotEmpty && hasEnergy && anyFaceEnabled && hasValidBinding();
+        boolean hasEnoughEnergy = energyStorage.getEnergyStored() >= calcRequiredFE();
+        return hasCore && voidNotEmpty && anyFaceEnabled && hasValidBinding() && hasEnoughEnergy;
     }
 
     // ── ICoreMachine ──
@@ -349,7 +367,7 @@ public class InfiniteFluidMachineBlockEntity extends BlockEntity implements ICor
     public EnergyStorage getEnergyStorage() { return energyStorage; }
     public float getPressure() { return pressure; }
     public int getLastTickFEConsumed() { return lastTickFEConsumed; }
-    @Nullable public InfiniteChemicalOutput getInfiniteChemicalOutput() { return chemOutput; }
+    @Nullable public Object getInfiniteChemicalOutput() { return chemOutput; }
     public int getFluidBudgetRemaining() { return fluidBudgetRemaining; }
 
     private void notifyCapabilityChanged(Direction dir) {
@@ -380,7 +398,7 @@ public class InfiniteFluidMachineBlockEntity extends BlockEntity implements ICor
     @Override protected void loadAdditional(CompoundTag tag, HolderLookup.Provider registries) {
         super.loadAdditional(tag, registries);
         if (tag.contains("core")) coreSlot.deserializeNBT(registries, tag.getCompound("core"));
-        energyStorage.receiveEnergy(tag.getInt("energy"), false);
+        ((MachineEnergyStorage) energyStorage).setEnergy(tag.getInt("energy"));
         rebuildVoidTank();
         if (tag.contains("voidTank")) voidTank.readFromNBT(registries, tag.getCompound("voidTank"));
         pressure = tag.getFloat("pressure"); lastTickCanWork = tag.getBoolean("lastCanWork");

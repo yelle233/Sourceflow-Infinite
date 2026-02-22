@@ -3,7 +3,6 @@ package com.yelle233.yuanliuwujin.registry;
 import com.yelle233.yuanliuwujin.blockentity.DestructionMachineBlockEntity;
 import com.yelle233.yuanliuwujin.blockentity.InfiniteFluidMachineBlockEntity;
 import com.yelle233.yuanliuwujin.compat.MekanismChecker;
-import com.yelle233.yuanliuwujin.compat.mekanism.MekChemicalHelper;
 import com.yelle233.yuanliuwujin.item.InfiniteCoreItem.BindType;
 import net.minecraft.core.Direction;
 import net.neoforged.neoforge.capabilities.Capabilities;
@@ -11,6 +10,13 @@ import net.neoforged.neoforge.capabilities.RegisterCapabilitiesEvent;
 import net.neoforged.neoforge.fluids.FluidStack;
 import net.neoforged.neoforge.fluids.capability.IFluidHandler;
 
+/**
+ * Capability 注册。
+ * <p>
+ * 【修复】所有 Mekanism 相关的 Capability 注册已移至
+ * {@code MekCompatBridge}，通过 {@code MekanismChecker.isLoaded()} 守卫调用，
+ * 避免在没有 Mekanism 时加载 Mekanism API 类导致 ClassNotFoundException。
+ */
 public class ModCapabilities {
 
     public static void register(RegisterCapabilitiesEvent event) {
@@ -51,7 +57,10 @@ public class ModCapabilities {
             };
         }, ModBlocks.INFINITE_FLUID_MACHINE.get());
 
-        if (MekanismChecker.isLoaded()) registerInfiniteChemicalCapability(event);
+        // 【修复】Mekanism Chemical Capability 通过桥接类注册，不在此处直接引用 Mek API
+        if (MekanismChecker.isLoaded()) {
+            com.yelle233.yuanliuwujin.compat.mekanism.MekCompatBridge.registerInfiniteChemicalCapability(event);
+        }
     }
 
     private static IFluidHandler makeVoidAcceptHandler(InfiniteFluidMachineBlockEntity m) {
@@ -69,20 +78,6 @@ public class ModCapabilities {
         };
     }
 
-    private static void registerInfiniteChemicalCapability(RegisterCapabilitiesEvent event) {
-        event.registerBlock(MekChemicalHelper.CHEMICAL_HANDLER_CAP, (level, pos, state, be, ctx) -> {
-            if (!(be instanceof InfiniteFluidMachineBlockEntity m)) return null;
-            if (!m.hasValidBinding()) return null;
-            if (m.getCoreBindType() != BindType.CHEMICAL) return null;
-            if (ctx == null) return (mekanism.api.chemical.IChemicalHandler) m.getInfiniteChemicalOutput();
-            if (ctx == Direction.UP || ctx == Direction.DOWN) return null;
-            return switch (m.getSideMode(ctx)) {
-                case OFF -> null;
-                case PULL, BOTH -> (mekanism.api.chemical.IChemicalHandler) m.getInfiniteChemicalOutput();
-            };
-        }, ModBlocks.INFINITE_FLUID_MACHINE.get());
-    }
-
     private static void registerDestructionMachineCapabilities(RegisterCapabilitiesEvent event) {
         event.registerBlock(Capabilities.EnergyStorage.BLOCK, (level, pos, state, be, ctx) -> {
             if (!(be instanceof DestructionMachineBlockEntity m)) return null;
@@ -98,7 +93,10 @@ public class ModCapabilities {
             return m.makeSideSinkHandler(ctx);
         }, ModBlocks.DESTRUCTION_MACHINE.get());
 
-        if (MekanismChecker.isLoaded()) registerDestructionChemicalCapability(event);
+        // 【修复】Mekanism Chemical Capability 通过桥接类注册
+        if (MekanismChecker.isLoaded()) {
+            com.yelle233.yuanliuwujin.compat.mekanism.MekCompatBridge.registerDestructionChemicalCapability(event);
+        }
     }
 
     private static IFluidHandler makeVoidOutputHandler(DestructionMachineBlockEntity m) {
@@ -111,15 +109,5 @@ public class ModCapabilities {
             @Override public FluidStack drain(int maxDrain, FluidAction action) { return m.getVoidTank().drain(maxDrain, action); }
             @Override public FluidStack drain(FluidStack resource, FluidAction action) { return m.getVoidTank().drain(resource, action); }
         };
-    }
-
-    private static void registerDestructionChemicalCapability(RegisterCapabilitiesEvent event) {
-        event.registerBlock(MekChemicalHelper.CHEMICAL_HANDLER_CAP, (level, pos, state, be, ctx) -> {
-            if (!(be instanceof DestructionMachineBlockEntity m)) return null;
-            if (ctx == Direction.UP || ctx == Direction.DOWN) return null;
-            var mode = m.getSideMode(ctx);
-            if (mode == DestructionMachineBlockEntity.SideMode.OFF) return null;
-            return (mekanism.api.chemical.IChemicalHandler) m.getChemSink();
-        }, ModBlocks.DESTRUCTION_MACHINE.get());
     }
 }

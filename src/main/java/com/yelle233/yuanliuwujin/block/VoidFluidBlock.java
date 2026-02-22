@@ -57,12 +57,14 @@ public class VoidFluidBlock extends LiquidBlock {
     @Override
     public void onPlace(BlockState state, Level level, BlockPos pos, BlockState oldState, boolean movedByPiston) {
         super.onPlace(state, level, pos, oldState, movedByPiston);
+
         if (!level.isClientSide) {
             long key = packKey(level, pos);
+            // 源方块和流动方块都记录出生时间（流动方块复用已有记录）
             if (!BIRTH_TIMES.containsKey(key)) {
                 BIRTH_TIMES.put(key, level.getGameTime());
             }
-            // 所有虚空流体方块（源方块和流动方块）都安排恩惠期结束后的移除 tick
+            // 所有虚空流体方块都安排清除 tick
             if (level instanceof ServerLevel serverLevel
                     && !serverLevel.getBlockTicks().hasScheduledTick(pos, this)) {
                 long birthTime = BIRTH_TIMES.getOrDefault(key, level.getGameTime());
@@ -74,18 +76,18 @@ public class VoidFluidBlock extends LiquidBlock {
     }
 
 
+
     @Override
     public void onRemove(BlockState state, Level level, BlockPos pos, BlockState newState, boolean movedByPiston) {
         super.onRemove(state, level, pos, newState, movedByPiston);
-        // 源方块被真正移除（非流体状态更新）时清理出生时间
-        if (!level.isClientSide && state.getFluidState().isSource()) {
-            boolean wasReplacedBySourceVoid = newState.getBlock() instanceof VoidFluidBlock
-                    && newState.getFluidState().isSource();
-            if (!wasReplacedBySourceVoid) {
+        if (!level.isClientSide) {
+            boolean wasReplacedByVoid = newState.getBlock() instanceof VoidFluidBlock;
+            if (!wasReplacedByVoid) {
                 BIRTH_TIMES.remove(packKey(level, pos));
             }
         }
     }
+
 
     // ═══════════════════════════════════════════════════════════
     //  恩惠期：源方块到期后自我移除
@@ -100,16 +102,19 @@ public class VoidFluidBlock extends LiquidBlock {
         long gracePeriod = Modconfigs.VOID_GRACE_PERIOD.get();
 
         if (birthTime == null || (level.getGameTime() - birthTime) >= gracePeriod) {
-            // 恩惠期结束：无论源方块还是流动方块，直接移除
             BIRTH_TIMES.remove(key);
-            level.removeBlock(pos, false);
-        }
-        // 若因某些原因提前触发，重新安排一次
-        else {
+            // 【修复】不能用 level.removeBlock()！removeBlock 的实现是
+            // level.setBlock(pos, fluidState.createLegacyBlock(), 3)
+            // 而此处的 fluidState 就是虚空流体本身，导致"移除"后又立刻放回来。
+            // 必须显式设置为 AIR 才能真正移除。
+            level.setBlock(pos, net.minecraft.world.level.block.Blocks.AIR.defaultBlockState(),
+                    Block.UPDATE_ALL);
+        } else {
             long remaining = Math.max(1, gracePeriod - (level.getGameTime() - birthTime));
             level.scheduleTick(pos, this, (int) remaining);
         }
     }
+
 
     // ═══════════════════════════════════════════════════════════
     //  随机 tick：方块吞噬（慢于扩散，防止吞噬超前）
@@ -183,6 +188,22 @@ public class VoidFluidBlock extends LiquidBlock {
     /** 清理所有出生时间记录（服务器关闭时调用） */
     public static void clearBirthTimes() {
         BIRTH_TIMES.clear();
+    }
+
+    /** 获取指定位置的出生时间（供 VoidFluid 流体 tick 调用） */
+    @javax.annotation.Nullable
+    public static Long getBirthTime(long key) {
+        return BIRTH_TIMES.get(key);
+    }
+
+    /** 移除指定位置的出生时间记录 */
+    public static void removeBirthTime(long key) {
+        BIRTH_TIMES.remove(key);
+    }
+
+    /** 公开版本的 packKey（供 VoidFluid 使用） */
+    public static long makeKey(Level level, BlockPos pos) {
+        return packKey(level, pos);
     }
 
     /** 维度 + 坐标 → 唯一 key */

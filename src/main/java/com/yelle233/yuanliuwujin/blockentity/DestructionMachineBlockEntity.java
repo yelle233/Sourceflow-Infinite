@@ -3,8 +3,6 @@ package com.yelle233.yuanliuwujin.blockentity;
 import com.yelle233.yuanliuwujin.block.DestructionMachineBlock;
 import com.yelle233.yuanliuwujin.block.VoidFluidBlock;
 import com.yelle233.yuanliuwujin.compat.MekanismChecker;
-import com.yelle233.yuanliuwujin.compat.mekanism.DestructionChemicalSink;
-import com.yelle233.yuanliuwujin.compat.mekanism.MekChemicalHelper;
 import com.yelle233.yuanliuwujin.item.DestructionCoreItem;
 import com.yelle233.yuanliuwujin.registry.*;
 import net.minecraft.core.BlockPos;
@@ -49,23 +47,18 @@ public class DestructionMachineBlockEntity extends BlockEntity implements ICoreM
         @Override public int getSlotLimit(int slot) { return 1; }
     };
 
-    private final EnergyStorage energyStorage = new EnergyStorage(Integer.MAX_VALUE, Integer.MAX_VALUE, 0) {
-        @Override public int receiveEnergy(int maxReceive, boolean simulate) {
-            int received = super.receiveEnergy(maxReceive, simulate);
-            if (!simulate && received > 0) setChanged();
-            return received;
-        }
-    };
+    private final EnergyStorage energyStorage = new MachineEnergyStorage(this::setChanged);
 
     private FluidTank voidTank;
-    private DestructionChemicalSink chemSink;
+    /** Mekanism chemical sink handler, stored as Object to avoid loading Mek classes when Mek is absent */
+    private Object chemSink;
 
     public DestructionMachineBlockEntity(BlockPos pos, BlockState state) {
         super(ModBlockEntities.DESTRUCTION_MACHINE.get(), pos, state);
         rebuildVoidTank();
         initFaceRates();
         if (MekanismChecker.isLoaded()) {
-            chemSink = new DestructionChemicalSink(
+            chemSink = com.yelle233.yuanliuwujin.compat.mekanism.MekCompatBridge.createDestructionChemicalSink(
                     this::canWork,
                     this::getVoidTank,
                     this::getCurrentRatio,
@@ -126,17 +119,30 @@ public class DestructionMachineBlockEntity extends BlockEntity implements ICoreM
         boolean hasCore = !coreSlot.getStackInSlot(0).isEmpty();
         boolean voidNotFull = voidTank.getFluidAmount() < voidTank.getCapacity();
         boolean anyFaceEnabled = sideModes.values().stream().anyMatch(m -> m != SideMode.OFF);
-        int requiredFE = calcRequiredFE();
-        boolean hasEnergy = energyStorage.getEnergyStored() >= requiredFE;
-        boolean canWork = hasCore && voidNotFull && hasEnergy && anyFaceEnabled;
+        int baseFE = Modconfigs.DESTROY_FE_BASE.get();                    // 待机基础耗电
+        int requiredFE = calcRequiredFE();                                // 工作满载耗电（基础 + 面速率）
+        boolean hasEnoughEnergy = energyStorage.getEnergyStored() >= requiredFE;
+        boolean canWork = hasCore && voidNotFull && anyFaceEnabled && hasEnoughEnergy;
+
+        // ── 三档耗电逻辑 ──
+        if (canWork) {
+            // 工作中：消耗满载电量，HUD 显示满载耗电
+            energyStorage.extractEnergy(requiredFE, false);
+            lastTickFEConsumed = requiredFE;
+        } else if (hasCore) {
+            // 待机中（有核心但无法工作）：消耗待机电量，HUD 显示待机耗电
+            int standbyConsume = Math.min(baseFE, energyStorage.getEnergyStored());
+            if (standbyConsume > 0) energyStorage.extractEnergy(standbyConsume, false);
+            lastTickFEConsumed = baseFE;
+        } else {
+            // 无核心：不耗电，HUD 显示 0
+            lastTickFEConsumed = 0;
+        }
 
         // 重置化学品预算
         chemBudgetRemaining = canWork ? calcTotalChemBudget() : 0;
 
         if (canWork) {
-            energyStorage.extractEnergy(requiredFE, false);
-            lastTickFEConsumed = requiredFE;
-
             // BOTH 模式主动抽取
             for (Direction dir : new Direction[]{Direction.NORTH, Direction.SOUTH, Direction.EAST, Direction.WEST}) {
                 SideMode mode = getSideMode(dir);
@@ -149,11 +155,10 @@ public class DestructionMachineBlockEntity extends BlockEntity implements ICoreM
 
                 // 抽取 Mekanism 化学品
                 if (MekanismChecker.isLoaded()) {
-                    pullChemicalFromNeighbor(level, pos, dir, tickBudget);
+                    com.yelle233.yuanliuwujin.compat.mekanism.MekCompatBridge.pullChemicalFromNeighbor(
+                            level, pos, dir, tickBudget, getCurrentRatio(), voidTank);
                 }
             }
-
-            pushVoidFluidDown(level, pos);
 
             ItemStack coreStack = coreSlot.getStackInSlot(0);
             if (DestructionCoreItem.isOverclocked(coreStack)) {
@@ -161,27 +166,20 @@ public class DestructionMachineBlockEntity extends BlockEntity implements ICoreM
                 if (pressure >= 100.0f) { triggerExplosion(level, pos); return; }
             }
         } else {
-            lastTickFEConsumed = 0;
             if (pressure > 0) pressure = (float) Math.max(0.0, pressure - Modconfigs.PRESSURE_DECAY_PER_TICK.get());
         }
 
-        if (canWork != lastTickCanWork) { lastTickCanWork = canWork; level.setBlock(pos, state.setValue(DestructionMachineBlock.LIT, canWork), 3); }
-        setChanged(); syncToClient();
-    }
+        // 无论 canWork 与否，只要虚空流体罐不空就推送到底面
+        pushVoidFluidDown(level, pos);
 
-    /** 从邻居抽取 Mekanism 化学品并转换为虚空流体 */
-    private void pullChemicalFromNeighbor(ServerLevel level, BlockPos pos, Direction dir, int tickBudget) {
-        if (!MekanismChecker.isLoaded()) return;
-        int ratio = getCurrentRatio();
-        int voidSpace = voidTank.getCapacity() - voidTank.getFluidAmount();
-        long maxChem = Math.min(tickBudget, (long) voidSpace * ratio);
-        if (maxChem <= 0) return;
-
-        long drained = MekChemicalHelper.drainAndDestroyChemical(level, pos, dir, maxChem);
-        if (drained > 0) {
-            int voidProduced = (int) Math.max(1, drained / ratio);
-            voidTank.fill(new FluidStack(ModFluids.VOID_FLUID_SOURCE.get(), voidProduced), IFluidHandler.FluidAction.EXECUTE);
+        // LIT 发光状态：有核心就亮，没核心就暗，不受工作状态影响
+        BlockState currentState = level.getBlockState(pos);
+        boolean currentLit = currentState.getValue(DestructionMachineBlock.LIT);
+        if (hasCore != currentLit) {
+            level.setBlock(pos, currentState.setValue(DestructionMachineBlock.LIT, hasCore), 3);
         }
+        lastTickCanWork = canWork;
+        setChanged(); syncToClient();
     }
 
     private int calcRequiredFE() {
@@ -287,10 +285,9 @@ public class DestructionMachineBlockEntity extends BlockEntity implements ICoreM
         if (level == null || level.isClientSide) return lastTickCanWork;
         boolean hasCore = !coreSlot.getStackInSlot(0).isEmpty();
         boolean voidNotFull = voidTank.getFluidAmount() < voidTank.getCapacity();
-        int requiredFE = calcRequiredFE();
-        boolean hasEnergy = energyStorage.getEnergyStored() >= requiredFE;
         boolean anyFaceEnabled = sideModes.values().stream().anyMatch(m -> m != SideMode.OFF);
-        return hasCore && voidNotFull && hasEnergy && anyFaceEnabled;
+        boolean hasEnoughEnergy = energyStorage.getEnergyStored() >= calcRequiredFE();
+        return hasCore && voidNotFull && anyFaceEnabled && hasEnoughEnergy;
     }
 
     // ── ICoreMachine ──
@@ -316,7 +313,7 @@ public class DestructionMachineBlockEntity extends BlockEntity implements ICoreM
     public EnergyStorage getEnergyStorage() { return energyStorage; }
     public float getPressure() { return pressure; }
     public int getLastTickFEConsumed() { return lastTickFEConsumed; }
-    @Nullable public DestructionChemicalSink getChemSink() { return chemSink; }
+    @Nullable public Object getChemSink() { return chemSink; }
 
     private void notifyCapabilityChanged(Direction dir) {
         if (level == null) return;
@@ -346,7 +343,7 @@ public class DestructionMachineBlockEntity extends BlockEntity implements ICoreM
     @Override protected void loadAdditional(CompoundTag tag, HolderLookup.Provider registries) {
         super.loadAdditional(tag, registries);
         if (tag.contains("core")) coreSlot.deserializeNBT(registries, tag.getCompound("core"));
-        if (tag.contains("energy")) energyStorage.receiveEnergy(tag.getCompound("energy").getInt("energy"), false);
+        if (tag.contains("energy")) ((MachineEnergyStorage) energyStorage).setEnergy(tag.getCompound("energy").getInt("energy"));
         rebuildVoidTank(); if (tag.contains("voidTank")) voidTank.readFromNBT(registries, tag.getCompound("voidTank"));
         pressure = tag.getFloat("pressure"); lastTickCanWork = tag.getBoolean("lastCanWork");
         lastTickFEConsumed = tag.getInt("lastFE");

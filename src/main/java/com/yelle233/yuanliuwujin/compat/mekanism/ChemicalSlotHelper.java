@@ -16,7 +16,7 @@ import java.util.List;
  * 调用方须通过完全限定名调用，且只在 {@code recipe.isChemical()} 为 true 时调用。
  *
  * <p><b>FIX v2.1 - 修复化学品 JEI 槽使用静态纯色贴图问题：</b>
- * 原版本使用 {@link ChemicalTankRenderer}（自定义 {@code IIngredientRenderer}）渲染
+ * 原版本使用自定义 ChemicalTankRenderer 渲染
  * 化学品为静态色条，与 JEI 侧边栏的动态动画效果不一致、观感差。
  * 现在不再指定自定义渲染器，直接让 JEI 使用 Mekanism 自行注册的动态渲染器
  * （会显示化学品图标 + 颜色动画，与 JEI 物品列表完全一致）。

@@ -44,7 +44,7 @@ public class ModBlocks {
                             Block.Properties.of()
                                     .mapColor(MapColor.DEEPSLATE)
                                     .strength(3.0F, 6.0F)
-                                    .lightLevel(s -> s.getValue(DestructionMachineBlock.LIT) ? 4 : 0)
+                                    .lightLevel(s -> s.getValue(DestructionMachineBlock.LIT) ? 8 : 0)
                                     .noOcclusion()
                                     .requiresCorrectToolForDrops()));
 

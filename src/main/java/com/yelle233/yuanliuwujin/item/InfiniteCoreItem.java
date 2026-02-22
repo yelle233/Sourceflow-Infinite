@@ -1,7 +1,6 @@
 package com.yelle233.yuanliuwujin.item;
 
 import com.yelle233.yuanliuwujin.compat.MekanismChecker;
-import com.yelle233.yuanliuwujin.compat.mekanism.MekChemicalHelper;
 import com.yelle233.yuanliuwujin.registry.ModDataComponents;
 import com.yelle233.yuanliuwujin.registry.Modconfigs;
 import net.minecraft.ChatFormatting;
@@ -73,7 +72,7 @@ public class InfiniteCoreItem extends Item {
         if (fluidId != null) return tryBind(player, stack, ctx.getHand(), fluidId, BindType.FLUID);
 
         if (MekanismChecker.isLoaded()) {
-            ResourceLocation chemId = MekChemicalHelper.tryGetChemicalIdFromHandler(level, pos, face);
+            ResourceLocation chemId = com.yelle233.yuanliuwujin.compat.mekanism.MekChemicalHelper.tryGetChemicalIdFromHandler(level, pos, face);
             if (chemId != null) return tryBind(player, stack, ctx.getHand(), chemId, BindType.CHEMICAL);
         }
 
@@ -149,7 +148,7 @@ public class InfiniteCoreItem extends Item {
             tooltip.add(Component.translatable("tooltip.yuanliuwujin.core.bound", fluid.getFluidType().getDescription()).withStyle(ChatFormatting.GRAY));
             if (Modconfigs.isFluidBanned(boundFluidId)) tooltip.add(Component.literal("BANNED by config").withStyle(ChatFormatting.RED));
         } else {
-            Component chemName = MekanismChecker.isLoaded() ? MekChemicalHelper.getChemicalName(boundChemId) : null;
+            Component chemName = MekanismChecker.isLoaded() ? com.yelle233.yuanliuwujin.compat.mekanism.MekChemicalHelper.getChemicalName(boundChemId) : null;
             if (chemName == null) chemName = Component.literal(boundChemId.toString());
             tooltip.add(Component.translatable("tooltip.yuanliuwujin.core.bound_chemical", chemName).withStyle(ChatFormatting.LIGHT_PURPLE));
         }

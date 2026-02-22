@@ -43,8 +43,4 @@ public class DestructionCoreItem extends Item {
         if (oc) tooltip.add(Component.translatable("tooltip.yuanliuwujin.overclock_warning").withStyle(ChatFormatting.RED));
         tooltip.add(Component.translatable("tooltip.yuanliuwujin.destruction_core.hint").withStyle(ChatFormatting.DARK_GRAY));
     }
-
-    public static ItemStack ofLevel(Item item, int level) {
-        return new ItemStack(item);
-    }
 }
