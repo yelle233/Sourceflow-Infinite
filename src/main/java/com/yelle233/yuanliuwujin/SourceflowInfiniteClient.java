@@ -63,8 +63,12 @@ public class SourceflowInfiniteClient {
         if (WrenchItem.getMode(player.getMainHandItem()) == WrenchItem.WrenchMode.CONFIG) {
             HitResult hit = mc.hitResult;
             if (hit != null && hit.getType() == HitResult.Type.BLOCK) {
-                Direction face = ((BlockHitResult) hit).getDirection();
-                if (face != Direction.UP && face != Direction.DOWN) {
+                BlockHitResult bhr = (BlockHitResult) hit;
+                Direction face = bhr.getDirection();
+                // 仅在对准本模组机器的侧面时才拦截滚轮做速率调节
+                if (face != Direction.UP && face != Direction.DOWN
+                        && mc.level != null
+                        && mc.level.getBlockEntity(bhr.getBlockPos()) instanceof com.yelle233.yuanliuwujin.blockentity.ICoreMachine) {
                     int delta = scrollY > 0 ? 1000 : -1000;
                     PacketDistributor.sendToServer(new FaceRateUpdatePayload(face, delta));
                     event.setCanceled(true);
@@ -93,8 +97,12 @@ public class SourceflowInfiniteClient {
             if (event.getAction() == 1) {
                 HitResult hit = mc.hitResult;
                 if (hit != null && hit.getType() == HitResult.Type.BLOCK) {
-                    Direction face = ((BlockHitResult) hit).getDirection();
-                    if (face != Direction.UP && face != Direction.DOWN) {
+                    BlockHitResult bhr = (BlockHitResult) hit;
+                    Direction face = bhr.getDirection();
+                    // 仅在对准本模组机器的侧面时才启用长按速率调节
+                    if (face != Direction.UP && face != Direction.DOWN
+                            && mc.level != null
+                            && mc.level.getBlockEntity(bhr.getBlockPos()) instanceof com.yelle233.yuanliuwujin.blockentity.ICoreMachine) {
                         rightMouseHeld = true; holdTicks = 0; lastSentTick = 0; heldFace = face;
                     }
                 }

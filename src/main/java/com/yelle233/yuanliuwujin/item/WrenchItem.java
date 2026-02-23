@@ -68,11 +68,13 @@ public class WrenchItem extends Item {
     @Override
     public InteractionResult useOn(UseOnContext ctx) {
         Level level = ctx.getLevel();
-        if (level.isClientSide) return InteractionResult.SUCCESS;
-
         BlockPos pos = ctx.getClickedPos();
         BlockEntity be = level.getBlockEntity(pos);
+
+        // 非本模组机器：不拦截交互，让玩家正常操作其他方块（如打开箱子等）
         if (!(be instanceof ICoreMachine machine)) return InteractionResult.PASS;
+
+        if (level.isClientSide) return InteractionResult.SUCCESS;
 
         Player player = ctx.getPlayer();
         if (player == null) return InteractionResult.PASS;
