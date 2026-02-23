@@ -47,9 +47,9 @@ public class InfiniteFluidMachineBER implements BlockEntityRenderer<InfiniteFlui
         // 1) 渲染内部旋转核心
         renderCoreBlockInside(be, partialTick, poseStack, bufferSource);
 
-        // 2) 渲染各面的模式覆盖层
+        // 2) 渲染各面的模式覆盖层（跳过顶面和底面）
         for (Direction dir : Direction.values()) {
-            if (dir == Direction.UP) continue;
+            if (dir == Direction.UP || dir == Direction.DOWN) continue;
 
             SideMode mode = be.getSideMode(dir);
             if (mode == SideMode.OFF) continue;

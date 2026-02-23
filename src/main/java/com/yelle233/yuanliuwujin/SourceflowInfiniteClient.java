@@ -154,7 +154,7 @@ public class SourceflowInfiniteClient {
             if (!facesShort.isEmpty()) facesShort.append(' ');
             facesShort.append(dirShort(d)).append(mode == SideMode.PULL ? "(P)" : "(B)");
             if (mc.player != null && mc.player.getMainHandItem().getItem() instanceof WrenchItem) {
-                facesShort.append(':').append(machine.getFaceRate(d)).append("/s");
+                facesShort.append(':').append(machine.getFaceRate(d)).append("mB/s");
             }
         }
 
@@ -223,7 +223,7 @@ public class SourceflowInfiniteClient {
             if (!facesShort.isEmpty()) facesShort.append(' ');
             facesShort.append(dirShort(d)).append(mode == DestructionMachineBlockEntity.SideMode.PUSH ? "(P)" : "(B)");
             if (mc.player != null && mc.player.getMainHandItem().getItem() instanceof WrenchItem) {
-                facesShort.append(':').append(machine.getFaceRate(d)).append("/s");
+                facesShort.append(':').append(machine.getFaceRate(d)).append("mB/s");
             }
         }
 

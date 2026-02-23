@@ -51,9 +51,9 @@ public class DestructionMachineBER implements BlockEntityRenderer<DestructionMac
         // 1) 渲染内部旋转的销毁核心
         renderCoreInside(be, partialTick, poseStack, bufferSource);
 
-        // 2) 渲染各面的模式覆盖层（跳过顶面和 OFF 模式）
+        // 2) 渲染各面的模式覆盖层（跳过顶面、底面和 OFF 模式）
         for (Direction dir : Direction.values()) {
-            if (dir == Direction.UP) continue;
+            if (dir == Direction.UP || dir == Direction.DOWN) continue;
             SideMode mode = be.getSideMode(dir);
             if (mode == SideMode.OFF) continue;
 

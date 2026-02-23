@@ -52,7 +52,7 @@ public class VoidFluidType extends FluidType {
             ResourceLocation.fromNamespaceAndPath("yuanliuwujin", "fluid/void_fluid_overlay");
 
     /** 虚空流体颜色：深紫色，ARGB */
-    public static final int COLOR_ARGB = 0xCC_1A0030;
+    public static final int COLOR_ARGB = 0x88_C8A0E8;
 
     /** 着色向量（用于 getRenderColor 等客户端方法） */
     public static final Vector3f COLOR_VEC = new Vector3f(
