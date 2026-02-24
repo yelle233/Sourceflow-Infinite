@@ -152,35 +152,16 @@ dependencies {
     // http://www.gradle.org/docs/current/userguide/dependency_management.html
 
     //Mek
-    //只在编译期需要
     compileOnly fg.deobf("curse.maven:mekanism-268560:6552911")
-    // 实际加载
     runtimeOnly fg.deobf("curse.maven:mekanism-268560:6552911")
 
-//    //JADE
-//    runtimeOnly fg.deobf("curse.maven:jade-324717:6855440")
 
     //JEI
+    compileOnly fg.deobf("curse.maven:jei-238222:7391695")
     runtimeOnly fg.deobf("curse.maven:jei-238222:7391695")
 
-//    //Create
-//    runtimeOnly fg.deobf("curse.maven:create-328085:7178761")
-//
-//    //Create Crafts & Additions
-//    runtimeOnly fg.deobf("curse.maven:createaddition-439890:7208610")
 
 
-//    // JEI：请换成“仓库里确实存在”的版本号（你现在的 15.20.0.129 很可能不存在于 Maven）
-//    runtimeOnly "mezz.jei:jei-1.20.1-forge:15.20.0.106"
-//    // Jade：你日志里的就是这个坐标
-//    runtimeOnly "curse.maven:jade-324717:6271651"
-
-
-//    runtimeOnly fg.deobf(files(
-//            "libs/jei-1.20.1-forge-15.20.0.129.jar",
-////            "libs/Jade-1.20.1-Forge-11.13.2.jar",
-//            "libs/Mekanism-1.20.1-10.4.16.80.jar"
-//    ))
 }
 
 // This block of code expands all declared replace properties in the specified resource targets.

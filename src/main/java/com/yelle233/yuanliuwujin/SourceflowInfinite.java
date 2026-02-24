@@ -1,9 +1,8 @@
 package com.yelle233.yuanliuwujin;
 
-import com.yelle233.yuanliuwujin.network.ModNetwork;
+import com.yelle233.yuanliuwujin.registry.ModNetwork;
 import com.yelle233.yuanliuwujin.registry.*;
 import net.minecraftforge.eventbus.api.IEventBus;
-import net.minecraftforge.fml.ModContainer;
 import net.minecraftforge.fml.ModLoadingContext;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.config.ModConfig;
@@ -14,7 +13,13 @@ import com.mojang.logging.LogUtils;
 /**
  * 源流无尽（Sourceflow Infinite）模组主类。
  * <p>
- * 1.20.1 Forge 版本。
+ * 1.20.1 Forge 版本（v2.0 新功能移植）：
+ * <ul>
+ *   <li>引入虚空流体作为两种机器的中间媒介</li>
+ *   <li>核心升级至 1–4 级，超频系统</li>
+ *   <li>面速率独立可调</li>
+ *   <li>超频压力与爆炸机制</li>
+ * </ul>
  */
 @Mod(SourceflowInfinite.MODID)
 public class SourceflowInfinite {
@@ -25,6 +30,10 @@ public class SourceflowInfinite {
     public SourceflowInfinite() {
         IEventBus modEventBus = FMLJavaModLoadingContext.get().getModEventBus();
 
+        // 流体类型必须先于流体注册
+        ModFluids.FLUID_TYPES.register(modEventBus);
+        ModFluids.FLUIDS.register(modEventBus);
+
         ModItems.ITEMS.register(modEventBus);
         ModBlocks.BLOCKS.register(modEventBus);
         ModBlockEntities.BLOCK_ENTITIES.register(modEventBus);
@@ -32,7 +41,8 @@ public class SourceflowInfinite {
 
         ModNetwork.register();
 
+        // 1.20.1 Forge 使用 COMMON 类型配置（存放于 config 目录）
         ModLoadingContext.get().registerConfig(ModConfig.Type.COMMON, Modconfigs.SPEC);
     }
-
 }
+

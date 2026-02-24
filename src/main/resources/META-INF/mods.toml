@@ -78,3 +78,10 @@ type = "optional"
 versionRange = "[10.4,)"
 ordering = "AFTER"
 side = "BOTH"
+
+[[dependencies.yuanliuwujin]]
+modId = "jei"
+type = "optional"
+versionRange = "[19.0,)"
+ordering = "AFTER"
+side = "CLIENT"

@@ -124,79 +124,91 @@ public final class MekChemicalHelper {
 
     /* ====== 化学品推送（无限流体机器 BOTH 模式主动输出） ====== */
 
-    public static void pushAnyChemical(Level level, BlockPos pos, Direction dir,
+    public static long pushAnyChemical(Level level, BlockPos pos, Direction dir,
                                        MekChemicalKind kind, ResourceLocation id, long amount) {
-        if (amount <= 0) return;
-        switch (kind) {
+        if (amount <= 0) return 0;
+        return switch (kind) {
             case GAS      -> pushGas(level, pos, dir, id, amount);
             case INFUSION -> pushInfusion(level, pos, dir, id, amount);
             case PIGMENT  -> pushPigment(level, pos, dir, id, amount);
             case SLURRY   -> pushSlurry(level, pos, dir, id, amount);
-        }
+        };
     }
 
-    public static void pushGas(Level level, BlockPos pos, Direction dir,
+    public static long pushGas(Level level, BlockPos pos, Direction dir,
                                ResourceLocation id, long amount) {
-        if (amount <= 0) return;
+        if (amount <= 0) return 0;
         Gas gas = MekanismAPI.gasRegistry().getValue(id);
-        if (gas == null) return;
+        if (gas == null) return 0;
         BlockEntity target = level.getBlockEntity(pos.relative(dir));
-        if (target == null) return;
+        if (target == null) return 0;
+        long[] result = {0};
         target.getCapability(GAS_HANDLER_CAP, dir.getOpposite()).ifPresent(handler -> {
             GasStack stack = new GasStack(gas, amount);
             GasStack remainingSim = handler.insertChemical(stack, Action.SIMULATE);
             long inserted = amount - remainingSim.getAmount();
             if (inserted <= 0) return;
             handler.insertChemical(new GasStack(gas, inserted), Action.EXECUTE);
+            result[0] = inserted;
         });
+        return result[0];
     }
 
-    public static void pushInfusion(Level level, BlockPos pos, Direction dir,
+    public static long pushInfusion(Level level, BlockPos pos, Direction dir,
                                     ResourceLocation id, long amount) {
-        if (amount <= 0) return;
+        if (amount <= 0) return 0;
         InfuseType type = MekanismAPI.infuseTypeRegistry().getValue(id);
-        if (type == null) return;
+        if (type == null) return 0;
         BlockEntity target = level.getBlockEntity(pos.relative(dir));
-        if (target == null) return;
+        if (target == null) return 0;
+        long[] result = {0};
         target.getCapability(INFUSION_HANDLER_CAP, dir.getOpposite()).ifPresent(handler -> {
             InfusionStack stack = new InfusionStack(type, amount);
             InfusionStack remainingSim = handler.insertChemical(stack, Action.SIMULATE);
             long inserted = amount - remainingSim.getAmount();
             if (inserted <= 0) return;
             handler.insertChemical(new InfusionStack(type, inserted), Action.EXECUTE);
+            result[0] = inserted;
         });
+        return result[0];
     }
 
-    public static void pushPigment(Level level, BlockPos pos, Direction dir,
+    public static long pushPigment(Level level, BlockPos pos, Direction dir,
                                    ResourceLocation id, long amount) {
-        if (amount <= 0) return;
+        if (amount <= 0) return 0;
         Pigment pigment = MekanismAPI.pigmentRegistry().getValue(id);
-        if (pigment == null) return;
+        if (pigment == null) return 0;
         BlockEntity target = level.getBlockEntity(pos.relative(dir));
-        if (target == null) return;
+        if (target == null) return 0;
+        long[] result = {0};
         target.getCapability(PIGMENT_HANDLER_CAP, dir.getOpposite()).ifPresent(handler -> {
             PigmentStack stack = new PigmentStack(pigment, amount);
             PigmentStack remainingSim = handler.insertChemical(stack, Action.SIMULATE);
             long inserted = amount - remainingSim.getAmount();
             if (inserted <= 0) return;
             handler.insertChemical(new PigmentStack(pigment, inserted), Action.EXECUTE);
+            result[0] = inserted;
         });
+        return result[0];
     }
 
-    public static void pushSlurry(Level level, BlockPos pos, Direction dir,
+    public static long pushSlurry(Level level, BlockPos pos, Direction dir,
                                   ResourceLocation id, long amount) {
-        if (amount <= 0) return;
+        if (amount <= 0) return 0;
         Slurry slurry = MekanismAPI.slurryRegistry().getValue(id);
-        if (slurry == null) return;
+        if (slurry == null) return 0;
         BlockEntity target = level.getBlockEntity(pos.relative(dir));
-        if (target == null) return;
+        if (target == null) return 0;
+        long[] result = {0};
         target.getCapability(SLURRY_HANDLER_CAP, dir.getOpposite()).ifPresent(handler -> {
             SlurryStack stack = new SlurryStack(slurry, amount);
             SlurryStack remainingSim = handler.insertChemical(stack, Action.SIMULATE);
             long inserted = amount - remainingSim.getAmount();
             if (inserted <= 0) return;
             handler.insertChemical(new SlurryStack(slurry, inserted), Action.EXECUTE);
+            result[0] = inserted;
         });
+        return result[0];
     }
 
     /* ====== 化学品抽取并销毁（销毁机器 BOTH 模式主动抽取） ====== */

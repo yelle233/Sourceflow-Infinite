@@ -92,7 +92,7 @@ public class DestructionMachineBlock extends Block implements EntityBlock {
         if (level.isClientSide) return null;
         if (type != ModBlockEntities.DESTRUCTION_MACHINE.get()) return null;
         return (lvl, pos, st, be) ->
-                DestructionMachineBlockEntity.serverTick(lvl, pos, st,
+                DestructionMachineBlockEntity.tick(lvl, pos, st,
                         (DestructionMachineBlockEntity) be);
     }
 

@@ -78,7 +78,7 @@ public class InfiniteFluidMachineBlock extends Block implements EntityBlock {
         if (level.isClientSide) return null;
         if (type != ModBlockEntities.INFINITE_FLUID_MACHINE.get()) return null;
         return (lvl, pos, st, be) ->
-                InfiniteFluidMachineBlockEntity.serverTick(lvl, pos, st, (InfiniteFluidMachineBlockEntity) be);
+                InfiniteFluidMachineBlockEntity.tick(lvl, pos, st, (InfiniteFluidMachineBlockEntity) be);
     }
 
     /* ====== 方块破坏时掉落核心 ====== */

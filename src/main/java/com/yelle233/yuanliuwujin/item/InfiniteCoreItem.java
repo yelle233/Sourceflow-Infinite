@@ -32,37 +32,53 @@ import javax.annotation.Nullable;
 import java.util.List;
 
 /**
- * 无限核心物品（1.20.1 Forge 版本）。
+ * 无限核心物品（1.20.1 Forge v2.0 版本）。
  * <p>
- * 使用 NBT Tag 替代 1.21.1 的 Data Component 存储绑定数据。
+ * 与 1.21.1 版本保持功能对等：
  * <ul>
- *   <li>NBT Key "BoundFluid" → ResourceLocation 字符串</li>
- *   <li>NBT Key "BoundChemical" → ResourceLocation 字符串</li>
- *   <li>NBT Key "Bound" → boolean，用于模型切换</li>
+ *   <li>支持 L1–L4 等级与超频（OC）标志，通过构造函数传入</li>
+ *   <li>使用 NBT Tag 替代 Data Component 存储绑定数据</li>
+ *   <li>支持流体绑定与 Mekanism 四种化学品（Gas/InfuseType/Pigment/Slurry）绑定</li>
  * </ul>
  */
 public class InfiniteCoreItem extends Item {
 
-    private static final String TAG_BOUND_FLUID = "BoundFluid";
+    // ── NBT 键名 ──────────────────────────────────────────
+    private static final String TAG_BOUND_FLUID    = "BoundFluid";
     private static final String TAG_BOUND_CHEMICAL = "BoundChemical";
-    private static final String TAG_BOUND = "Filled";
-    private static final String TAG_CHEM_KIND = "MekChemKind";
+    private static final String TAG_BOUND          = "Filled";
+    private static final String TAG_CHEM_KIND      = "MekChemKind";
 
-    public InfiniteCoreItem(Properties properties) {
+    // ── 核心等级与超频 ─────────────────────────────────────
+    private final int level;
+    private final boolean overclocked;
+
+    public InfiniteCoreItem(Properties properties, int level, boolean overclocked) {
         super(properties);
+        this.level = Math.max(1, Math.min(4, level));
+        this.overclocked = overclocked && this.level == 4;
     }
 
-    /* ====== 绑定类型枚举 ====== */
+    public int getCoreLevel()       { return level; }
+    public boolean isCoreOverclocked() { return overclocked; }
 
-    public enum BindType {
-        NONE, FLUID, CHEMICAL
+    public static int getLevel(ItemStack stack) {
+        if (stack.getItem() instanceof InfiniteCoreItem core) return core.getCoreLevel();
+        return 1;
     }
 
-    public enum MekChemicalKind {
-        GAS, INFUSION, PIGMENT, SLURRY
+    public static boolean isOverclocked(ItemStack stack) {
+        if (stack.getItem() instanceof InfiniteCoreItem core) return core.isCoreOverclocked();
+        return false;
     }
 
-    /* ====== 右键方块交互 ====== */
+    // ── 绑定类型枚举 ──────────────────────────────────────
+    public enum BindType { NONE, FLUID, CHEMICAL }
+
+    /** Mekanism 化学品种类枚举，用于区分四种独立化学品类型 */
+    public enum MekChemicalKind { GAS, INFUSION, PIGMENT, SLURRY }
+
+    // ── 右键方块交互 ──────────────────────────────────────
 
     @Override
     public InteractionResult useOn(UseOnContext ctx) {
@@ -73,44 +89,33 @@ public class InfiniteCoreItem extends Item {
         if (player == null) return InteractionResult.PASS;
 
         ItemStack stack = ctx.getItemInHand();
-        BlockPos pos = ctx.getClickedPos();
-        Direction face = ctx.getClickedFace();
+        BlockPos pos     = ctx.getClickedPos();
+        Direction face   = ctx.getClickedFace();
 
         // 1) 尝试从流体容器绑定
         ResourceLocation fluidId = tryGetFluidIdFromHandler(level, pos, face);
-        if (fluidId != null) {
-            return tryBind(player, stack, ctx.getHand(), fluidId, BindType.FLUID);
-        }
+        if (fluidId != null) return tryBind(player, stack, ctx.getHand(), fluidId, BindType.FLUID, null);
 
         // 2) 尝试从 Mekanism 化学品储罐绑定
         if (MekanismChecker.isLoaded()) {
             MekChemicalHelper.MekChemicalBinding binding =
                     MekChemicalHelper.tryGetAnyChemicalFromHandler(level, pos, face);
-
             if (binding != null) {
-                InteractionResult r = tryBind(player, stack, ctx.getHand(),
-                        binding.id(), BindType.CHEMICAL, binding.kind());
-
-                if (r.consumesAction()) {
-                    forceUpdateStack(player, ctx.getHand(), stack);
-                }
+                InteractionResult r = tryBind(player, stack, ctx.getHand(), binding.id(), BindType.CHEMICAL, binding.kind());
+                if (r.consumesAction()) forceUpdateStack(player, ctx.getHand(), stack);
                 return r;
             }
         }
 
         // 3) 尝试从液体方块绑定
         ResourceLocation worldFluidId = tryGetFluidIdFromWorld(level, pos, face);
-        if (worldFluidId != null) {
-            return tryBind(player, stack, ctx.getHand(), worldFluidId, BindType.FLUID);
-        }
+        if (worldFluidId != null) return tryBind(player, stack, ctx.getHand(), worldFluidId, BindType.FLUID, null);
 
         // 潜行右键：清除绑定
         if (player.isShiftKeyDown()) {
-            // 检查生存模式是否允许解绑
             if (!player.isCreative() && !Modconfigs.ALLOW_UNBIND_SURVIVAL.get()) {
                 player.displayClientMessage(
-                        Component.translatable("tooltip.yuanliuwujin.core.unbind_disabled")
-                                .withStyle(ChatFormatting.RED), true);
+                        Component.translatable("tooltip.yuanliuwujin.core.unbind_disabled").withStyle(ChatFormatting.RED), true);
                 return InteractionResult.CONSUME;
             }
             unbindOneCore(player, stack);
@@ -119,11 +124,10 @@ public class InfiniteCoreItem extends Item {
                     Component.translatable("tooltip.yuanliuwujin.core.text4").withStyle(ChatFormatting.YELLOW), true);
             return InteractionResult.CONSUME;
         }
-
         return InteractionResult.PASS;
     }
 
-    /* ====== 右键空气交互 ====== */
+    // ── 右键空气交互 ──────────────────────────────────────
 
     @Override
     public InteractionResultHolder<ItemStack> use(Level level, Player player, InteractionHand hand) {
@@ -131,11 +135,9 @@ public class InfiniteCoreItem extends Item {
         if (level.isClientSide) return InteractionResultHolder.pass(stack);
 
         if (player.isShiftKeyDown()) {
-            // 检查生存模式是否允许解绑
             if (!player.isCreative() && !Modconfigs.ALLOW_UNBIND_SURVIVAL.get()) {
                 player.displayClientMessage(
-                        Component.translatable("tooltip.yuanliuwujin.core.unbind_disabled")
-                                .withStyle(ChatFormatting.RED), true);
+                        Component.translatable("tooltip.yuanliuwujin.core.unbind_disabled").withStyle(ChatFormatting.RED), true);
                 return InteractionResultHolder.consume(stack);
             }
             unbindOneCore(player, stack);
@@ -147,86 +149,79 @@ public class InfiniteCoreItem extends Item {
 
         BlockPos fluidPos = findFluidPos(level, player);
         if (fluidPos == null) return InteractionResultHolder.pass(stack);
-
         ResourceLocation fluidId = resolveSourceFluidId(level.getFluidState(fluidPos));
         if (fluidId == null) return InteractionResultHolder.pass(stack);
-
-        InteractionResult result = tryBind(player, stack, hand, fluidId, BindType.FLUID);
-        return result == InteractionResult.CONSUME
-                ? InteractionResultHolder.consume(stack)
-                : InteractionResultHolder.pass(stack);
+        InteractionResult result = tryBind(player, stack, hand, fluidId, BindType.FLUID, null);
+        return result == InteractionResult.CONSUME ? InteractionResultHolder.consume(stack) : InteractionResultHolder.pass(stack);
     }
 
-    /* ====== 库存 Tick ====== */
+    // ── 库存 Tick（模型状态维护） ────────────────────────────
 
     @Override
     public void inventoryTick(ItemStack stack, Level level, Entity entity, int slot, boolean selected) {
         if (level.isClientSide || level.getGameTime() % 20 != 0) return;
 
-        boolean shouldLookBound = false;
-
+        boolean shouldBeFilled = false;
         ResourceLocation boundFluid = getBoundFluid(stack);
-        if (boundFluid != null && !Modconfigs.isFluidBanned(boundFluid)) {
-            shouldLookBound = true;
-        }
-
-        if (!shouldLookBound) {
-            ResourceLocation boundChem = getBoundChemical(stack);
-            if (boundChem != null) {
-                shouldLookBound = true;
-            }
-        }
+        if (boundFluid != null && !Modconfigs.isFluidBanned(boundFluid)) shouldBeFilled = true;
+        if (!shouldBeFilled && getBoundChemical(stack) != null) shouldBeFilled = true;
 
         CompoundTag tag = stack.getOrCreateTag();
-        if (shouldLookBound) {
-            if (!tag.getBoolean(TAG_BOUND)) tag.putBoolean(TAG_BOUND, true);
-        } else {
-            if (tag.getBoolean(TAG_BOUND)) tag.putBoolean(TAG_BOUND, false);
-        }
+        boolean currentFilled = tag.getBoolean(TAG_BOUND);
+        if (shouldBeFilled != currentFilled) tag.putBoolean(TAG_BOUND, shouldBeFilled);
     }
 
-    /* ====== Tooltip ====== */
+    // ── Tooltip ───────────────────────────────────────────
 
     @Override
     public void appendHoverText(ItemStack stack, @Nullable Level level, List<Component> tooltip, TooltipFlag flag) {
+        int lvl = this.level;
+        boolean oc = this.overclocked;
+        ChatFormatting levelColor = switch (lvl) {
+            case 1 -> ChatFormatting.GRAY;
+            case 2 -> ChatFormatting.GREEN;
+            case 3 -> ChatFormatting.AQUA;
+            case 4 -> oc ? ChatFormatting.GOLD : ChatFormatting.LIGHT_PURPLE;
+            default -> ChatFormatting.GRAY;
+        };
+        tooltip.add(Component.translatable("tooltip.yuanliuwujin.core_level", lvl + (oc ? " ★" : "")).withStyle(levelColor));
+
+        int ratio = Modconfigs.getInfiniteRatio(lvl, oc);
+        tooltip.add(Component.translatable("tooltip.yuanliuwujin.infinite_core.ratio", ratio).withStyle(ChatFormatting.DARK_GRAY));
+
         ResourceLocation boundFluidId = getBoundFluid(stack);
-        ResourceLocation boundChemId = getBoundChemical(stack);
+        ResourceLocation boundChemId  = getBoundChemical(stack);
 
         if (boundFluidId == null && boundChemId == null) {
             tooltip.add(Component.translatable("tooltip.yuanliuwujin.core.unbound").withStyle(ChatFormatting.GRAY));
             tooltip.add(Component.translatable("tooltip.yuanliuwujin.core.bind_hint").withStyle(ChatFormatting.DARK_GRAY));
-            if (MekanismChecker.isLoaded()) {
+            if (MekanismChecker.isLoaded())
                 tooltip.add(Component.translatable("tooltip.yuanliuwujin.core.bind_chem_hint").withStyle(ChatFormatting.DARK_GRAY));
-            }
             tooltip.add(Component.translatable("tooltip.yuanliuwujin.core.clear_hint").withStyle(ChatFormatting.DARK_GRAY));
             return;
         }
 
         if (boundFluidId != null) {
             Fluid fluid = BuiltInRegistries.FLUID.get(boundFluidId);
-            Component fluidName = fluid.getFluidType().getDescription();
-            tooltip.add(Component.translatable("tooltip.yuanliuwujin.core.bound", fluidName).withStyle(ChatFormatting.GRAY));
-
-            if (Modconfigs.isFluidBanned(boundFluidId)) {
+            tooltip.add(Component.translatable("tooltip.yuanliuwujin.core.bound",
+                    fluid.getFluidType().getDescription()).withStyle(ChatFormatting.GRAY));
+            if (Modconfigs.isFluidBanned(boundFluidId))
                 tooltip.add(Component.translatable("tooltip.yuanliuwujin.core.banned_by_config").withStyle(ChatFormatting.RED));
-            }
         } else {
             Component chemName = null;
             if (MekanismChecker.isLoaded()) {
-                MekChemicalKind kind = getBoundChemicalKind(stack);  // ★ 获取 kind
-                chemName = MekChemicalHelper.getChemicalNameByKind(kind, boundChemId);  // ★ 精确查找
+                MekChemicalKind kind = getBoundChemicalKind(stack);
+                chemName = MekChemicalHelper.getChemicalNameByKind(kind, boundChemId);
             }
-            if (chemName == null) {
-                chemName = Component.literal(boundChemId.toString());
-            }
-            tooltip.add(Component.translatable("tooltip.yuanliuwujin.core.bound_chemical", chemName)
-                    .withStyle(ChatFormatting.LIGHT_PURPLE));
+            if (chemName == null) chemName = Component.literal(boundChemId.toString());
+            tooltip.add(Component.translatable("tooltip.yuanliuwujin.core.bound_chemical", chemName).withStyle(ChatFormatting.LIGHT_PURPLE));
         }
 
         tooltip.add(Component.translatable("tooltip.yuanliuwujin.core.clear_hint").withStyle(ChatFormatting.DARK_GRAY));
+        if (oc) tooltip.add(Component.translatable("tooltip.yuanliuwujin.overclock_warning").withStyle(ChatFormatting.RED));
     }
 
-    /* ====== 绑定数据读写（NBT） ====== */
+    // ── 绑定数据读写（NBT） ──────────────────────────────────
 
     public static BindType getBindType(ItemStack stack) {
         CompoundTag tag = stack.getTag();
@@ -236,32 +231,36 @@ public class InfiniteCoreItem extends Item {
         return BindType.NONE;
     }
 
+    public static boolean hasValidBinding(ItemStack stack) { return getBindType(stack) != BindType.NONE; }
+
     @Nullable
     public static ResourceLocation getBoundFluid(ItemStack stack) {
         CompoundTag tag = stack.getTag();
         if (tag == null || !tag.contains(TAG_BOUND_FLUID)) return null;
-        try {
-            return ResourceLocation.tryParse(tag.getString(TAG_BOUND_FLUID));
-        } catch (Exception e) {
-            return null;
-        }
+        return ResourceLocation.tryParse(tag.getString(TAG_BOUND_FLUID));
     }
 
     @Nullable
     public static ResourceLocation getBoundChemical(ItemStack stack) {
         CompoundTag tag = stack.getTag();
         if (tag == null || !tag.contains(TAG_BOUND_CHEMICAL)) return null;
-        try {
-            return ResourceLocation.tryParse(tag.getString(TAG_BOUND_CHEMICAL));
-        } catch (Exception e) {
-            return null;
-        }
+        return ResourceLocation.tryParse(tag.getString(TAG_BOUND_CHEMICAL));
+    }
+
+    public static MekChemicalKind getBoundChemicalKind(ItemStack stack) {
+        CompoundTag tag = stack.getTag();
+        if (tag == null) return MekChemicalKind.GAS;
+        String s = tag.getString(TAG_CHEM_KIND);
+        if (s == null || s.isEmpty()) return MekChemicalKind.GAS;
+        try { return MekChemicalKind.valueOf(s); }
+        catch (IllegalArgumentException e) { return MekChemicalKind.GAS; }
     }
 
     private static void setBoundFluid(ItemStack stack, ResourceLocation id) {
         CompoundTag tag = stack.getOrCreateTag();
         tag.putString(TAG_BOUND_FLUID, id.toString());
-        tag.remove(TAG_BOUND_CHEMICAL); // 互斥
+        tag.remove(TAG_BOUND_CHEMICAL);
+        tag.remove(TAG_CHEM_KIND);
         setCoreModelState(stack, true);
     }
 
@@ -269,7 +268,7 @@ public class InfiniteCoreItem extends Item {
         CompoundTag tag = stack.getOrCreateTag();
         tag.putString(TAG_BOUND_CHEMICAL, id.toString());
         tag.putString(TAG_CHEM_KIND, kind.name());
-        tag.remove(TAG_BOUND_FLUID); // 互斥
+        tag.remove(TAG_BOUND_FLUID);
         setCoreModelState(stack, true);
     }
 
@@ -278,15 +277,15 @@ public class InfiniteCoreItem extends Item {
         if (tag != null) {
             tag.remove(TAG_BOUND_FLUID);
             tag.remove(TAG_BOUND_CHEMICAL);
-            tag.remove(TAG_BOUND);
+            tag.remove(TAG_CHEM_KIND);
         }
         setCoreModelState(stack, false);
     }
 
-    /* ====== 统一绑定入口 ====== */
+    // ── 绑定逻辑 ──────────────────────────────────────────
 
     private InteractionResult tryBind(Player player, ItemStack stack, InteractionHand hand,
-                                       ResourceLocation substanceId, BindType type,@Nullable MekChemicalKind kind) {
+                                      ResourceLocation substanceId, BindType type, @Nullable MekChemicalKind kind) {
         if (type == BindType.FLUID && Modconfigs.isFluidBanned(substanceId)) {
             player.displayClientMessage(
                     Component.translatable("tooltip.fluid_banned", substanceId.toString()).withStyle(ChatFormatting.RED), true);
@@ -295,83 +294,52 @@ public class InfiniteCoreItem extends Item {
 
         BindType currentType = getBindType(stack);
         if (currentType != BindType.NONE) {
-            ResourceLocation currentId = (currentType == BindType.FLUID)
-                    ? getBoundFluid(stack) : getBoundChemical(stack);
-            if (currentId != null && currentId.equals(substanceId)) {
-                player.displayClientMessage(
-                        Component.translatable("tooltip.yuanliuwujin.core.text1").withStyle(ChatFormatting.YELLOW), true);
-            } else {
-                player.displayClientMessage(
-                        Component.translatable("tooltip.yuanliuwujin.core.text2").withStyle(ChatFormatting.RED), true);
-            }
+            ResourceLocation currentId = (currentType == BindType.FLUID) ? getBoundFluid(stack) : getBoundChemical(stack);
+            if (currentId != null && currentId.equals(substanceId))
+                player.displayClientMessage(Component.translatable("tooltip.yuanliuwujin.core.text1").withStyle(ChatFormatting.YELLOW), true);
+            else
+                player.displayClientMessage(Component.translatable("tooltip.yuanliuwujin.core.text2").withStyle(ChatFormatting.RED), true);
             return InteractionResult.CONSUME;
         }
 
-        bindOneCore(player, stack, substanceId, type,kind);
+        bindOneCore(player, stack, substanceId, type, kind);
         forceUpdateStack(player, hand, stack);
-
-        String translationKey = (type == BindType.CHEMICAL)
-                ? "tooltip.yuanliuwujin.core.text3_chem"
-                : "tooltip.yuanliuwujin.core.text3";
+        String key = (type == BindType.CHEMICAL) ? "tooltip.yuanliuwujin.core.text3_chem" : "tooltip.yuanliuwujin.core.text3";
         player.displayClientMessage(
-                Component.translatable(translationKey).withStyle(ChatFormatting.GREEN)
-                        .append(Component.literal(substanceId.toString()).withStyle(ChatFormatting.AQUA)),
-                true);
+                Component.translatable(key).withStyle(ChatFormatting.GREEN)
+                        .append(Component.literal(substanceId.toString()).withStyle(ChatFormatting.AQUA)), true);
         return InteractionResult.CONSUME;
     }
 
-    private InteractionResult tryBind(Player player, ItemStack stack, InteractionHand hand,
-                                      ResourceLocation substanceId, BindType type) {
-        // 只有化学才需要 kind；旧调用默认 GAS
-        return tryBind(player, stack, hand, substanceId, type,
-                type == BindType.CHEMICAL ? MekChemicalKind.GAS : null);
-    }
-
-    /* ====== 核心绑定/解绑 ====== */
-
     private static void bindOneCore(Player player, ItemStack stackInHand,
-                                     ResourceLocation id, BindType type,@Nullable MekChemicalKind kind) {
+                                    ResourceLocation id, BindType type, @Nullable MekChemicalKind kind) {
         if (player.level().isClientSide) return;
-
         if (stackInHand.getCount() == 1) {
             applyBinding(stackInHand, id, type, kind);
             setCoreModelState(stackInHand, true);
             syncInventory(player);
             return;
         }
-
         stackInHand.shrink(1);
         ItemStack single = stackInHand.copy();
         single.setCount(1);
         applyBinding(single, id, type, kind);
         setCoreModelState(single, true);
-
         if (!player.addItem(single)) player.drop(single, false);
         syncInventory(player);
     }
 
-    private static void applyBinding(ItemStack stack, ResourceLocation id, BindType type,@Nullable MekChemicalKind kind) {
-        if (type == BindType.CHEMICAL) {
-            if (kind == null) return; // 安全保护
-            setBoundChemical(stack, kind, id);
-        } else {
-            setBoundFluid(stack, id);
-        }
+    private static void applyBinding(ItemStack stack, ResourceLocation id, BindType type, @Nullable MekChemicalKind kind) {
+        if (type == BindType.CHEMICAL && kind != null) setBoundChemical(stack, kind, id);
+        else setBoundFluid(stack, id);
     }
 
     private static void unbindOneCore(Player player, ItemStack stackInHand) {
-        if (stackInHand.getCount() == 1) {
-            clearBinding(stackInHand);
-            setCoreModelState(stackInHand, false);
-            return;
-        }
-
+        if (stackInHand.getCount() == 1) { clearBinding(stackInHand); return; }
         stackInHand.shrink(1);
         ItemStack single = stackInHand.copy();
         single.setCount(1);
         clearBinding(single);
-        setCoreModelState(single, false);
-
         if (!player.addItem(single)) player.drop(single, false);
     }
 
@@ -379,14 +347,12 @@ public class InfiniteCoreItem extends Item {
         stack.getOrCreateTag().putBoolean(TAG_BOUND, filled);
     }
 
-    /* ====== 工具方法 ====== */
+    // ── 辅助方法 ──────────────────────────────────────────
 
     private static void forceUpdateStack(Player player, InteractionHand hand, ItemStack stack) {
         player.setItemInHand(hand, stack);
         player.getInventory().setChanged();
-        if (!player.level().isClientSide) {
-            player.inventoryMenu.broadcastChanges();
-        }
+        if (!player.level().isClientSide) player.inventoryMenu.broadcastChanges();
     }
 
     private static void syncInventory(Player player) {
@@ -394,14 +360,10 @@ public class InfiniteCoreItem extends Item {
         player.inventoryMenu.broadcastChanges();
     }
 
-    /* ====== 流体检测工具方法 ====== */
-
     @Nullable
     private static ResourceLocation tryGetFluidIdFromWorld(Level level, BlockPos pos, Direction clickedFace) {
         FluidState fluidState = level.getFluidState(pos);
-        if (fluidState.isEmpty()) {
-            fluidState = level.getFluidState(pos.relative(clickedFace));
-        }
+        if (fluidState.isEmpty()) fluidState = level.getFluidState(pos.relative(clickedFace));
         return fluidState.isEmpty() ? null : resolveSourceFluidId(fluidState);
     }
 
@@ -415,15 +377,12 @@ public class InfiniteCoreItem extends Item {
 
     @Nullable
     private static BlockPos findFluidPos(Level level, Player player) {
-        // 1.20.1: 使用固定交互距离（4.5 格）
         double reach = 4.5;
         Vec3 eye = player.getEyePosition();
         Vec3 look = player.getViewVector(1.0F).normalize();
-
         double step = 0.1;
         int steps = (int) Math.ceil(reach / step);
         BlockPos lastPos = null;
-
         for (int i = 0; i <= steps; i++) {
             Vec3 point = eye.add(look.scale(i * step));
             BlockPos pos = BlockPos.containing(point);
@@ -436,33 +395,22 @@ public class InfiniteCoreItem extends Item {
 
     @Nullable
     private static ResourceLocation tryGetFluidIdFromHandler(Level level, BlockPos pos, @Nullable Direction preferredSide) {
-        if (preferredSide != null) {
-            var be = level.getBlockEntity(pos);
-            if (be != null) {
-                ResourceLocation id = be.getCapability(ForgeCapabilities.FLUID_HANDLER, preferredSide)
-                        .map(InfiniteCoreItem::firstNonEmptyFluidId)
-                        .orElse(null);
-                if (id != null) return id;
-            }
-        }
-
         var be = level.getBlockEntity(pos);
         if (be == null) return null;
-
-        for (Direction d : Direction.values()) {
-            ResourceLocation id = be.getCapability(ForgeCapabilities.FLUID_HANDLER, d)
-                    .map(InfiniteCoreItem::firstNonEmptyFluidId)
-                    .orElse(null);
+        if (preferredSide != null) {
+            ResourceLocation id = be.getCapability(ForgeCapabilities.FLUID_HANDLER, preferredSide)
+                    .map(InfiniteCoreItem::firstNonEmptyFluidId).orElse(null);
             if (id != null) return id;
         }
-
+        for (Direction d : Direction.values()) {
+            ResourceLocation id = be.getCapability(ForgeCapabilities.FLUID_HANDLER, d)
+                    .map(InfiniteCoreItem::firstNonEmptyFluidId).orElse(null);
+            if (id != null) return id;
+        }
         try {
             return be.getCapability(ForgeCapabilities.FLUID_HANDLER, null)
-                    .map(InfiniteCoreItem::firstNonEmptyFluidId)
-                    .orElse(null);
-        } catch (Throwable ignored) {
-            return null;
-        }
+                    .map(InfiniteCoreItem::firstNonEmptyFluidId).orElse(null);
+        } catch (Throwable ignored) { return null; }
     }
 
     @Nullable
@@ -478,18 +426,5 @@ public class InfiniteCoreItem extends Item {
         }
         return null;
     }
-
-    //读取MEK的化学品种类
-    public static MekChemicalKind getBoundChemicalKind(ItemStack stack) {
-        CompoundTag tag = stack.getTag();
-        if (tag == null) return MekChemicalKind.GAS;
-        String s = tag.getString(TAG_CHEM_KIND);
-        if (s == null || s.isEmpty()) return MekChemicalKind.GAS;
-        try {
-            return MekChemicalKind.valueOf(s);
-        } catch (IllegalArgumentException e) {
-            return MekChemicalKind.GAS;
-        }
-    }
-
 }
+

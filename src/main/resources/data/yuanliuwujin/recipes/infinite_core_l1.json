@@ -1,0 +1,13 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    " G ",
+    "GEG",
+    " G "
+  ],
+  "key": {
+    "G": { "item": "minecraft:gold_ingot" },
+    "E": { "item": "minecraft:ender_pearl" }
+  },
+  "result": { "id": "yuanliuwujin:infinite_core_l1", "count": 1 }
+}

@@ -5,10 +5,12 @@ import net.minecraft.world.item.Item;
 import net.minecraftforge.items.ItemStackHandler;
 
 /**
- * 拥有可插拔核心槽和面模式配置的机器公共接口。
+ * 拥有可插拔核心槽、面模式配置和面速率控制的机器公共接口。
  * <p>
  * {@link com.yelle233.yuanliuwujin.item.WrenchItem} 通过此接口操作不同机器，
  * 无需关心具体实现，实现了无限流体机器与销毁机器的统一扳手交互。
+ * <p>
+ * 面速率单位为 mB/s（每秒）。
  */
 public interface ICoreMachine {
 
@@ -32,4 +34,11 @@ public interface ICoreMachine {
      * 例如无限流体机器只接受 InfiniteCoreItem，销毁机器只接受 DestructionCoreItem。
      */
     boolean isValidCoreItem(Item item);
+
+    /** 获取指定侧面的流量速率（mB/s） */
+    int getFaceRate(Direction dir);
+
+    /** 调整指定侧面的流量速率（mB/s），delta 可正可负 */
+    void adjustFaceRate(Direction dir, int delta);
 }
+

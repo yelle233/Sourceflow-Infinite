@@ -8,27 +8,26 @@ import net.minecraftforge.registries.DeferredRegister;
 import net.minecraftforge.registries.ForgeRegistries;
 import net.minecraftforge.registries.RegistryObject;
 
-/** 方块实体类型注册表（1.20.1 Forge） */
+/**
+ * 方块实体类型注册表（1.20.1 Forge v2.0 版本）。
+ */
 public class ModBlockEntities {
 
     public static final DeferredRegister<BlockEntityType<?>> BLOCK_ENTITIES =
             DeferredRegister.create(ForgeRegistries.BLOCK_ENTITY_TYPES, SourceflowInfinite.MODID);
 
     public static final RegistryObject<BlockEntityType<InfiniteFluidMachineBlockEntity>> INFINITE_FLUID_MACHINE =
-            BLOCK_ENTITIES.register("infinite_fluid_machine", () ->
-                    BlockEntityType.Builder.of(
-                            InfiniteFluidMachineBlockEntity::new,
-                            ModBlocks.INFINITE_FLUID_MACHINE.get()
-                    ).build(null));
+            BLOCK_ENTITIES.register("infinite_fluid_machine",
+                    () -> BlockEntityType.Builder
+                            .of(InfiniteFluidMachineBlockEntity::new,
+                                    ModBlocks.INFINITE_FLUID_MACHINE.get())
+                            .build(null));
 
-    /**
-     * 销毁机器的方块实体类型。
-     * 与 DESTRUCTION_MACHINE 方块绑定。
-     */
     public static final RegistryObject<BlockEntityType<DestructionMachineBlockEntity>> DESTRUCTION_MACHINE =
-            BLOCK_ENTITIES.register("destruction_machine", () ->
-                    BlockEntityType.Builder.of(
-                            DestructionMachineBlockEntity::new,
-                            ModBlocks.DESTRUCTION_MACHINE.get()
-                    ).build(null));
+            BLOCK_ENTITIES.register("destruction_machine",
+                    () -> BlockEntityType.Builder
+                            .of(DestructionMachineBlockEntity::new,
+                                    ModBlocks.DESTRUCTION_MACHINE.get())
+                            .build(null));
 }
+

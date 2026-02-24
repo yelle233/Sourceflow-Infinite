@@ -13,9 +13,10 @@ import net.minecraftforge.network.NetworkEvent;
 import java.util.function.Supplier;
 
 /**
- * 扳手模式滚轮切换网络消息（客户端 → 服务端）。
+ * 扳手模式切换网络包（客户端 → 服务端）。
  * <p>
- * 1.20.1 Forge 版本，使用 {@link FriendlyByteBuf} 编解码。
+ * 当玩家在持有扳手时按 Shift+滚轮，此包发送到服务端切换扳手模式。
+ * 使用 Forge 1.20.1 的 SimpleChannel 传输。
  */
 public class WrenchModeScrollMessage {
 
@@ -25,17 +26,13 @@ public class WrenchModeScrollMessage {
         this.delta = delta;
     }
 
-    /* ====== 编解码 ====== */
-
     public static void encode(WrenchModeScrollMessage msg, FriendlyByteBuf buf) {
-        buf.writeVarInt(msg.delta);
+        buf.writeInt(msg.delta);
     }
 
     public static WrenchModeScrollMessage decode(FriendlyByteBuf buf) {
-        return new WrenchModeScrollMessage(buf.readVarInt());
+        return new WrenchModeScrollMessage(buf.readInt());
     }
-
-    /* ====== 服务端处理 ====== */
 
     public static void handle(WrenchModeScrollMessage msg, Supplier<NetworkEvent.Context> ctxSupplier) {
         NetworkEvent.Context ctx = ctxSupplier.get();
@@ -46,14 +43,12 @@ public class WrenchModeScrollMessage {
             ItemStack mainHand = player.getMainHandItem();
             if (!(mainHand.getItem() instanceof WrenchItem)) return;
 
-            // 切换模式
             WrenchItem.WrenchMode current = WrenchItem.getMode(mainHand);
-            WrenchItem.WrenchMode next = current.next(msg.delta);
+            WrenchItem.WrenchMode next    = current.next(msg.delta);
             WrenchItem.setMode(mainHand, next);
 
-            // 发送 actionbar 消息（翻译键修正为 yuanliuwujin）
             Component modeName = switch (next) {
-                case IO -> Component.translatable("mode.yuanliuwujin.wrench.io")
+                case IO     -> Component.translatable("mode.yuanliuwujin.wrench.io")
                         .withStyle(ChatFormatting.AQUA, ChatFormatting.BOLD);
                 case CONFIG -> Component.translatable("mode.yuanliuwujin.wrench.config")
                         .withStyle(ChatFormatting.GOLD, ChatFormatting.BOLD);
@@ -61,15 +56,22 @@ public class WrenchModeScrollMessage {
 
             player.displayClientMessage(
                     Component.literal(" ")
-                            .append(Component.translatable("msg.yuanliuwujin.wrench_mode")
-                                    .withStyle(ChatFormatting.GRAY))
+                            .append(Component.translatable("msg.yuanliuwujin.wrench_mode").withStyle(ChatFormatting.GRAY))
                             .append(Component.literal(": ").withStyle(ChatFormatting.DARK_GRAY))
                             .append(modeName),
                     true);
 
-            // 切换音效
-            player.playNotifySound(SoundEvents.UI_BUTTON_CLICK.value(), SoundSource.PLAYERS, 0.4f, 1.2f);
+            player.level().playSound(
+                    null,
+                    player.blockPosition(),
+                    SoundEvents.UI_BUTTON_CLICK.value(),
+                    SoundSource.PLAYERS,
+                    0.5f,
+                    1.0f
+            );
+
         });
         ctx.setPacketHandled(true);
     }
 }
+

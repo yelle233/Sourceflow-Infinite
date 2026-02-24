@@ -1,0 +1,13 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    " I ",
+    "IEI",
+    " I "
+  ],
+  "key": {
+    "I": { "item": "minecraft:iron_ingot" },
+    "E": { "item": "minecraft:ender_pearl" }
+  },
+  "result": { "id": "yuanliuwujin:destruction_core_l1", "count": 1 }
+}
