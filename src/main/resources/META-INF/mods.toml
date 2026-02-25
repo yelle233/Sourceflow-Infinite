@@ -81,7 +81,8 @@ side = "BOTH"
 
 [[dependencies.yuanliuwujin]]
 modId = "jei"
+mandatory=false
 type = "optional"
-versionRange = "[19.0,)"
+versionRange = "[15.20,)"
 ordering = "AFTER"
 side = "CLIENT"

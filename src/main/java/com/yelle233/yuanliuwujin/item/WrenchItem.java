@@ -103,10 +103,6 @@ public class WrenchItem extends Item {
         if (!machine.isValidCoreItem(offhand.getItem())) return InteractionResult.PASS;
         if (!machine.getCoreSlot().getStackInSlot(0).isEmpty()) return InteractionResult.PASS;
 
-        // 无限核心需要已绑定流体/化学品
-        if (offhand.getItem() instanceof InfiniteCoreItem && !InfiniteCoreItem.hasValidBinding(offhand))
-            return InteractionResult.PASS;
-
         ItemStack toInsert = offhand.copy();
         toInsert.setCount(1);
         machine.getCoreSlot().setStackInSlot(0, toInsert);

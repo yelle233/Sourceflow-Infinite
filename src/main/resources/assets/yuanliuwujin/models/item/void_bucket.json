@@ -1,6 +1,6 @@
 {
-  "parent": "neoforge:item/bucket_drip",
-  "loader": "neoforge:fluid_container",
+  "parent": "forge:item/bucket_drip",
+  "loader": "forge:fluid_container",
   "fluid": "yuanliuwujin:void_fluid",
   "flip_gas": false,
   "apply_tint": true,

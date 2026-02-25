@@ -11,5 +11,5 @@
     "C": { "item": "minecraft:obsidian" },
     "D": { "tag": "yuanliuwujin:destruction_cores" }
   },
-  "result": { "id": "yuanliuwujin:destruction_machine", "count": 1 }
+  "result": { "item": "yuanliuwujin:destruction_machine", "count": 1 }
 }

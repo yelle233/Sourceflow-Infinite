@@ -92,6 +92,7 @@ public class InfiniteFluidMachineBlockEntity extends BlockEntity implements ICor
 
     // ── Capability LazyOptional ─────────────────────────────
     private LazyOptional<IEnergyStorage> energyCap = LazyOptional.empty();
+    private LazyOptional<IFluidHandler> voidTankReadCap = LazyOptional.empty();
     /** 每个侧面的流体 Capability，仅 PULL/BOTH 模式下有效 */
     private final EnumMap<Direction, LazyOptional<IFluidHandler>> fluidCaps = new EnumMap<>(Direction.class);
     // Mekanism 化学品输出（四种类型，避免 Mek 未加载时类加载）
@@ -129,6 +130,7 @@ public class InfiniteFluidMachineBlockEntity extends BlockEntity implements ICor
     private void rebuildCapabilities() {
         // 能量 Capability（顶面接收能量）
         energyCap = LazyOptional.of(() -> energyStorage);
+        voidTankReadCap = LazyOptional.of(() -> makeVoidTankReadOnly());
         // 流体 Capability 在 getCapability 中按需创建
         for (Direction dir : Direction.values()) {
             fluidCaps.remove(dir);
@@ -211,7 +213,8 @@ public class InfiniteFluidMachineBlockEntity extends BlockEntity implements ICor
         boolean canWork       = hasCore && voidNotEmpty && anyFaceEnabled && hasValidBinding() && hasEnoughFE;
 
         // 三档耗电
-        lastTickFEConsumed = hasCore ? requiredFE : 0;
+        // HUD 显示实际耗电档位：工作中显示满载，待机中显示待机基础耗电
+        lastTickFEConsumed = hasCore ? (canWork ? requiredFE : baseFE) : 0;
         if (canWork) {
             energyStorage.extractEnergy(requiredFE, false);
         } else if (hasCore) {
@@ -520,9 +523,14 @@ public class InfiniteFluidMachineBlockEntity extends BlockEntity implements ICor
 
     @Override
     public @NotNull <T> LazyOptional<T> getCapability(@NotNull Capability<T> cap, @Nullable Direction side) {
-        // 能量：顶面接收
-        if (cap == ForgeCapabilities.ENERGY && side == Direction.UP) {
+        // 能量：顶面接收 + null方向（供 Jade 等信息模组查询）
+        if (cap == ForgeCapabilities.ENERGY && (side == Direction.UP || side == null)) {
             return energyCap.cast();
+        }
+
+        // 虚空储罐只读（null 方向，供 Jade 等信息模组查询）
+        if (cap == ForgeCapabilities.FLUID_HANDLER && side == null) {
+            return voidTankReadCap.cast();
         }
 
         // 流体：PULL/BOTH 模式下，对应面暴露 IFluidHandler（仅允许 extract，不允许 fill）
@@ -563,6 +571,7 @@ public class InfiniteFluidMachineBlockEntity extends BlockEntity implements ICor
     public void invalidateCaps() {
         super.invalidateCaps();
         energyCap.invalidate();
+        voidTankReadCap.invalidate();
         fluidCaps.values().forEach(LazyOptional::invalidate);
         gasCaps.values().forEach(LazyOptional::invalidate);
         infusionCaps.values().forEach(LazyOptional::invalidate);
@@ -589,6 +598,26 @@ public class InfiniteFluidMachineBlockEntity extends BlockEntity implements ICor
                 if (result.isEmpty() || !result.isFluidEqual(resource)) return FluidStack.EMPTY;
                 return drain(resource.getAmount(), action);
             }
+        };
+    }
+
+    /**
+     * 虚空储罐的只读 Handler（用于 Jade / null 方向查询）。
+     * 仅暴露储罐内容和容量，不允许任何 fill/drain 操作。
+     */
+    private IFluidHandler makeVoidTankReadOnly() {
+        return new IFluidHandler() {
+            @Override public int getTanks() { return 1; }
+            @Override public @NotNull FluidStack getFluidInTank(int tank) {
+                return voidTank.getFluid().copy();
+            }
+            @Override public int getTankCapacity(int tank) {
+                return voidTank.getCapacity();
+            }
+            @Override public boolean isFluidValid(int tank, @NotNull FluidStack stack) { return false; }
+            @Override public int fill(@NotNull FluidStack resource, FluidAction action) { return 0; }
+            @Override public @NotNull FluidStack drain(int maxDrain, FluidAction action) { return FluidStack.EMPTY; }
+            @Override public @NotNull FluidStack drain(@NotNull FluidStack resource, FluidAction action) { return FluidStack.EMPTY; }
         };
     }
 

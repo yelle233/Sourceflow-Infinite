@@ -6,5 +6,5 @@
     "D": {"item": "minecraft:dragon_breath"},
     "E": {"item": "minecraft:end_crystal"}
   },
-  "result": {"id": "yuanliuwujin:destruction_core_l4_oc", "count": 1}
+  "result": {"item": "yuanliuwujin:destruction_core_l4_oc", "count": 1}
 }

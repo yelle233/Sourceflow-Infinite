@@ -6,5 +6,5 @@
     "D": {"item": "minecraft:diamond"},
     "R": {"item": "minecraft:redstone_block"}
   },
-  "result": {"id": "yuanliuwujin:infinite_core_l2", "count": 1}
+  "result": {"item": "yuanliuwujin:infinite_core_l2", "count": 1}
 }

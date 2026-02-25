@@ -2,6 +2,7 @@
   "block.yuanliuwujin.destruction_machine": "Destruction Machine",
   "block.yuanliuwujin.infinite_fluid_machine": "Infinite Fluid Machine",
   "block.yuanliuwujin.void_fluid": "Void Fluid",
+  "fluid_type.yuanliuwujin.void_fluid": "Void Fluid",
 
   "hud.sourceflowinfinite.core": "Core %s",
   "hud.sourceflowinfinite.core.inserted": "Inserted",
@@ -13,6 +14,7 @@
   "hud.sourceflowinfinite.none": "None",
 
   "hud.yuanliuwujin.destruction.active": "Running",
+  "hud.yuanliuwujin.destruction.standby": "Standby",
   "hud.yuanliuwujin.destruction.no_core": "No Core Inserted",
   "hud.yuanliuwujin.destruction.no_power": "Insufficient Power",
   "hud.yuanliuwujin.destruction.status_label": "Status: %s",
@@ -63,6 +65,6 @@
   "tooltip.yuanliuwujin.destruction_core.hint": "Use wrench to insert into Destruction Machine",
   "tooltip.yuanliuwujin.destruction_core.ratio": "Ratio: %d fluid → 1 mB void",
   "tooltip.yuanliuwujin.infinite_core.ratio": "Ratio: %d mB void → 1 fluid",
-  "tooltip.yuanliuwujin.overclock_warning": "⚠ Overclock: builds pressure! Explodes at 100%%"
+  "tooltip.yuanliuwujin.overclock_warning": "OVERCLOCKED: Machine will accumulate pressure!"
 }
 

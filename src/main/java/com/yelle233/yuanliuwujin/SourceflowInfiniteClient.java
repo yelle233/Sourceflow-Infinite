@@ -69,7 +69,7 @@ public class SourceflowInfiniteClient {
                         ModItems.INFINITE_CORE_L4_OC.get()
                 }) {
                     ItemProperties.register(item,
-                            new ResourceLocation(SourceflowInfinite.MODID, "filled"),
+                            ResourceLocation.fromNamespaceAndPath(SourceflowInfinite.MODID, "filled"),
                             (stack, level, entity, seed) -> {
                                 CompoundTag tag = stack.getTag();
                                 return (tag != null && tag.getBoolean("Filled")) ? 1.0f : 0.0f;
@@ -246,6 +246,7 @@ public class SourceflowInfiniteClient {
             Component statusComp;
             if (!hasCore) statusComp = Component.translatable("hud.yuanliuwujin.destruction.no_core").withStyle(ChatFormatting.GRAY);
             else if (energy <= 0) statusComp = Component.translatable("hud.yuanliuwujin.destruction.no_power").withStyle(ChatFormatting.RED);
+            else if (enabledFaces == 0 || machine.getVoidTank().isEmpty()) statusComp = Component.translatable("hud.yuanliuwujin.destruction.standby").withStyle(ChatFormatting.YELLOW);
             else statusComp = Component.translatable("hud.yuanliuwujin.destruction.active").withStyle(ChatFormatting.GREEN);
             lines.add(Component.translatable("hud.yuanliuwujin.destruction.status_label", statusComp));
         }
@@ -280,11 +281,6 @@ public class SourceflowInfiniteClient {
         long capacity = machine.getEnergyStorage().getMaxEnergyStored();
         boolean hasCore = !machine.getCoreSlot().getStackInSlot(0).isEmpty();
 
-        Component statusComp;
-        if (!hasCore) statusComp = Component.translatable("hud.yuanliuwujin.destruction.no_core").withStyle(ChatFormatting.GRAY);
-        else if (energy <= 0) statusComp = Component.translatable("hud.yuanliuwujin.destruction.no_power").withStyle(ChatFormatting.RED);
-        else statusComp = Component.translatable("hud.yuanliuwujin.destruction.active").withStyle(ChatFormatting.GREEN);
-
         StringBuilder facesShort = new StringBuilder();
         int enabledFaces = 0;
         for (Direction d : Direction.values()) {
@@ -298,6 +294,13 @@ public class SourceflowInfiniteClient {
                 facesShort.append(':').append(machine.getFaceRate(d)).append("mB/s");
             }
         }
+
+        var vt = machine.getVoidTank();
+        Component statusComp;
+        if (!hasCore) statusComp = Component.translatable("hud.yuanliuwujin.destruction.no_core").withStyle(ChatFormatting.GRAY);
+        else if (energy <= 0) statusComp = Component.translatable("hud.yuanliuwujin.destruction.no_power").withStyle(ChatFormatting.RED);
+        else if (enabledFaces == 0 || vt.getFluidAmount() >= vt.getCapacity()) statusComp = Component.translatable("hud.yuanliuwujin.destruction.standby").withStyle(ChatFormatting.YELLOW);
+        else statusComp = Component.translatable("hud.yuanliuwujin.destruction.active").withStyle(ChatFormatting.GREEN);
 
         List<Component> lines = new ArrayList<>();
         lines.add(Component.translatable("hud.sourceflowinfinite.energy", compactFE(energy), compactFE(capacity)).withStyle(ChatFormatting.WHITE));
@@ -315,7 +318,7 @@ public class SourceflowInfiniteClient {
                         : Component.translatable("hud.sourceflowinfinite.core.missing").withStyle(ChatFormatting.RED)));
         lines.add(Component.translatable("hud.yuanliuwujin.destruction.status_label", statusComp));
 
-        var vt = machine.getVoidTank();
+        vt = machine.getVoidTank();
         lines.add(Component.translatable("hud.yuanliuwujin.void_tank", compactMB(vt.getFluidAmount()), compactMB(vt.getCapacity())).withStyle(ChatFormatting.DARK_PURPLE));
 
         if (hasCore) {

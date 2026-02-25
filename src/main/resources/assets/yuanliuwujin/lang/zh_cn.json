@@ -1,7 +1,8 @@
 {
   "block.yuanliuwujin.destruction_machine": "销毁机器",
-  "block.yuanliuwujin.infinite_fluid_machine": "无限液体机器",
+  "block.yuanliuwujin.infinite_fluid_machine": "无限流体机器",
   "block.yuanliuwujin.void_fluid": "虚空流体",
+  "fluid_type.yuanliuwujin.void_fluid": "虚空流体",
 
   "hud.sourceflowinfinite.core": "核心 %s",
   "hud.sourceflowinfinite.core.inserted": "已插入",
@@ -13,6 +14,7 @@
   "hud.sourceflowinfinite.none": "无",
 
   "hud.yuanliuwujin.destruction.active": "运行中",
+  "hud.yuanliuwujin.destruction.standby": "待机中",
   "hud.yuanliuwujin.destruction.no_core": "未插入核心",
   "hud.yuanliuwujin.destruction.no_power": "能量不足",
   "hud.yuanliuwujin.destruction.status_label": "状态：%s",
@@ -63,6 +65,6 @@
   "tooltip.yuanliuwujin.destruction_core.hint": "使用扳手插入至销毁机器",
   "tooltip.yuanliuwujin.destruction_core.ratio": "转换比：%d mB 流体 → 1 mB 虚空",
   "tooltip.yuanliuwujin.infinite_core.ratio": "转换比：%d mB 虚空 → 1 mB 流体",
-  "tooltip.yuanliuwujin.overclock_warning": "⚠ 超频：积累压力！压力达 100%% 时爆炸"
+  "tooltip.yuanliuwujin.overclock_warning": "超频状态：机器将积累压力并可能爆炸！"
 }
 

@@ -29,11 +29,11 @@ public class VoidFluidType extends FluidType {
     }
 
     public static final ResourceLocation STILL_TEXTURE =
-            new ResourceLocation("yuanliuwujin", "fluid/void_fluid_still");
+            new ResourceLocation("yuanliuwujin", "block/void_fluid_still");
     public static final ResourceLocation FLOWING_TEXTURE =
-            new ResourceLocation("yuanliuwujin", "fluid/void_fluid_flow");
+            new ResourceLocation("yuanliuwujin", "block/void_fluid_flow");
     public static final ResourceLocation OVERLAY_TEXTURE =
-            new ResourceLocation("yuanliuwujin", "fluid/void_fluid_overlay");
+            new ResourceLocation("yuanliuwujin", "block/void_fluid_overlay");
 
     public static final int COLOR_ARGB = 0x88_C8A0E8;
 

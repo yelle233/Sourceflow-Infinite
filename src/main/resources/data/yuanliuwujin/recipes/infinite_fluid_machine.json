@@ -11,5 +11,5 @@
     "C": { "item": "minecraft:obsidian" },
     "D": { "tag": "yuanliuwujin:infinite_cores" }
   },
-  "result": { "id": "yuanliuwujin:infinite_fluid_machine", "count": 1 }
+  "result": { "item": "yuanliuwujin:infinite_fluid_machine", "count": 1 }
 }

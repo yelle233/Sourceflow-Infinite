@@ -1,0 +1,5 @@
+{
+  "parent": "forge:block/fluid",
+  "loader": "forge:fluid",
+  "fluid": "yuanliuwujin:void_fluid"
+}

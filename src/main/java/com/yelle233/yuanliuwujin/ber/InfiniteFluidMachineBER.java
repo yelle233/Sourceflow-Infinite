@@ -39,7 +39,7 @@ public class InfiniteFluidMachineBER implements BlockEntityRenderer<InfiniteFlui
         renderCoreBlockInside(be, partialTick, poseStack, bufferSource);
 
         for (Direction dir : Direction.values()) {
-            if (dir == Direction.UP) continue;
+            if (dir == Direction.UP || dir == Direction.DOWN) continue;
             SideMode mode = be.getSideMode(dir);
             if (mode == SideMode.OFF) continue;
             ResourceLocation tex = (mode == SideMode.PULL) ? OVERLAY_PULL : OVERLAY_BOTH;

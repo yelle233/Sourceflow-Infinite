@@ -6,5 +6,5 @@
     "E": {"item": "minecraft:emerald"},
     "B": {"item": "minecraft:blaze_rod"}
   },
-  "result": {"id": "yuanliuwujin:infinite_core_l3", "count": 1}
+  "result": {"item": "yuanliuwujin:infinite_core_l3", "count": 1}
 }

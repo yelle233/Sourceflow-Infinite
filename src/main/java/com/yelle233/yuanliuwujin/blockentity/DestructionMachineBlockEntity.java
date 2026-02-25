@@ -79,6 +79,7 @@ public class DestructionMachineBlockEntity extends BlockEntity implements ICoreM
 
     // ── Capability LazyOptional ─────────────────────────────
     private LazyOptional<IEnergyStorage> energyCap = LazyOptional.empty();
+    private LazyOptional<IFluidHandler> voidTankReadCap = LazyOptional.empty();
     private final EnumMap<Direction, LazyOptional<IFluidHandler>> fluidCaps = new EnumMap<>(Direction.class);
     // Mekanism 四种化学品 Sink（接收并虚空销毁）
     private Object gasSink, infusionSink, pigmentSink, slurrySink;
@@ -114,6 +115,7 @@ public class DestructionMachineBlockEntity extends BlockEntity implements ICoreM
 
     private void rebuildCapabilities() {
         energyCap = LazyOptional.of(() -> energyStorage);
+        voidTankReadCap = LazyOptional.of(() -> makeVoidTankReadOnly());
         fluidCaps.forEach((d, lo) -> lo.invalidate());
         fluidCaps.clear();
         if (MekanismChecker.isLoaded()) buildMekSinks();
@@ -149,7 +151,8 @@ public class DestructionMachineBlockEntity extends BlockEntity implements ICoreM
         boolean canWork      = hasCore && voidNotFull && anyFaceEnabled && hasEnoughFE;
 
         // 三档耗电
-        lastTickFEConsumed = hasCore ? requiredFE : 0;
+        // HUD 显示实际耗电档位：工作中显示满载，待机中显示待机基础耗电
+        lastTickFEConsumed = hasCore ? (canWork ? requiredFE : baseFE) : 0;
         if (canWork) {
             energyStorage.extractEnergy(requiredFE, false);
         } else if (hasCore) {
@@ -186,13 +189,13 @@ public class DestructionMachineBlockEntity extends BlockEntity implements ICoreM
                 pressure = (float) Math.min(100.0, pressure + Modconfigs.OVERCLOCK_PRESSURE_PER_TICK.get());
                 if (pressure >= 100.0f) { triggerExplosion(level, pos); return; }
             }
-
-            // 向下推送虚空流体给无限流体机器
-            if (!voidTank.isEmpty()) {
-                pushVoidFluidDown(level, pos);
-            }
         } else {
             if (pressure > 0) pressure = (float) Math.max(0.0, pressure - Modconfigs.PRESSURE_DECAY_PER_TICK.get());
+        }
+
+        // 无论 canWork 与否，只要虚空储罐不空就向下推送给无限流体机器
+        if (!voidTank.isEmpty()) {
+            pushVoidFluidDown(level, pos);
         }
 
         // LIT 状态
@@ -370,13 +373,37 @@ public class DestructionMachineBlockEntity extends BlockEntity implements ICoreM
 
     public boolean hasCoreInserted() { return !coreSlot.getStackInSlot(0).isEmpty(); }
 
+    /**
+     * 虚空储罐的只读 Handler（用于 Jade / null 方向查询）。
+     */
+    private IFluidHandler makeVoidTankReadOnly() {
+        return new IFluidHandler() {
+            @Override public int getTanks() { return 1; }
+            @Override public @NotNull FluidStack getFluidInTank(int tank) {
+                return voidTank.getFluid().copy();
+            }
+            @Override public int getTankCapacity(int tank) {
+                return voidTank.getCapacity();
+            }
+            @Override public boolean isFluidValid(int tank, @NotNull FluidStack stack) { return false; }
+            @Override public int fill(@NotNull FluidStack resource, FluidAction action) { return 0; }
+            @Override public @NotNull FluidStack drain(int maxDrain, FluidAction action) { return FluidStack.EMPTY; }
+            @Override public @NotNull FluidStack drain(@NotNull FluidStack resource, FluidAction action) { return FluidStack.EMPTY; }
+        };
+    }
+
     // ── Capability ──────────────────────────────────────────
 
     @Override
     public @NotNull <T> LazyOptional<T> getCapability(@NotNull Capability<T> cap, @Nullable Direction side) {
-        // 能量：顶面接收
-        if (cap == ForgeCapabilities.ENERGY && side == Direction.UP) {
+        // 能量：顶面接收 + null方向（供 Jade 等信息模组查询）
+        if (cap == ForgeCapabilities.ENERGY && (side == Direction.UP || side == null)) {
             return energyCap.cast();
+        }
+
+        // 虚空储罐只读（null 方向，供 Jade 等信息模组查询）
+        if (cap == ForgeCapabilities.FLUID_HANDLER && side == null) {
+            return voidTankReadCap.cast();
         }
 
         // 流体：PUSH/BOTH 模式，接受外部推送（虚空销毁）
@@ -409,6 +436,7 @@ public class DestructionMachineBlockEntity extends BlockEntity implements ICoreM
     public void invalidateCaps() {
         super.invalidateCaps();
         energyCap.invalidate();
+        voidTankReadCap.invalidate();
         fluidCaps.values().forEach(LazyOptional::invalidate);
         gasCaps.values().forEach(LazyOptional::invalidate);
         infusionCaps.values().forEach(LazyOptional::invalidate);
