@@ -16,7 +16,7 @@ public class ModTab {
 
     public static final Supplier<CreativeModeTab> INFINITE_WATER_TAB =
             TABS.register("infinite_water_tab", () -> CreativeModeTab.builder()
-                    .icon(() -> new ItemStack(ModItems.INFINITE_CORE_L1.get()))
+                    .icon(() -> new ItemStack(ModItems.INFINITE_CORE_L4.get()))
                     .title(Component.translatable("itemgroup.infinitewater"))
                     .displayItems((parameters, output) -> {
                         // 无限核心 L1-L4 + OC

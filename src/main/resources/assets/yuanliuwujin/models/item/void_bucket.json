@@ -1,5 +1,5 @@
 {
-  "parent": "neoforge:item/bucket_drip",
+  "parent": "neoforge:item/bucket",
   "loader": "neoforge:fluid_container",
   "fluid": "yuanliuwujin:void_fluid",
   "flip_gas": false,

@@ -3,6 +3,7 @@ package com.yelle233.yuanliuwujin.fluid;
 import net.minecraft.core.BlockPos;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.level.BlockAndTintGetter;
+import net.minecraft.world.level.LevelReader;
 import net.minecraft.world.level.material.FluidState;
 import net.neoforged.neoforge.client.extensions.common.IClientFluidTypeExtensions;
 import net.neoforged.neoforge.fluids.FluidStack;
@@ -51,8 +52,8 @@ public class VoidFluidType extends FluidType {
     public static final ResourceLocation OVERLAY_TEXTURE =
             ResourceLocation.fromNamespaceAndPath("yuanliuwujin", "fluid/void_fluid_overlay");
 
-    /** 虚空流体颜色：深紫色，ARGB */
-    public static final int COLOR_ARGB = 0x88_C8A0E8;
+    /** 虚空流体颜色：深紫色，ARGB（alpha 控制整体透明度） */
+    public static final int COLOR_ARGB = 0xCC_380060;
 
     /** 着色向量（用于 getRenderColor 等客户端方法） */
     public static final Vector3f COLOR_VEC = new Vector3f(
@@ -90,4 +91,10 @@ public class VoidFluidType extends FluidType {
             }
         });
     }
+
+    @Override
+    public boolean canConvertToSource(FluidState state, LevelReader level, BlockPos pos) {
+        return false;
+    }
+
 }
