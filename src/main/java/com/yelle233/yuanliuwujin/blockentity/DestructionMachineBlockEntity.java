@@ -125,8 +125,8 @@ public class DestructionMachineBlockEntity extends BlockEntity implements ICoreM
         boolean canWork = hasCore && voidNotFull && anyFaceEnabled && hasEnoughEnergy;
 
         // ── 三档耗电逻辑 ──
-        // HUD 始终显示满载耗电（有核心就显示 requiredFE），方便玩家查看所需电量
-        lastTickFEConsumed = hasCore ? requiredFE : 0;
+        // HUD 显示实际耗电档位：工作中显示满载，待机中显示待机基础耗电
+        lastTickFEConsumed = hasCore ? (canWork ? requiredFE : baseFE) : 0;
         if (canWork) {
             // 工作中：消耗满载电量
             energyStorage.extractEnergy(requiredFE, false);
