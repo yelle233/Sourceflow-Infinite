@@ -5,10 +5,12 @@ import com.yelle233.yuanliuwujin.ber.InfiniteFluidMachineBER;
 import com.yelle233.yuanliuwujin.blockentity.DestructionMachineBlockEntity;
 import com.yelle233.yuanliuwujin.blockentity.InfiniteFluidMachineBlockEntity;
 import com.yelle233.yuanliuwujin.blockentity.InfiniteFluidMachineBlockEntity.SideMode;
+import com.yelle233.yuanliuwujin.fluid.VoidFluidType;
 import com.yelle233.yuanliuwujin.item.InfiniteCoreItem;
 import com.yelle233.yuanliuwujin.item.InfiniteCoreItem.BindType;
 import com.yelle233.yuanliuwujin.item.WrenchItem;
 import com.yelle233.yuanliuwujin.network.FaceRateUpdateMessage;
+import com.yelle233.yuanliuwujin.registry.ModFluids;
 import com.yelle233.yuanliuwujin.registry.ModNetwork;
 import com.yelle233.yuanliuwujin.network.WrenchModeScrollMessage;
 import com.yelle233.yuanliuwujin.registry.ModBlockEntities;
@@ -17,6 +19,8 @@ import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.player.LocalPlayer;
+import net.minecraft.client.renderer.ItemBlockRenderTypes;
+import net.minecraft.client.renderer.RenderType;
 import net.minecraft.client.renderer.item.ItemProperties;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -30,6 +34,7 @@ import net.minecraft.world.phys.HitResult;
 import net.minecraftforge.api.distmarker.Dist;
 import net.minecraftforge.client.event.EntityRenderersEvent;
 import net.minecraftforge.client.event.InputEvent;
+import net.minecraftforge.client.event.RegisterColorHandlersEvent;
 import net.minecraftforge.client.event.RenderGuiOverlayEvent;
 import net.minecraftforge.client.gui.overlay.VanillaGuiOverlay;
 import net.minecraftforge.event.TickEvent;
@@ -55,6 +60,14 @@ public class SourceflowInfiniteClient {
         public static void onRegisterRenderers(EntityRenderersEvent.RegisterRenderers event) {
             event.registerBlockEntityRenderer(ModBlockEntities.INFINITE_FLUID_MACHINE.get(), InfiniteFluidMachineBER::new);
             event.registerBlockEntityRenderer(ModBlockEntities.DESTRUCTION_MACHINE.get(), DestructionMachineBER::new);
+
+        }
+
+        @SubscribeEvent
+        public static void onItemColors(RegisterColorHandlersEvent.Item event) {
+            event.register((stack, tintIndex) -> {
+                return tintIndex == 1 ? VoidFluidType.COLOR_ARGB : 0xFFFFFFFF;
+            }, ModItems.VOID_BUCKET.get());
         }
 
         @SubscribeEvent
@@ -75,6 +88,13 @@ public class SourceflowInfiniteClient {
                                 return (tag != null && tag.getBoolean("Filled")) ? 1.0f : 0.0f;
                             });
                 }
+
+                ItemBlockRenderTypes.setRenderLayer(
+                        ModFluids.VOID_FLUID_SOURCE.get(), RenderType.translucent());
+                ItemBlockRenderTypes.setRenderLayer(
+                        ModFluids.VOID_FLUID_FLOWING.get(), RenderType.translucent());
+                ItemBlockRenderTypes.setRenderLayer(ModFluids.VOID_FLUID_SOURCE.get(), RenderType.translucent());
+                ItemBlockRenderTypes.setRenderLayer(ModFluids.VOID_FLUID_FLOWING.get(), RenderType.translucent());
             });
         }
     }

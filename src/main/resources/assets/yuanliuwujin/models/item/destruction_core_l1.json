@@ -1,6 +1,6 @@
 {
   "parent": "minecraft:item/generated",
   "textures": {
-    "layer0": "yuanliuwujin:item/destruction_core"
+    "layer0": "yuanliuwujin:item/destruction_core_l1"
   }
 }

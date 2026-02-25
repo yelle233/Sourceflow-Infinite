@@ -29,9 +29,8 @@ import java.util.stream.Stream;
 /**
  * 销毁机器方块（1.20.1 Forge 版本）。
  * <p>
- * 与无限流体机器结构相似，区别：
  * <ul>
- *   <li>五个面作为流体/化学品输入端（PUSH / BOTH 模式）</li>
+ *   <li>四个面作为流体/化学品输入端（PUSH / BOTH 模式）</li>
  *   <li>顶面仅用于接收 FE 能量</li>
  *   <li>插入销毁核心且通电后，可销毁任意推入/吸入的流体或化学品</li>
  * </ul>
@@ -44,18 +43,9 @@ public class DestructionMachineBlock extends Block implements EntityBlock {
     /** LIT 属性：插入销毁核心时发光（复用原版 LIT） */
     public static final BooleanProperty LIT = BlockStateProperties.LIT;
 
-    /** 与无限流体机器共享外形，保持视觉统一 */
     public static final VoxelShape SHAPE = Stream.of(
-            Block.box(0, 14, 0, 2, 16, 2),
-            Block.box(14, 0, 0, 16, 2, 2),
-            Block.box(0, 0, 14, 2, 2, 16),
-            Block.box(14, 0, 14, 16, 2, 16),
-            Block.box(14, 14, 0, 16, 16, 2),
-            Block.box(0, 14, 14, 2, 16, 16),
-            Block.box(14, 14, 14, 16, 16, 16),
-            Block.box(0, 0, 0, 2, 2, 2),
-            Block.box(1, 1, 1, 15, 15, 15),
-            Block.box(2, 15, 2, 14, 16, 14)
+            Block.box(0, 1, 0, 16, 15, 16),
+            Block.box(1, 0, 1, 15, 16, 15)
     ).reduce((v1, v2) -> Shapes.join(v1, v2, BooleanOp.OR)).get();
 
     public DestructionMachineBlock(Properties properties) {

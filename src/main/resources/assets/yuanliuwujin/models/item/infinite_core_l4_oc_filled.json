@@ -1,6 +1,6 @@
 {
   "parent": "minecraft:item/generated",
   "textures": {
-    "layer0": "yuanliuwujin:item/infinite_core_filled"
+    "layer0": "yuanliuwujin:item/infinite_core_l4_oc_filled"
   }
 }

@@ -78,7 +78,7 @@ public class DestructionMachineBER implements BlockEntityRenderer<DestructionMac
         poseStack.mulPose(Axis.YP.rotationDegrees(-(time * 2.0f) % 360.0f));
         poseStack.mulPose(Axis.XP.rotationDegrees(-(time * 1.5f) % 360.0f));
         poseStack.mulPose(Axis.ZP.rotationDegrees(-(time * 1.0f) % 360.0f));
-        poseStack.scale(2.0f, 2.0f, 2.0f);
+        poseStack.scale(1.5f, 1.5f, 1.5f);
 
         BlockState coreState = ModBlocks.DESTRUCTION_CORE_BLOCK.get().defaultBlockState();
         Minecraft.getInstance().getBlockRenderer().renderSingleBlock(

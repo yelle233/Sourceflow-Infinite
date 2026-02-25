@@ -35,7 +35,7 @@ public class VoidFluidType extends FluidType {
     public static final ResourceLocation OVERLAY_TEXTURE =
             new ResourceLocation("yuanliuwujin", "block/void_fluid_overlay");
 
-    public static final int COLOR_ARGB = 0x88_C8A0E8;
+    public static final int COLOR_ARGB = 0xCC_380060;
 
     public static final Vector3f COLOR_VEC = new Vector3f(
             ((COLOR_ARGB >> 16) & 0xFF) / 255f,
