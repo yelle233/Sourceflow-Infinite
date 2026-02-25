@@ -5,12 +5,15 @@ import com.yelle233.yuanliuwujin.blockentity.InfiniteFluidMachineBlockEntity;
 import com.yelle233.yuanliuwujin.blockentity.InfiniteFluidMachineBlockEntity.SideMode;
 import com.yelle233.yuanliuwujin.ber.DestructionMachineBER;
 import com.yelle233.yuanliuwujin.ber.InfiniteFluidMachineBER;
+import com.yelle233.yuanliuwujin.fluid.VoidFluidType;
 import com.yelle233.yuanliuwujin.item.InfiniteCoreItem;
 import com.yelle233.yuanliuwujin.item.InfiniteCoreItem.BindType;
 import com.yelle233.yuanliuwujin.item.WrenchItem;
 import com.yelle233.yuanliuwujin.network.FaceRateUpdatePayload;
 import com.yelle233.yuanliuwujin.network.WrenchModeScrollPayload;
 import com.yelle233.yuanliuwujin.registry.ModBlockEntities;
+import com.yelle233.yuanliuwujin.registry.ModFluids;
+import com.yelle233.yuanliuwujin.registry.ModItems;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
@@ -29,6 +32,7 @@ import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.fml.common.Mod;
 import net.neoforged.neoforge.client.event.EntityRenderersEvent;
 import net.neoforged.neoforge.client.event.InputEvent;
+import net.neoforged.neoforge.client.event.RegisterColorHandlersEvent;
 import net.neoforged.neoforge.client.event.RenderGuiEvent;
 import net.neoforged.neoforge.client.gui.ConfigurationScreen;
 import net.neoforged.neoforge.client.gui.IConfigScreenFactory;
@@ -44,6 +48,26 @@ public class SourceflowInfiniteClient {
 
     public SourceflowInfiniteClient(ModContainer container) {
         container.registerExtensionPoint(IConfigScreenFactory.class, ConfigurationScreen::new);
+
+        // ★ 虚空流体桶颜色
+        container.getEventBus().addListener((RegisterColorHandlersEvent.Item event) -> {
+            event.register((stack, tintIndex) -> {
+                // tintIndex == 1 是桶模型中流体层的 tint
+                return tintIndex == 1 ? VoidFluidType.COLOR_ARGB : 0xFFFFFFFF;
+            }, ModItems.VOID_BUCKET.get());
+        });
+
+        // ★ 虚空流体使用半透明渲染层（否则流体在世界中完全不透明）
+        container.getEventBus().addListener((net.neoforged.fml.event.lifecycle.FMLClientSetupEvent event) -> {
+            event.enqueueWork(() -> {
+                net.minecraft.client.renderer.ItemBlockRenderTypes.setRenderLayer(
+                        ModFluids.VOID_FLUID_SOURCE.get(),
+                        net.minecraft.client.renderer.RenderType.translucent());
+                net.minecraft.client.renderer.ItemBlockRenderTypes.setRenderLayer(
+                        ModFluids.VOID_FLUID_FLOWING.get(),
+                        net.minecraft.client.renderer.RenderType.translucent());
+            });
+        });
     }
 
     @SubscribeEvent
