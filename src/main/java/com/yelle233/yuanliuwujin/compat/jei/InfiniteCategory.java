@@ -23,11 +23,6 @@ import net.minecraft.world.item.ItemStack;
  * 无限流体机器 JEI 分类：虚空流体 → 任意流体或化学品。
  * <p>
  * 同一分类栏同时展示流体和化学品配方。
- * <p>
- * <b>FIX v2.1 - 化学品槽渲染修复：</b>
- * 化学品配方不再使用自定义 {@code ChemicalTankRenderer}（静态纯色条），
- * 改用 JEI 原生化学品槽（16×16，Mekanism 动态动画效果）。
- * 化学品槽位置做了适当调整以居中对齐。
  */
 public class InfiniteCategory implements IRecipeCategory<ConversionRecipe> {
 
@@ -49,7 +44,6 @@ public class InfiniteCategory implements IRecipeCategory<ConversionRecipe> {
     private static final int ARROW_Y  = 17;
 
     // 化学品输出槽：标准 16×16，垂直居中于流体槽区域
-    // ★ FIX: 化学品槽使用 JEI 标准尺寸 16×16，Y 坐标居中对齐
     private static final int CHEM_OUTPUT_X = OUTPUT_X;
     private static final int CHEM_OUTPUT_Y = OUTPUT_Y + (TANK_H - 18) / 2;  // ≈ 17
 
@@ -84,18 +78,17 @@ public class InfiniteCategory implements IRecipeCategory<ConversionRecipe> {
     public void setRecipe(IRecipeLayoutBuilder builder, ConversionRecipe recipe, IFocusGroup focuses) {
         int voidAmt = recipe.voidFluid().getAmount();
 
-        // 虚空流体输入槽（始终是流体 16×40，保持原样）
+        // 虚空流体输入槽
         builder.addSlot(RecipeIngredientRole.INPUT, INPUT_X, INPUT_Y)
                 .setFluidRenderer(voidAmt, false, TANK_W, TANK_H)
                 .addIngredient(NeoForgeTypes.FLUID_STACK, recipe.voidFluid());
 
         if (recipe.isChemical()) {
-            // ★ FIX: 化学品输出槽使用 ChemicalSlotHelper（内部不再指定自定义渲染器）
-            // JEI 将自动使用 Mekanism 注册的动态动画渲染器
+            // 使用 Mekanism 注册的动态动画渲染器
             com.yelle233.yuanliuwujin.compat.mekanism.ChemicalSlotHelper
                     .addOutputSlot(builder, recipe.chemicalOther(), CHEM_OUTPUT_X, CHEM_OUTPUT_Y);
         } else {
-            // 普通流体输出槽（16×40 高槽，保持原样）
+            // 普通流体输出槽
             int fluidAmt = recipe.fluidOther().getAmount();
             builder.addSlot(RecipeIngredientRole.OUTPUT, OUTPUT_X, OUTPUT_Y)
                     .setFluidRenderer(fluidAmt, false, TANK_W, TANK_H)

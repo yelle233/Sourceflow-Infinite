@@ -28,7 +28,6 @@ import java.util.List;
  *   <li>销毁机器：任意流体或化学品 → 虚空流体</li>
  *   <li>无限流体机器：虚空流体 → 任意流体或化学品</li>
  * </ul>
- * 化学品配方（需要 Mekanism）合并进相同分类栏，无单独化学品栏。
  */
 @JeiPlugin
 public class SourceflowJeiPlugin implements IModPlugin {
@@ -44,10 +43,8 @@ public class SourceflowJeiPlugin implements IModPlugin {
     @Override
     public void registerCategories(IRecipeCategoryRegistration registration) {
         var guiHelper = registration.getJeiHelpers().getGuiHelper();
-        // 只有两个分类栏，始终注册
         registration.addRecipeCategories(new DestructionCategory(guiHelper));
         registration.addRecipeCategories(new InfiniteCategory(guiHelper));
-        // 化学品配方合并进以上两栏，无需额外分类
     }
 
     @Override
@@ -91,7 +88,7 @@ public class SourceflowJeiPlugin implements IModPlugin {
         registration.addRecipes(DestructionCategory.RECIPE_TYPE, destructionRecipes);
         registration.addRecipes(InfiniteCategory.RECIPE_TYPE, infiniteRecipes);
 
-        // ── Mekanism 化学品配方（合并进同一分类栏） ──
+        // ── Mekanism 化学品配方 ──
         if (MekanismChecker.isLoaded()) {
             com.yelle233.yuanliuwujin.compat.mekanism.MekJeiHelper.registerRecipes(registration);
         }

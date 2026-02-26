@@ -25,7 +25,7 @@ import org.joml.Matrix4f;
  * <p>
  * 渲染两部分内容：
  * <ol>
- *   <li>机器中心反向旋转的销毁核心装饰方块（插入核心时显示）</li>
+ *   <li>机器中心旋转的销毁核心装饰方块（插入核心时显示）</li>
  *   <li>各激活面的模式覆盖层贴图（BOTH / PUSH）</li>
  * </ol>
  * <p>
@@ -66,7 +66,7 @@ public class DestructionMachineBER implements BlockEntityRenderer<DestructionMac
     /* ====== 内部核心渲染 ====== */
 
     /**
-     * 渲染销毁核心装饰方块，使用反向旋转营造"吸入"的视觉效果。
+     * 渲染销毁核心装饰方块
      */
     private static void renderCoreInside(DestructionMachineBlockEntity be, float partialTick,
                                           PoseStack poseStack, MultiBufferSource bufferSource) {
@@ -78,7 +78,7 @@ public class DestructionMachineBER implements BlockEntityRenderer<DestructionMac
         poseStack.translate(0.5, 0.5, 0.5);
 
         float time = level.getGameTime() + partialTick;
-        // 与无限流体机器相反的旋转方向，视觉上表示"吸入"
+        // 内部装饰方块旋转
         poseStack.mulPose(Axis.YP.rotationDegrees(-(time * 2.0f) % 360.0f));
         poseStack.mulPose(Axis.XP.rotationDegrees(-(time * 1.5f) % 360.0f));
         poseStack.mulPose(Axis.ZP.rotationDegrees(-(time * 1.0f) % 360.0f));
@@ -94,7 +94,7 @@ public class DestructionMachineBER implements BlockEntityRenderer<DestructionMac
         poseStack.popPose();
     }
 
-    /* ====== 面覆盖层渲染（与 InfiniteFluidMachineBER 逻辑相同） ====== */
+    /* ====== 面覆盖层渲染 ====== */
 
     private static void renderFaceOverlay(PoseStack poseStack, MultiBufferSource bufferSource,
                                            Direction face, ResourceLocation texture,

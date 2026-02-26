@@ -16,7 +16,6 @@ public class MachineEnergyStorage extends EnergyStorage {
     private final Runnable onChange;
 
     public MachineEnergyStorage(Runnable onChange) {
-        // capacity = MAX, maxReceive = MAX, maxExtract = MAX
         super(Integer.MAX_VALUE, Integer.MAX_VALUE, Integer.MAX_VALUE);
         this.onChange = onChange;
     }

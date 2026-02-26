@@ -12,14 +12,6 @@ import java.util.List;
  * <p>
  * 此类放在 mekanism 包下，以隔离对 {@code ChemicalStack} 的直接引用，
  * 防止 {@code DestructionCategory} 等始终加载的类意外触发 Mekanism 类加载。
- * <p>
- * 调用方须通过完全限定名调用，且只在 {@code recipe.isChemical()} 为 true 时调用。
- *
- * <p><b>FIX v2.1 - 修复化学品 JEI 槽使用静态纯色贴图问题：</b>
- * 原版本使用自定义 ChemicalTankRenderer 渲染
- * 化学品为静态色条，与 JEI 侧边栏的动态动画效果不一致、观感差。
- * 现在不再指定自定义渲染器，直接让 JEI 使用 Mekanism 自行注册的动态渲染器
- * （会显示化学品图标 + 颜色动画，与 JEI 物品列表完全一致）。
  */
 public final class ChemicalSlotHelper {
 

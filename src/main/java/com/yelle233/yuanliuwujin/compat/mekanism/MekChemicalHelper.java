@@ -17,8 +17,8 @@ import javax.annotation.Nullable;
 /**
  * Mekanism 化学品集成帮助类。
  * <p>
- * <b>重要</b>：此类引用了 Mekanism API 类，只能在确认 Mekanism 已加载后调用！
- * 请始终通过 {@code MekanismChecker.isLoaded()} 判断后再调用此类的方法。
+ * 此类引用了 Mekanism API 类
+ * 通过 {@code MekanismChecker.isLoaded()} 判断后再调用此类的方法。
  */
 public final class MekChemicalHelper {
 

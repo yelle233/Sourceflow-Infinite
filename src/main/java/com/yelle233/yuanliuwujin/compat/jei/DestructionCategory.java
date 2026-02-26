@@ -48,8 +48,7 @@ public class DestructionCategory implements IRecipeCategory<ConversionRecipe> {
     private static final int ARROW_X  = 36;
     private static final int ARROW_Y  = 17;
 
-    // 化学品输入槽：标准 16×16，垂直居中于流体槽区域（Y=6 + (40-18)/2 ≈ Y=17）
-    // ★ FIX: 化学品槽使用 JEI 标准尺寸 16×16，此处 Y 坐标居中对齐
+    // 化学品输入槽：标准 16×16，垂直居中于流体槽区域
     private static final int CHEM_INPUT_X  = INPUT_X;
     private static final int CHEM_INPUT_Y  = INPUT_Y + (TANK_H - 18) / 2;  // ≈ 17
 
@@ -90,19 +89,18 @@ public class DestructionCategory implements IRecipeCategory<ConversionRecipe> {
         int voidAmt = recipe.voidFluid().getAmount();
 
         if (recipe.isChemical()) {
-            // ★ FIX: 化学品输入槽使用 ChemicalSlotHelper（内部不再指定自定义渲染器）
             // JEI 将自动使用 Mekanism 注册的动态动画渲染器
             com.yelle233.yuanliuwujin.compat.mekanism.ChemicalSlotHelper
                     .addInputSlot(builder, recipe.chemicalOther(), CHEM_INPUT_X, CHEM_INPUT_Y);
         } else {
-            // 普通流体输入槽（16×40 高槽，保持原样）
+            // 普通流体输入槽
             int fluidAmt = recipe.fluidOther().getAmount();
             builder.addSlot(RecipeIngredientRole.INPUT, INPUT_X, INPUT_Y)
                     .setFluidRenderer(fluidAmt, false, TANK_W, TANK_H)
                     .addIngredient(NeoForgeTypes.FLUID_STACK, recipe.fluidOther());
         }
 
-        // 虚空流体输出槽（始终是流体 16×40）
+        // 虚空流体输出槽
         builder.addSlot(RecipeIngredientRole.OUTPUT, OUTPUT_X, OUTPUT_Y)
                 .setFluidRenderer(voidAmt, false, TANK_W, TANK_H)
                 .addIngredient(NeoForgeTypes.FLUID_STACK, recipe.voidFluid());
@@ -128,7 +126,7 @@ public class DestructionCategory implements IRecipeCategory<ConversionRecipe> {
                 Modconfigs.DESTROY_RATIO_L4.get(), Modconfigs.DESTROY_RATIO_OC.get());
     }
 
-    // ═══════════ 静态工具（供 InfiniteCategory 复用） ═══════════
+    // ═══════════ 静态工具 ═══════════
 
     static void drawRatios(GuiGraphics g, Font font, int l1, int l2, int l3, int l4, int oc) {
         int y = RATIO_Y;

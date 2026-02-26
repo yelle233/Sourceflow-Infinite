@@ -49,7 +49,7 @@ public class SourceflowInfiniteClient {
     public SourceflowInfiniteClient(ModContainer container) {
         container.registerExtensionPoint(IConfigScreenFactory.class, ConfigurationScreen::new);
 
-        // ★ 虚空流体桶颜色
+        // 虚空流体桶颜色
         container.getEventBus().addListener((RegisterColorHandlersEvent.Item event) -> {
             event.register((stack, tintIndex) -> {
                 // tintIndex == 1 是桶模型中流体层的 tint
@@ -57,7 +57,7 @@ public class SourceflowInfiniteClient {
             }, ModItems.VOID_BUCKET.get());
         });
 
-        // ★ 虚空流体使用半透明渲染层（否则流体在世界中完全不透明）
+        // 虚空流体使用半透明渲染层
         container.getEventBus().addListener((net.neoforged.fml.event.lifecycle.FMLClientSetupEvent event) -> {
             event.enqueueWork(() -> {
                 net.minecraft.client.renderer.ItemBlockRenderTypes.setRenderLayer(

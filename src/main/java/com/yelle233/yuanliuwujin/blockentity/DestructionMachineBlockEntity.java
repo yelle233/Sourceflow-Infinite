@@ -50,7 +50,6 @@ public class DestructionMachineBlockEntity extends BlockEntity implements ICoreM
     private final EnergyStorage energyStorage = new MachineEnergyStorage(this::setChanged);
 
     private FluidTank voidTank;
-    /** Mekanism chemical sink handler, stored as Object to avoid loading Mek classes when Mek is absent */
     private Object chemSink;
 
     public DestructionMachineBlockEntity(BlockPos pos, BlockState state) {

@@ -56,7 +56,6 @@ public class InfiniteFluidMachineBlockEntity extends BlockEntity implements ICor
     private final EnergyStorage energyStorage = new MachineEnergyStorage(this::setChanged);
 
     private FluidTank voidTank;
-    /** Mekanism chemical output handler, stored as Object to avoid loading Mek classes when Mek is absent */
     private Object chemOutput;
     private int fluidBudgetRemaining = 0;
 
@@ -286,15 +285,15 @@ public class InfiniteFluidMachineBlockEntity extends BlockEntity implements ICor
 
     /** 爆炸：删除核心（不掉落），先炸出弹坑，再填充虚空流体 */
     private void triggerExplosion(ServerLevel level, BlockPos pos) {
-        // 先清空核心槽（不会掉落）
+        // 清空核心槽
         coreSlot.setStackInSlot(0, ItemStack.EMPTY);
         // 移除方块
         level.removeBlock(pos, false);
-        // 先爆炸（炸出弹坑）
+        // 爆炸
         float strength = Modconfigs.EXPLOSION_STRENGTH.get().floatValue();
         level.explode(null, pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5,
                 strength, true, Level.ExplosionInteraction.TNT);
-        // 在弹坑中生成虚空流体（爆炸之后，不会被爆炸破坏）
+        // 在弹坑中生成虚空流体
         VoidFluidBlock.placeAt(level, pos);
         int blockCount = Math.min(Modconfigs.EXPLOSION_VOID_BLOCKS.get(),
                 voidTank.getFluidAmount() / 500 + Modconfigs.EXPLOSION_VOID_BLOCKS.get() / 2);
@@ -374,8 +373,8 @@ public class InfiniteFluidMachineBlockEntity extends BlockEntity implements ICor
         // 翻转 DIRTY 触发方块更新（客户端渲染刷新）
         boolean dirty = !getBlockState().getValue(InfiniteFluidMachineBlock.DIRTY);
         level.setBlock(worldPosition, getBlockState().setValue(InfiniteFluidMachineBlock.DIRTY, dirty), 3);
-        // 通知 NeoForge Capability 系统本位置的 Capability 已变化，
-        // 使相邻的 Mekanism 管道重新检查连接状态（解决 OFF ↔ 启用时管道不自动连接的问题）
+        // 通知NeoForge的Capability系统本位置的Capability已变化，
+        // 使相邻的 Mekanism 管道重新检查连接状态
         if (!level.isClientSide) {
             level.invalidateCapabilities(worldPosition);
         }

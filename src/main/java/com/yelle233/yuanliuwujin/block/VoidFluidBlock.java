@@ -24,8 +24,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * <p>
  * 设计思路：
  * <ul>
- *   <li>扩散 / 吞噬固体方块由 {@link com.yelle233.yuanliuwujin.fluid.VoidFluid} 的原版 tick 驱动，
- *       不再在方块层面实现扩散，彻底解决桶取走后幽灵贴图的问题。</li>
+ *   <li>扩散 / 吞噬固体方块由 {@link com.yelle233.yuanliuwujin.fluid.VoidFluid} 的原版 tick 驱动</li>
  *   <li>恩惠期（grace period）：仅对<b>源方块</b>（LEVEL=0）计时。
  *       恩惠期结束后移除源方块；流动方块失去源头后通过原版流体逻辑自然消失。</li>
  *   <li>随机 tick（{@link #randomTick}）：随机销毁相邻非虚空流体方块，
