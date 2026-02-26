@@ -1,7 +1,10 @@
 package com.yelle233.yuanliuwujin;
 
+import com.yelle233.yuanliuwujin.block.VoidFluidBlock;
 import com.yelle233.yuanliuwujin.registry.ModNetwork;
 import com.yelle233.yuanliuwujin.registry.*;
+import net.minecraftforge.common.MinecraftForge;
+import net.minecraftforge.event.server.ServerStoppingEvent;
 import net.minecraftforge.eventbus.api.IEventBus;
 import net.minecraftforge.fml.ModLoadingContext;
 import net.minecraftforge.fml.common.Mod;
@@ -43,6 +46,11 @@ public class SourceflowInfinite {
 
         // 1.20.1 Forge 使用 COMMON 类型配置（存放于 config 目录）
         ModLoadingContext.get().registerConfig(ModConfig.Type.COMMON, Modconfigs.SPEC);
+
+        //监听服务器关闭事件，清理虚空流体出生时间记录，防止内存泄漏。
+        MinecraftForge.EVENT_BUS.addListener((ServerStoppingEvent event) -> {
+            VoidFluidBlock.clearBirthTimes();
+            LOGGER.debug("Cleared VoidFluidBlock birth times on server stopping.");
+        });
     }
 }
-

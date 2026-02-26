@@ -36,8 +36,9 @@ public class ModBlocks {
                                     .noOcclusion()
                                     .requiresCorrectToolForDrops()));
 
+    // 原来使用 registerBlock() 会自动注册 BlockItem，改为 BLOCKS.register() 直接注册。
     public static final RegistryObject<Block> INFINITE_CORE_BLOCK =
-            registerBlock("infinite_core_block", () -> new Block(Block.Properties.of()));
+            BLOCKS.register("infinite_core_block", () -> new Block(Block.Properties.of()));
 
     // ── 销毁机器 ──
     public static final RegistryObject<Block> DESTRUCTION_MACHINE =
@@ -51,9 +52,9 @@ public class ModBlocks {
                                     .requiresCorrectToolForDrops()));
 
     public static final RegistryObject<Block> DESTRUCTION_CORE_BLOCK =
-            registerBlock("destruction_core_block", () -> new Block(Block.Properties.of()));
+            BLOCKS.register("destruction_core_block", () -> new Block(Block.Properties.of()));
 
-    // ── 虚空流体方块（不注册 BlockItem） ──
+    // ── 虚空流体方块──
     public static final RegistryObject<VoidFluidBlock> VOID_FLUID_BLOCK =
             BLOCKS.register("void_fluid",
                     () -> new VoidFluidBlock(
@@ -77,4 +78,3 @@ public class ModBlocks {
         return block;
     }
 }
-
