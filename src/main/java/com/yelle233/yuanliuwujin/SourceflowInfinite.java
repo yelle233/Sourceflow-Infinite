@@ -1,10 +1,13 @@
 package com.yelle233.yuanliuwujin;
 
+import com.yelle233.yuanliuwujin.block.VoidFluidBlock;
 import com.yelle233.yuanliuwujin.registry.*;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.ModContainer;
 import net.neoforged.fml.common.Mod;
 import net.neoforged.fml.config.ModConfig;
+import net.neoforged.neoforge.common.NeoForge;
+import net.neoforged.neoforge.event.server.ServerStoppingEvent;
 import org.slf4j.Logger;
 import com.mojang.logging.LogUtils;
 
@@ -39,5 +42,10 @@ public class SourceflowInfinite {
         modEventBus.addListener(ModCapabilities::register);
 
         modContainer.registerConfig(ModConfig.Type.SERVER, Modconfigs.SPEC);
+
+        // 监听服务器关闭事件，清理虚空流体出生时间记录，防止内存泄漏
+        NeoForge.EVENT_BUS.addListener((ServerStoppingEvent event) -> {
+            VoidFluidBlock.clearBirthTimes();
+        });
     }
 }
