@@ -1,0 +1,47 @@
+name: Bug Report / 错误报告
+description: Submit a bug report to help us improve / 提交错误报告以帮助我们改进
+title: "[Bug]: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to fill out this bug report!  
+        感谢你抽出时间填写此错误报告！
+  - type: dropdown
+    id: minecraft_version
+    attributes:
+      label: Minecraft Version / Minecraft 版本
+      description: The version of Minecraft you are using / 你正在使用的 Minecraft 版本
+      options:
+        - 1.20.1
+        - 1.21.1
+    validations:
+      required: true
+  - type: textarea
+    id: what_happened
+    attributes:
+      label: What happened? / 发生了什么？
+      description: How do you trigger this bug? Please walk us through it step by step. / 你是如何触发这个 bug 的？请一步步告诉我们。
+      placeholder: |
+        1.
+        2.
+        3.
+      value: |
+        1.
+        2.
+        3.
+    validations:
+      required: true
+  - type: textarea
+    id: log_output
+    attributes:
+      label: Relevant log output / 相关日志输出
+      description: Please copy and paste any relevant log output. This will be automatically formatted into code, so no need for backticks. / 请复制并粘贴任何相关的日志输出。这将自动格式化为代码，所以不需要反引号。
+      render: shell
+  - type: input
+    id: contact_details
+    attributes:
+      label: Contact Details / 联系方式
+      description: How can we get in touch with you if we need more info? / 如果需要更多信息，我们如何联系你？
+      placeholder: ex. email@example.com
