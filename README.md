@@ -4,8 +4,6 @@
 ---
 # 源流无尽 / Sourceflow Infinite
 
-**适用版本：** Minecraft 1.21.1（NeoForge）
-
 ---
 
 ## 模组简介
@@ -48,7 +46,7 @@
 
 ### 扳手
 
-扳手是操作两种机器的核心工具，拥有两种模式（按住 **Shift + 滚轮** 切换）：
+扳手是操作两种机器的核心工具，拥有两种模式（ **潜行 + 滚轮** 切换）：
 
 **装配模式（IO Mode）**
 - 右键机器：从副手将核心插入机器
@@ -57,9 +55,7 @@
 **配置模式（Config Mode）**
 - 右键机器侧面：循环切换该面的输入/输出模式
 - 潜行 + 右键侧面：增加该面的流量速率（+10 mB/s）
-- Shift + 滚轮上/下：大幅调整速率（±1000 mB/s）
-
-
+- 潜行 + 滚轮上/下：大幅调整速率（±1000 mB/s）
 
 ---
 
@@ -167,7 +163,7 @@ Lv.4 ★超频核心拥有 **1:1** 的转换比，效率极高，但代价是机
 - 当压力达到 **100%** 时，机器立刻爆炸
 
 **爆炸后果：**
-- 产生威力为 80 的爆炸（TNT = 4，末影水晶 = 6），**毁灭性极强**
+- 产生威力为 80 的爆炸（TNT = 4，末影水晶 = 6）
 - 在爆炸点周围生成大量虚空流体方块（默认 32 个），虚空流体会进一步扩散并销毁周围的方块、流体和实体
 - 机器本身与核心被摧毁
 
@@ -284,7 +280,6 @@ A：不会。只有插入核心后才会开始消耗待机电量（基础 FE/tic
 
 # Sourceflow Infinite
 
-**Supported version:** Minecraft 1.21.1 (NeoForge)
 
 ---
 
@@ -465,7 +460,7 @@ The Lv.4 ★ Overclocked Core has a **1:1** conversion ratio and is extremely ef
 
 **Explosion effects:**
 
-* Creates an explosion with power **80** (TNT = 4, End Crystal = 6) — **highly destructive**
+* Creates an explosion with power **80** (TNT = 4, End Crystal = 6) 
 * Spawns a large number of Void Fluid blocks around the blast (default **32**), which then spreads and destroys nearby blocks, fluids, and entities
 * Destroys the machine and the core
 
