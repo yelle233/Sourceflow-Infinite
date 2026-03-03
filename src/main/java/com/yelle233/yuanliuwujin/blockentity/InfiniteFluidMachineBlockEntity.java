@@ -45,6 +45,10 @@ public class InfiniteFluidMachineBlockEntity extends BlockEntity implements ICor
     private final EnumMap<Direction, SideMode> sideModes = new EnumMap<>(Direction.class);
     private final EnumMap<Direction, Integer> faceRates = new EnumMap<>(Direction.class);
 
+    // 红石控制相关
+    private boolean hadRedstoneSignal = false;
+    private final EnumMap<Direction, SideMode> savedSideModes = new EnumMap<>(Direction.class);
+
     private final ItemStackHandler coreSlot = new ItemStackHandler(1) {
         @Override protected void onContentsChanged(int slot) { setChanged(); onCoreChanged(); }
         @Override public boolean isItemValid(int slot, ItemStack stack) {
@@ -366,6 +370,48 @@ public class InfiniteFluidMachineBlockEntity extends BlockEntity implements ICor
     @Nullable public Object getInfiniteChemicalOutput() { return chemOutput; }
     public int getFluidBudgetRemaining() { return fluidBudgetRemaining; }
 
+    // ── 红石控制 ──
+    public boolean hadRedstoneSignal() { return hadRedstoneSignal; }
+    public void setRedstoneSignal(boolean signal) { hadRedstoneSignal = signal; }
+
+    /**
+     * 切换红石控制：保存当前状态并关闭所有侧面，或恢复之前保存的状态
+     */
+    public void toggleRedstoneControl() {
+        boolean allOff = true;
+        for (Direction dir : new Direction[]{Direction.NORTH, Direction.SOUTH, Direction.EAST, Direction.WEST}) {
+            if (getSideMode(dir) != SideMode.OFF) {
+                allOff = false;
+                break;
+            }
+        }
+
+        if (allOff) {
+            // 当前全部关闭 → 恢复之前保存的状态
+            for (Direction dir : new Direction[]{Direction.NORTH, Direction.SOUTH, Direction.EAST, Direction.WEST}) {
+                SideMode saved = savedSideModes.get(dir);
+                if (saved != null && saved != SideMode.OFF) {
+                    sideModes.put(dir, saved);
+                }
+            }
+            savedSideModes.clear();
+        } else {
+            // 当前有侧面开启 → 保存状态并全部关闭
+            savedSideModes.clear();
+            for (Direction dir : new Direction[]{Direction.NORTH, Direction.SOUTH, Direction.EAST, Direction.WEST}) {
+                SideMode current = getSideMode(dir);
+                if (current != SideMode.OFF) {
+                    savedSideModes.put(dir, current);
+                    sideModes.put(dir, SideMode.OFF);
+                }
+            }
+        }
+
+        notifyCapabilityChanged(null);
+        setChanged();
+        syncToClient();
+    }
+
     private void notifyCapabilityChanged(Direction dir) {
         if (level == null) return;
         setChanged();
@@ -390,6 +436,12 @@ public class InfiniteFluidMachineBlockEntity extends BlockEntity implements ICor
         tag.putInt("lastFE", lastTickFEConsumed);
         CompoundTag modesTag = new CompoundTag(); sideModes.forEach((d, m) -> modesTag.putString(d.getName(), m.name())); tag.put("sideModes", modesTag);
         CompoundTag ratesTag = new CompoundTag(); faceRates.forEach((d, r) -> ratesTag.putInt(d.getName(), r)); tag.put("faceRates", ratesTag);
+
+        // 保存红石控制状态
+        tag.putBoolean("hadRedstoneSignal", hadRedstoneSignal);
+        CompoundTag savedModesTag = new CompoundTag();
+        savedSideModes.forEach((dir, mode) -> savedModesTag.putString(dir.getName(), mode.name()));
+        tag.put("savedSideModes", savedModesTag);
     }
     @Override protected void loadAdditional(CompoundTag tag, HolderLookup.Provider registries) {
         super.loadAdditional(tag, registries);
@@ -403,6 +455,20 @@ public class InfiniteFluidMachineBlockEntity extends BlockEntity implements ICor
         for (Direction dir : Direction.values()) { if (dir == Direction.UP || dir == Direction.DOWN) continue; String s = modesTag.getString(dir.getName()); if (!s.isEmpty()) { try { sideModes.put(dir, SideMode.valueOf(s)); } catch (IllegalArgumentException ignored) {} } }
         CompoundTag ratesTag = tag.getCompound("faceRates");
         for (Direction dir : Direction.values()) { if (dir == Direction.UP || dir == Direction.DOWN) continue; if (ratesTag.contains(dir.getName())) faceRates.put(dir, Math.max(1, ratesTag.getInt(dir.getName()))); }
+
+        // 加载红石控制状态
+        hadRedstoneSignal = tag.getBoolean("hadRedstoneSignal");
+        CompoundTag savedModesTag = tag.getCompound("savedSideModes");
+        savedSideModes.clear();
+        for (Direction dir : Direction.values()) {
+            if (dir == Direction.UP || dir == Direction.DOWN) continue;
+            String modeStr = savedModesTag.getString(dir.getName());
+            if (!modeStr.isEmpty()) {
+                try {
+                    savedSideModes.put(dir, SideMode.valueOf(modeStr));
+                } catch (IllegalArgumentException ignored) {}
+            }
+        }
     }
     @Override public ClientboundBlockEntityDataPacket getUpdatePacket() { return ClientboundBlockEntityDataPacket.create(this); }
     @Override public CompoundTag getUpdateTag(HolderLookup.Provider registries) { return saveWithoutMetadata(registries); }

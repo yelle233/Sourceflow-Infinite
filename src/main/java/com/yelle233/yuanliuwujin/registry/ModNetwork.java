@@ -34,11 +34,7 @@ public class ModNetwork {
             WrenchItem.WrenchMode current = WrenchItem.getMode(mainHand);
             WrenchItem.WrenchMode next = current.next(payload.delta());
             WrenchItem.setMode(mainHand, next);
-            Component modeName = switch (next) {
-                case IO -> Component.translatable("mode.yuanliuwujin.wrench.io").withStyle(ChatFormatting.AQUA, ChatFormatting.BOLD);
-                case CONFIG -> Component.translatable("mode.yuanliuwujin.wrench.config").withStyle(ChatFormatting.GOLD, ChatFormatting.BOLD);
-            };
-            player.displayClientMessage(Component.literal(" ").append(Component.translatable("msg.yuanliuwujin.wrench_mode").withStyle(ChatFormatting.GRAY)).append(Component.literal(": ").withStyle(ChatFormatting.DARK_GRAY)).append(modeName), true);
+            // 移除临时消息，因为现在有持久 HUD 显示
             player.playNotifySound(SoundEvents.UI_BUTTON_CLICK.value(), SoundSource.PLAYERS, 0.4f, 1.2f);
         }));
 

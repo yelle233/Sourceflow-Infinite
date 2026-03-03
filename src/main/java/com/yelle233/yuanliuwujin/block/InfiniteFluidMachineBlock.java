@@ -84,4 +84,27 @@ public class InfiniteFluidMachineBlock extends Block implements EntityBlock {
         }
         super.onRemove(state, level, pos, newState, moving);
     }
+
+    /**
+     * 监听红石信号变化，切换机器侧面模式
+     */
+    @Override
+    public void neighborChanged(BlockState state, Level level, BlockPos pos,
+                                 Block neighborBlock, BlockPos neighborPos, boolean movedByPiston) {
+        if (level.isClientSide) return;
+
+        BlockEntity be = level.getBlockEntity(pos);
+        if (!(be instanceof InfiniteFluidMachineBlockEntity machine)) return;
+
+        // 检测红石信号变化
+        boolean hasSignal = level.hasNeighborSignal(pos);
+        boolean wasSignal = machine.hadRedstoneSignal();
+
+        // 红石信号从无到有：切换模式
+        if (hasSignal && !wasSignal) {
+            machine.toggleRedstoneControl();
+        }
+
+        machine.setRedstoneSignal(hasSignal);
+    }
 }

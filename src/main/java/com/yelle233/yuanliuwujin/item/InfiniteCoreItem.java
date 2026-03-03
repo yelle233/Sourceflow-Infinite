@@ -169,6 +169,26 @@ public class InfiniteCoreItem extends Item {
     private static void setBoundChemical(ItemStack stack, ResourceLocation id) { stack.set(ModDataComponents.BOUND_CHEMICAL.get(), id); stack.remove(ModDataComponents.BOUND_FLUID.get()); }
     private static void clearBinding(ItemStack stack) { stack.remove(ModDataComponents.BOUND_FLUID.get()); stack.remove(ModDataComponents.BOUND_CHEMICAL.get()); }
 
+    /**
+     * 复制绑定数据从源物品到目标物品（用于配方升级）
+     */
+    public static void copyBindingData(ItemStack source, ItemStack target) {
+        BindType sourceType = getBindType(source);
+        if (sourceType == BindType.FLUID) {
+            ResourceLocation fluidId = getBoundFluid(source);
+            if (fluidId != null) {
+                setBoundFluid(target, fluidId);
+                setCoreModelState(target, true);
+            }
+        } else if (sourceType == BindType.CHEMICAL) {
+            ResourceLocation chemId = getBoundChemical(source);
+            if (chemId != null) {
+                setBoundChemical(target, chemId);
+                setCoreModelState(target, true);
+            }
+        }
+    }
+
     private InteractionResult tryBind(Player player, ItemStack stack, InteractionHand hand, ResourceLocation substanceId, BindType type) {
         if (type == BindType.FLUID && Modconfigs.isFluidBanned(substanceId)) { player.displayClientMessage(Component.translatable("tooltip.fluid_banned", substanceId.toString()).withStyle(ChatFormatting.RED), true); return InteractionResult.CONSUME; }
         BindType currentType = getBindType(stack);

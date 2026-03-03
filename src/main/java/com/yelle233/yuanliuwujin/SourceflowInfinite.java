@@ -38,6 +38,7 @@ public class SourceflowInfinite {
         ModBlockEntities.BLOCK_ENTITIES.register(modEventBus);
         ModDataComponents.REGISTRAR.register(modEventBus);
         ModTab.TABS.register(modEventBus);
+        ModRecipeSerializers.RECIPE_SERIALIZERS.register(modEventBus);
 
         modEventBus.addListener(ModCapabilities::register);
 

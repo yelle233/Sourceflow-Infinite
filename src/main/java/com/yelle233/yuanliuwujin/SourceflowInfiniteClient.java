@@ -23,6 +23,7 @@ import net.minecraft.core.Direction;
 import net.minecraft.network.chat.Component;
 import net.minecraft.util.FormattedCharSequence;
 import net.minecraft.util.Mth;
+import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.phys.BlockHitResult;
 import net.minecraft.world.phys.HitResult;
 import net.neoforged.api.distmarker.Dist;
@@ -156,12 +157,48 @@ public class SourceflowInfiniteClient {
         if (mc.options.hideGui) return;
         LocalPlayer player = mc.player;
         if (player == null || mc.level == null) return;
+
+        // 渲染扳手模式指示器
+        renderWrenchModeIndicator(event.getGuiGraphics(), mc, player);
+
         HitResult hit = mc.hitResult;
         if (!(hit instanceof BlockHitResult bhr)) return;
         BlockPos pos = bhr.getBlockPos();
         Object be = mc.level.getBlockEntity(pos);
         if (be instanceof InfiniteFluidMachineBlockEntity inf) renderInfiniteMachineHud(event.getGuiGraphics(), mc, inf);
         else if (be instanceof DestructionMachineBlockEntity dest) renderDestructionMachineHud(event.getGuiGraphics(), mc, dest);
+    }
+
+    /**
+     * 渲染扳手模式指示器（持久显示在物品栏上方）
+     */
+    private static void renderWrenchModeIndicator(GuiGraphics gg, Minecraft mc, LocalPlayer player) {
+        ItemStack mainHand = player.getMainHandItem();
+        if (!(mainHand.getItem() instanceof WrenchItem)) return;
+
+        WrenchItem.WrenchMode mode = WrenchItem.getMode(mainHand);
+        Component modeName;
+
+        if (mode == WrenchItem.WrenchMode.IO) {
+            modeName = Component.translatable("mode.yuanliuwujin.wrench.io").withStyle(ChatFormatting.AQUA, ChatFormatting.BOLD);
+        } else {
+            modeName = Component.translatable("mode.yuanliuwujin.wrench.config").withStyle(ChatFormatting.GOLD, ChatFormatting.BOLD);
+        }
+
+        Component fullText = Component.literal(" ")
+            .append(Component.translatable("msg.yuanliuwujin.wrench_mode").withStyle(ChatFormatting.GRAY))
+            .append(Component.literal(": ").withStyle(ChatFormatting.DARK_GRAY))
+            .append(modeName);
+
+        // 使用 Minecraft 原生的 action bar 位置和样式
+        int screenW = mc.getWindow().getGuiScaledWidth();
+        int screenH = mc.getWindow().getGuiScaledHeight();
+        int textWidth = mc.font.width(fullText);
+        int x = (screenW - textWidth) / 2;
+        int y = screenH - 59; // action bar 位置
+
+        // 直接绘制文本，不添加背景和阴影
+        gg.drawString(mc.font, fullText, x, y, 0xFFFFFF, false);
     }
 
     private static void renderInfiniteMachineHud(GuiGraphics gg, Minecraft mc, InfiniteFluidMachineBlockEntity machine) {

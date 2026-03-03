@@ -57,6 +57,8 @@
 - 潜行 + 右键侧面：增加该面的流量速率（+10 mB/s）
 - 潜行 + 滚轮上/下：大幅调整速率（±1000 mB/s）
 
+**模式指示器：** 手持扳手时，屏幕物品栏上方会持久显示当前模式（IO 模式为青色，CONFIG 模式为金色），方便随时查看。
+
 ---
 
 ### 销毁核心（Destruction Core）
@@ -71,6 +73,8 @@
 - 手持无限核心**右键或潜行右键流体源方块**即可绑定该流体
 - 若安装了 Mekanism，潜行＋右键化学品储罐可绑定化学品
 - 对着空气**潜行 + 右键**清除已有绑定（生存模式下可在配置中禁用）
+
+**核心升级：** 无限核心可以通过合成升级到更高等级（Lv.1 → Lv.2 → Lv.3 → Lv.4 → Lv.4 ★超频），升级时会**自动保留绑定的流体或化学品**，无需重新绑定。升级后的核心在物品栏中也会保持已绑定的贴图状态。
 
 ## 机器
 
@@ -105,6 +109,11 @@
 
 **待机：** 当虚空储罐为满或没有面启用时机器变为待机模式，此时仅消耗待机电量
 
+**红石控制：** 机器支持红石信号控制。每次接收到红石信号（从无到有）时，会切换工作状态：
+- 首次信号：保存当前侧面配置并将所有侧面设为 OFF，机器停止工作
+- 再次信号：恢复之前保存的侧面配置，机器恢复工作
+- 适用于超频核心的自动安全控制，防止无人看管时爆炸
+
 ### 无限流体机器（Infinite Fluid Machine）
 
 无限流体机器消耗虚空流体，产出核心绑定的流体。
@@ -135,6 +144,11 @@
 **面速率：** 每个侧面默认 20 mB/s，可用扳手调节。面速率决定了该面每秒可以输入或输出的流体量。
 
 **待机：** 当虚空储罐为空或没有面启用时机器变为待机模式，此时仅消耗待机电量
+
+**红石控制：** 机器支持红石信号控制。每次接收到红石信号（从无到有）时，会切换工作状态：
+- 首次信号：保存当前侧面配置并将所有侧面设为 OFF，机器停止工作
+- 再次信号：恢复之前保存的侧面配置，机器恢复工作
+- 适用于超频核心的自动安全控制，防止无人看管时爆炸
 
 ### HUD 信息显示
 
@@ -260,7 +274,10 @@ A：会。虚空流体放置后会经历恩惠期（扩散+销毁），之后浓
 A：会。虚空流体在扩散和随机 tick 中都会吞噬接触到的其他流体（水、岩浆等），将其替换为虚空流体或直接清除。此行为受「是否吞噬方块」配置控制。
 
 **Q：超频核心爆炸能避免吗？**
-A：可以。注意监控 HUD 上的压力值，在压力较高时暂停机器运行让压力衰减。
+A：可以。有以下几种方法：
+1. 手动监控 HUD 上的压力值，在压力较高时暂停机器运行让压力衰减
+2. 使用红石信号控制机器自动停机：给机器一个红石信号即可关闭所有侧面，压力衰减后再次给信号恢复工作
+3. 配合红石时钟或比较器等红石电路实现自动循环启停，防止压力积累
 
 **Q：可以禁止某些流体被绑定吗？**
 A：可以。在服务端配置文件的黑名单中添加流体 ID 或 tag 即可。
@@ -337,6 +354,8 @@ The Wrench is the primary tool used to operate both machines. It has two modes (
 * Sneak + right-click a side: increases that side’s rate (+10 mB/s)
 * Shift + mouse wheel up/down: adjust rate in large steps (±1000 mB/s)
 
+**Mode Indicator:** When holding the wrench, the current mode is persistently displayed above the hotbar (IO mode in cyan, CONFIG mode in gold) for easy reference.
+
 ---
 
 ### Destruction Core
@@ -354,6 +373,8 @@ Inserted into the Infinite Fluid Machine. It must first be bound to a fluid or c
 * Hold the Infinite Core and **right-click or sneak-right-click a fluid source block** to bind that fluid.
 * If **Mekanism** is installed: sneak-right-click a **Chemical Tank** to bind a chemical.
 * **Sneak + right-click air** to clear an existing binding (this can be disabled in the config for Survival mode).
+
+**Core Upgrading:** Infinite Cores can be upgraded to higher levels through crafting (Lv.1 → Lv.2 → Lv.3 → Lv.4 → Lv.4 ★ Overclocked). When upgrading, the **bound fluid or chemical is automatically preserved**—no need to rebind. The upgraded core will also maintain its bound texture state in the inventory.
 
 ---
 
@@ -393,6 +414,11 @@ Converts any input fluid into Void Fluid and stores it in its internal tank.
 
 **Idle behavior:** The machine becomes idle when the Void Tank is full or no sides are enabled; in this state it only consumes idle power.
 
+**Redstone Control:** The machine supports redstone signal control. Each time a redstone signal is received (transitioning from off to on), the machine toggles its working state:
+- First signal: Saves current side configuration and sets all sides to OFF, stopping the machine
+- Second signal: Restores the previously saved side configuration, resuming operation
+- Useful for automatic safety control with overclocked cores to prevent unattended explosions
+
 ---
 
 ### Infinite Fluid Machine
@@ -428,6 +454,11 @@ Consumes Void Fluid and outputs the fluid bound to its core.
 **Side rate:** Each side defaults to **20 mB/s** and can be adjusted with the wrench. The side rate determines how much fluid that side can input/output per second.
 
 **Idle behavior:** The machine becomes idle when the Void Tank is empty or no sides are enabled; in this state it only consumes idle power.
+
+**Redstone Control:** The machine supports redstone signal control. Each time a redstone signal is received (transitioning from off to on), the machine toggles its working state:
+- First signal: Saves current side configuration and sets all sides to OFF, stopping the machine
+- Second signal: Restores the previously saved side configuration, resuming operation
+- Useful for automatic safety control with overclocked cores to prevent unattended explosions
 
 ---
 
@@ -555,7 +586,10 @@ A: Yes. Once placed, it goes through the grace period (spreading + destroying), 
 A: Yes. During spreading and random ticks, Void Fluid will consume other fluids (water, lava, etc.), replacing them with Void Fluid or removing them entirely. This behavior is controlled by the “Consume blocks” config option.
 
 **Q: Can I prevent an overclocked-core explosion?**
-A: Yes. Watch the pressure value on the HUD. If pressure gets high, pause the machine so pressure can decay.
+A: Yes. There are several methods:
+1. Manually monitor the pressure value on the HUD and pause the machine when pressure gets high to allow decay
+2. Use redstone signals to automatically stop the machine: sending a redstone signal will disable all sides; after pressure decays, send another signal to resume operation
+3. Combine with redstone clocks or comparators to create automatic start-stop cycles that prevent pressure buildup
 
 **Q: Can I ban certain fluids from being bound?**
 A: Yes. Add the fluid ID or tag to the blacklist in the server config.
