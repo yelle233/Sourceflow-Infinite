@@ -17,24 +17,19 @@ import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
 
 /**
- * 扳手物品，用于操作无限流体机器和销毁机器。
+ * 扳手物品，用于操作机器核心和配置
  * <p>
- * <b>两种模式（Shift+滚轮切换）：</b>
+ * 两种模式（Shift+滚轮切换）：
  * <ul>
- *   <li><b>IO 模式</b>：非潜行右键 → 从副手插入核心；潜行右键 → 取出核心</li>
- *   <li><b>CONFIG 模式</b>：右键侧面 → 循环切换面模式（OFF/PUSH/BOTH 或 OFF/PULL/BOTH）</li>
- *   <li>CONFIG 模式下，潜行右键侧面 → 速率 +10（单击）或持续增加（长按）</li>
- *   <li>CONFIG 模式下，Shift+滚轮上 → 速率 +1000；Shift+滚轮下 → 速率 -1000</li>
+ *   <li>IO 模式：右键插入/取出核心</li>
+ *   <li>CONFIG 模式：右键切换面模式，潜行右键调整速率</li>
  * </ul>
- * <p>
- * 长按逻辑在客户端通过 {@link com.yelle233.yuanliuwujin.SourceflowInfiniteClient} 处理，
- * 此处 {@code useOn} 只处理单次点击。
  */
 public class WrenchItem extends Item {
 
     public WrenchItem(Properties props) { super(props); }
 
-    // ── 扳手模式枚举 ──────────────────────────────────────────
+    // ── 扳手模式 ──
 
     public enum WrenchMode {
         IO, CONFIG;
@@ -63,7 +58,7 @@ public class WrenchItem extends Item {
         });
     }
 
-    // ── 右键交互 ──────────────────────────────────────────────
+    // ── 右键交互 ──
 
     @Override
     public InteractionResult useOn(UseOnContext ctx) {
@@ -87,7 +82,7 @@ public class WrenchItem extends Item {
                 : handleConfigMode(level, pos, player, machine, face, player.isShiftKeyDown());
     }
 
-    // ── IO 模式 ────────────────────────────────────────────────
+    // ── IO 模式 ──
 
     private InteractionResult handleIOMode(Level level, BlockPos pos,
                                             Player player, ICoreMachine machine) {
@@ -116,20 +111,17 @@ public class WrenchItem extends Item {
         }
     }
 
-    // ── CONFIG 模式 ────────────────────────────────────────────
+    // ── CONFIG 模式 ──
 
     private InteractionResult handleConfigMode(Level level, BlockPos pos,
                                                 Player player, ICoreMachine machine,
                                                 Direction face, boolean sneaking) {
-        // 顶面、底面不参与 CONFIG 操作
         if (face == Direction.UP || face == Direction.DOWN) return InteractionResult.PASS;
 
         if (sneaking) {
-            // 潜行右键：速率 +10（单次点击；长按由客户端持续发包）
             machine.adjustFaceRate(face, 10);
             level.playSound(null, pos, SoundEvents.UI_BUTTON_CLICK.value(), SoundSource.BLOCKS, 0.3f, 1.2f);
         } else {
-            // 非潜行右键：循环切换面模式
             machine.cycleSideMode(face);
             level.playSound(null, pos, SoundEvents.LEVER_CLICK, SoundSource.BLOCKS, 0.6f, 1.0f);
         }

@@ -12,15 +12,9 @@ import org.slf4j.Logger;
 import com.mojang.logging.LogUtils;
 
 /**
- * 源流无尽（Sourceflow Infinite）模组主类。
+ * 源流无尽（Sourceflow Infinite）模组主类
  * <p>
- * v2.0 改动：
- * <ul>
- *   <li>引入虚空流体作为两种机器的中间媒介</li>
- *   <li>核心升级至 1–4 级，超频系统</li>
- *   <li>面速率独立可调</li>
- *   <li>超频压力与爆炸机制</li>
- * </ul>
+ * v2.0 核心特性：虚空流体中间媒介、分级核心系统、面速率控制、超频压力机制
  */
 @Mod(SourceflowInfinite.MODID)
 public class SourceflowInfinite {

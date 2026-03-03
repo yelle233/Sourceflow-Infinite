@@ -35,7 +35,7 @@ public class DestructionMachineBlockEntity extends BlockEntity implements ICoreM
     private float pressure = 0.0f;
     private int lastTickFEConsumed = 0;
     private int secondTick = 0;
-    /** 当前 tick 化学品总预算（所有启用面合计），每 tick 重置 */
+    /** 当前tick化学品总预算（所有启用面合计） */
     private int chemBudgetRemaining = 0;
 
     private final EnumMap<Direction, SideMode> sideModes = new EnumMap<>(Direction.class);
@@ -95,7 +95,7 @@ public class DestructionMachineBlockEntity extends BlockEntity implements ICoreM
         return (secondTick < remainder) ? base + 1 : base;
     }
 
-    /** 计算所有启用面本 tick 的化学品总预算 */
+    /** 计算所有启用面本tick的化学品总预算 */
     private int calcTotalChemBudget() {
         int total = 0;
         for (Direction dir : new Direction[]{Direction.NORTH, Direction.SOUTH, Direction.EAST, Direction.WEST}) {
@@ -122,38 +122,31 @@ public class DestructionMachineBlockEntity extends BlockEntity implements ICoreM
         boolean hasCore = !coreSlot.getStackInSlot(0).isEmpty();
         boolean voidNotFull = voidTank.getFluidAmount() < voidTank.getCapacity();
         boolean anyFaceEnabled = sideModes.values().stream().anyMatch(m -> m != SideMode.OFF);
-        int baseFE = Modconfigs.DESTROY_FE_BASE.get();                    // 待机基础耗电
-        int requiredFE = calcRequiredFE();                                // 工作满载耗电（基础 + 面速率）
+        int baseFE = Modconfigs.DESTROY_FE_BASE.get();
+        int requiredFE = calcRequiredFE();
         boolean hasEnoughEnergy = energyStorage.getEnergyStored() >= requiredFE;
         boolean canWork = hasCore && voidNotFull && anyFaceEnabled && hasEnoughEnergy;
 
-        // ── 三档耗电逻辑 ──
-        // HUD 显示实际耗电档位：工作中显示满载，待机中显示待机基础耗电
+        // 三档耗电：无核心0，待机baseFE，工作requiredFE
         lastTickFEConsumed = hasCore ? (canWork ? requiredFE : baseFE) : 0;
         if (canWork) {
-            // 工作中：消耗满载电量
             energyStorage.extractEnergy(requiredFE, false);
         } else if (hasCore) {
-            // 待机中（有核心但无法工作）：消耗待机电量
             int standbyConsume = Math.min(baseFE, energyStorage.getEnergyStored());
             if (standbyConsume > 0) energyStorage.extractEnergy(standbyConsume, false);
         }
 
-        // 重置化学品预算
         chemBudgetRemaining = canWork ? calcTotalChemBudget() : 0;
 
         if (canWork) {
-            // BOTH 模式主动抽取
             for (Direction dir : new Direction[]{Direction.NORTH, Direction.SOUTH, Direction.EAST, Direction.WEST}) {
                 SideMode mode = getSideMode(dir);
                 if (mode != SideMode.BOTH) continue;
                 if (voidTank.getFluidAmount() >= voidTank.getCapacity()) break;
                 int tickBudget = calcTickBudget(getFaceRate(dir));
 
-                // 抽取流体
                 pullFluidFromNeighbor(level, pos, dir, tickBudget);
 
-                // 抽取 Mekanism 化学品
                 if (MekanismChecker.isLoaded()) {
                     com.yelle233.yuanliuwujin.compat.mekanism.MekCompatBridge.pullChemicalFromNeighbor(
                             level, pos, dir, tickBudget, getCurrentRatio(), voidTank);
@@ -169,10 +162,8 @@ public class DestructionMachineBlockEntity extends BlockEntity implements ICoreM
             if (pressure > 0) pressure = (float) Math.max(0.0, pressure - Modconfigs.PRESSURE_DECAY_PER_TICK.get());
         }
 
-        // 无论 canWork 与否，只要虚空流体罐不空就推送到底面
         pushVoidFluidDown(level, pos);
 
-        // LIT 发光状态：有核心就亮，没核心就暗，不受工作状态影响
         BlockState currentState = level.getBlockState(pos);
         boolean currentLit = currentState.getValue(DestructionMachineBlock.LIT);
         if (hasCore != currentLit) {
@@ -255,17 +246,13 @@ public class DestructionMachineBlockEntity extends BlockEntity implements ICoreM
         };
     }
 
-    /** 爆炸：删除核心（不掉落），先炸出弹坑，再填充虚空流体 */
+    /** 爆炸：删除核心，炸出弹坑，填充虚空流体 */
     private void triggerExplosion(ServerLevel level, BlockPos pos) {
-        // 先清空核心槽（不会掉落）
         coreSlot.setStackInSlot(0, ItemStack.EMPTY);
-        // 移除方块
         level.removeBlock(pos, false);
-        // 先爆炸（炸出弹坑）
         float strength = Modconfigs.EXPLOSION_STRENGTH.get().floatValue();
         level.explode(null, pos.getX() + 0.5, pos.getY() + 0.5, pos.getZ() + 0.5,
                 strength, true, Level.ExplosionInteraction.TNT);
-        // 在弹坑中生成虚空流体（爆炸之后，不会被爆炸破坏）
         VoidFluidBlock.placeAt(level, pos);
         int blockCount = Math.min(Modconfigs.EXPLOSION_VOID_BLOCKS.get(),
                 voidTank.getFluidAmount() / 500 + Modconfigs.EXPLOSION_VOID_BLOCKS.get() / 2);
@@ -320,7 +307,7 @@ public class DestructionMachineBlockEntity extends BlockEntity implements ICoreM
     public void setRedstoneSignal(boolean signal) { hadRedstoneSignal = signal; }
 
     /**
-     * 切换红石控制：保存当前状态并关闭所有侧面，或恢复之前保存的状态
+     * 切换红石控制：保存当前状态并关闭所有侧面，或恢复保存的状态
      */
     public void toggleRedstoneControl() {
         boolean allOff = true;
@@ -332,7 +319,6 @@ public class DestructionMachineBlockEntity extends BlockEntity implements ICoreM
         }
 
         if (allOff) {
-            // 当前全部关闭 → 恢复之前保存的状态
             for (Direction dir : new Direction[]{Direction.NORTH, Direction.SOUTH, Direction.EAST, Direction.WEST}) {
                 SideMode saved = savedSideModes.get(dir);
                 if (saved != null && saved != SideMode.OFF) {
@@ -341,7 +327,6 @@ public class DestructionMachineBlockEntity extends BlockEntity implements ICoreM
             }
             savedSideModes.clear();
         } else {
-            // 当前有侧面开启 → 保存状态并全部关闭
             savedSideModes.clear();
             for (Direction dir : new Direction[]{Direction.NORTH, Direction.SOUTH, Direction.EAST, Direction.WEST}) {
                 SideMode current = getSideMode(dir);
@@ -361,11 +346,8 @@ public class DestructionMachineBlockEntity extends BlockEntity implements ICoreM
         if (level == null) return;
         setChanged();
         syncToClient();
-        // 翻转 DIRTY 触发方块更新（客户端渲染刷新）
         boolean dirty = !getBlockState().getValue(DestructionMachineBlock.DIRTY);
         level.setBlock(worldPosition, getBlockState().setValue(DestructionMachineBlock.DIRTY, dirty), 3);
-        // 通知 NeoForge Capability 系统本位置的 Capability 已变化，
-        // 使相邻的 Mekanism 管道重新检查连接状态（解决 OFF ↔ 启用时管道不自动连接的问题）
         if (!level.isClientSide) {
             level.invalidateCapabilities(worldPosition);
         }
@@ -382,7 +364,6 @@ public class DestructionMachineBlockEntity extends BlockEntity implements ICoreM
         CompoundTag modesTag = new CompoundTag(); sideModes.forEach((dir, mode) -> modesTag.putString(dir.getName(), mode.name())); tag.put("sideModes", modesTag);
         CompoundTag ratesTag = new CompoundTag(); faceRates.forEach((dir, rate) -> ratesTag.putInt(dir.getName(), rate)); tag.put("faceRates", ratesTag);
 
-        // 保存红石控制状态
         tag.putBoolean("hadRedstoneSignal", hadRedstoneSignal);
         CompoundTag savedModesTag = new CompoundTag();
         savedSideModes.forEach((dir, mode) -> savedModesTag.putString(dir.getName(), mode.name()));
@@ -400,8 +381,6 @@ public class DestructionMachineBlockEntity extends BlockEntity implements ICoreM
         CompoundTag ratesTag = tag.getCompound("faceRates");
         for (Direction dir : Direction.values()) { if (dir == Direction.UP || dir == Direction.DOWN) continue; if (ratesTag.contains(dir.getName())) faceRates.put(dir, Math.max(1, ratesTag.getInt(dir.getName()))); }
 
-        // 加载红石控制状态
-        hadRedstoneSignal = tag.getBoolean("hadRedstoneSignal");
         CompoundTag savedModesTag = tag.getCompound("savedSideModes");
         savedSideModes.clear();
         for (Direction dir : Direction.values()) {
