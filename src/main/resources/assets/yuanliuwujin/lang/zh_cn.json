@@ -47,6 +47,10 @@
   "msg.yuanliuwujin.wrench_mode": "模式",
 
   "tooltip.fluid_banned": "已禁用：%s",
+  "tooltip.yuanliuwujin.wrench.current_mode": "当前模式：",
+  "tooltip.yuanliuwujin.wrench.mode.io": "装配模式",
+  "tooltip.yuanliuwujin.wrench.mode.config": "配置模式",
+  "tooltip.yuanliuwujin.wrench.switch_hint": "Shift+滚轮切换模式",
   "tooltip.yuanliuwujin.core.banned_by_config": "已被配置禁用",
   "tooltip.yuanliuwujin.core.bind_chem_hint": "右键 Mekanism 化学品储罐绑定化学品",
   "tooltip.yuanliuwujin.core.bind_hint": "右键液体方块进行绑定",

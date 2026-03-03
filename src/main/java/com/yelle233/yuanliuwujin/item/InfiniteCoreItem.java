@@ -347,6 +347,25 @@ public class InfiniteCoreItem extends Item {
         stack.getOrCreateTag().putBoolean(TAG_BOUND, filled);
     }
 
+    /**
+     * 复制绑定数据从源物品到目标物品（用于配方升级）
+     */
+    public static void copyBindingData(ItemStack source, ItemStack target) {
+        BindType sourceType = getBindType(source);
+        if (sourceType == BindType.FLUID) {
+            ResourceLocation fluidId = getBoundFluid(source);
+            if (fluidId != null) {
+                setBoundFluid(target, fluidId);
+            }
+        } else if (sourceType == BindType.CHEMICAL) {
+            ResourceLocation chemId = getBoundChemical(source);
+            MekChemicalKind kind = getBoundChemicalKind(source);
+            if (chemId != null) {
+                setBoundChemical(target, kind, chemId);
+            }
+        }
+    }
+
     // ── 辅助方法 ──────────────────────────────────────────
 
     private static void forceUpdateStack(Player player, InteractionHand hand, ItemStack stack) {

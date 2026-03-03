@@ -1,5 +1,5 @@
 {
-  "type": "minecraft:crafting_shaped",
+  "type": "yuanliuwujin:infinite_core_upgrade",
   "pattern": ["BEB", "ECE", "BEB"],
   "key": {
     "C": {"item": "yuanliuwujin:infinite_core_l2"},

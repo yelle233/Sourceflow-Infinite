@@ -47,6 +47,10 @@
   "msg.yuanliuwujin.wrench_mode": "Mode",
 
   "tooltip.fluid_banned": "Banned: %s",
+  "tooltip.yuanliuwujin.wrench.current_mode": "Current Mode: ",
+  "tooltip.yuanliuwujin.wrench.mode.io": "IO Mode",
+  "tooltip.yuanliuwujin.wrench.mode.config": "Config Mode",
+  "tooltip.yuanliuwujin.wrench.switch_hint": "Shift+Scroll to switch mode",
   "tooltip.yuanliuwujin.core.banned_by_config": "Banned by config",
   "tooltip.yuanliuwujin.core.bind_chem_hint": "Right-click Mekanism chemical tank to bind",
   "tooltip.yuanliuwujin.core.bind_hint": "Right-click a fluid block to bind",

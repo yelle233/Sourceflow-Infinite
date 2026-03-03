@@ -47,7 +47,7 @@ import java.util.List;
 import java.util.Locale;
 
 /**
- * 客户端入口类（1.20.1 Forge 版本，含 v2.0 新功能）。
+ * 客户端入口类。
  */
 public class SourceflowInfiniteClient {
 
@@ -73,7 +73,7 @@ public class SourceflowInfiniteClient {
         @SubscribeEvent
         public static void onClientSetup(FMLClientSetupEvent event) {
             event.enqueueWork(() -> {
-                // 为所有无限核心注册 filled 属性（通过 NBT "Filled" 字段）
+                // 为所有无限核心注册 filled 属性
                 for (var item : new net.minecraft.world.item.Item[]{
                         ModItems.INFINITE_CORE_L1.get(),
                         ModItems.INFINITE_CORE_L2.get(),
@@ -195,6 +195,9 @@ public class SourceflowInfiniteClient {
             LocalPlayer player = mc.player;
             if (player == null || mc.level == null) return;
 
+            // 渲染扳手模式指示器
+            renderWrenchModeIndicator(event.getGuiGraphics(), mc, player);
+
             HitResult hit = mc.hitResult;
             if (!(hit instanceof BlockHitResult bhr)) return;
             BlockPos pos = bhr.getBlockPos();
@@ -206,6 +209,38 @@ public class SourceflowInfiniteClient {
                 renderDestructionMachineHud(event.getGuiGraphics(), mc, dest);
             }
         }
+    }
+
+    /**
+     * 渲染扳手模式指示器（持久显示在物品栏上方）
+     */
+    private static void renderWrenchModeIndicator(GuiGraphics gg, Minecraft mc, LocalPlayer player) {
+        var mainHand = player.getMainHandItem();
+        if (!(mainHand.getItem() instanceof WrenchItem)) return;
+
+        WrenchItem.WrenchMode mode = WrenchItem.getMode(mainHand);
+        Component modeName;
+
+        if (mode == WrenchItem.WrenchMode.IO) {
+            modeName = Component.translatable("mode.yuanliuwujin.wrench.io").withStyle(ChatFormatting.AQUA, ChatFormatting.BOLD);
+        } else {
+            modeName = Component.translatable("mode.yuanliuwujin.wrench.config").withStyle(ChatFormatting.GOLD, ChatFormatting.BOLD);
+        }
+
+        Component fullText = Component.literal(" ")
+            .append(Component.translatable("msg.yuanliuwujin.wrench_mode").withStyle(ChatFormatting.GRAY))
+            .append(Component.literal(": ").withStyle(ChatFormatting.DARK_GRAY))
+            .append(modeName);
+
+        // 使用 Minecraft 原生的 action bar 位置和样式
+        int screenW = mc.getWindow().getGuiScaledWidth();
+        int screenH = mc.getWindow().getGuiScaledHeight();
+        int textWidth = mc.font.width(fullText);
+        int x = (screenW - textWidth) / 2;
+        int y = screenH - 59; // action bar 位置
+
+        // 绘制文本
+        gg.drawString(mc.font, fullText, x, y, 0xFFFFFF, false);
     }
 
     /* ====== 无限流体机器 HUD ====== */

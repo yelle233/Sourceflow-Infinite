@@ -33,7 +33,7 @@ public class SourceflowInfinite {
     public SourceflowInfinite() {
         IEventBus modEventBus = FMLJavaModLoadingContext.get().getModEventBus();
 
-        // 流体类型必须先于流体注册
+        // 流体类型先于流体注册
         ModFluids.FLUID_TYPES.register(modEventBus);
         ModFluids.FLUIDS.register(modEventBus);
 
@@ -41,10 +41,11 @@ public class SourceflowInfinite {
         ModBlocks.BLOCKS.register(modEventBus);
         ModBlockEntities.BLOCK_ENTITIES.register(modEventBus);
         ModTab.TABS.register(modEventBus);
+        ModRecipeSerializers.RECIPE_SERIALIZERS.register(modEventBus);
 
         ModNetwork.register();
 
-        // 1.20.1 Forge 使用 COMMON 类型配置（存放于 config 目录）
+
         ModLoadingContext.get().registerConfig(ModConfig.Type.COMMON, Modconfigs.SPEC);
 
         //监听服务器关闭事件，清理虚空流体出生时间记录，防止内存泄漏。

@@ -60,6 +60,10 @@ public class DestructionMachineBlockEntity extends BlockEntity implements ICoreM
     private final EnumMap<Direction, SideMode> sideModes = new EnumMap<>(Direction.class);
     private final EnumMap<Direction, Integer> faceRates  = new EnumMap<>(Direction.class);
 
+    // ── 红石控制相关 ────────────────────────────────────────
+    private boolean hadRedstoneSignal = false;
+    private final EnumMap<Direction, SideMode> savedSideModes = new EnumMap<>(Direction.class);
+
     // ── 核心槽 ──────────────────────────────────────────────
     private final ItemStackHandler coreSlot = new ItemStackHandler(1) {
         @Override
@@ -519,6 +523,48 @@ public class DestructionMachineBlockEntity extends BlockEntity implements ICoreM
     public int getLastTickFEConsumed()        { return lastTickFEConsumed; }
     public int getChemBudgetRemaining()       { return chemBudgetRemaining; }
 
+    // ── 红石控制 ──────────────────────────────────────────────
+    public boolean hadRedstoneSignal() { return hadRedstoneSignal; }
+    public void setRedstoneSignal(boolean signal) { hadRedstoneSignal = signal; }
+
+    /**
+     * 切换红石控制：保存当前状态并关闭所有侧面，或恢复之前保存的状态
+     */
+    public void toggleRedstoneControl() {
+        boolean allOff = true;
+        for (Direction dir : new Direction[]{Direction.NORTH, Direction.SOUTH, Direction.EAST, Direction.WEST}) {
+            if (getSideMode(dir) != SideMode.OFF) {
+                allOff = false;
+                break;
+            }
+        }
+
+        if (allOff) {
+            // 当前全部关闭 → 恢复之前保存的状态
+            for (Direction dir : new Direction[]{Direction.NORTH, Direction.SOUTH, Direction.EAST, Direction.WEST}) {
+                SideMode saved = savedSideModes.get(dir);
+                if (saved != null && saved != SideMode.OFF) {
+                    sideModes.put(dir, saved);
+                }
+            }
+            savedSideModes.clear();
+        } else {
+            // 当前有侧面开启 → 保存状态并全部关闭
+            savedSideModes.clear();
+            for (Direction dir : new Direction[]{Direction.NORTH, Direction.SOUTH, Direction.EAST, Direction.WEST}) {
+                SideMode current = getSideMode(dir);
+                if (current != SideMode.OFF) {
+                    savedSideModes.put(dir, current);
+                    sideModes.put(dir, SideMode.OFF);
+                }
+            }
+        }
+
+        notifyCapabilityChanged(null);
+        setChanged();
+        syncToClient();
+    }
+
     // ── NBT ─────────────────────────────────────────────────
 
     @Override
@@ -543,6 +589,20 @@ public class DestructionMachineBlockEntity extends BlockEntity implements ICoreM
             if (dir == Direction.UP || dir == Direction.DOWN) continue;
             if (ratesTag.contains(dir.getName())) faceRates.put(dir, Math.max(1, ratesTag.getInt(dir.getName())));
         }
+
+        // 加载红石控制状态
+        hadRedstoneSignal = tag.getBoolean("hadRedstoneSignal");
+        CompoundTag savedModesTag = tag.getCompound("savedSideModes");
+        savedSideModes.clear();
+        for (Direction dir : Direction.values()) {
+            if (dir == Direction.UP || dir == Direction.DOWN) continue;
+            String modeStr = savedModesTag.getString(dir.getName());
+            if (!modeStr.isEmpty()) {
+                try {
+                    savedSideModes.put(dir, SideMode.valueOf(modeStr));
+                } catch (IllegalArgumentException ignored) {}
+            }
+        }
     }
 
     @Override
@@ -560,6 +620,12 @@ public class DestructionMachineBlockEntity extends BlockEntity implements ICoreM
         CompoundTag ratesTag = new CompoundTag();
         faceRates.forEach((d, r) -> ratesTag.putInt(d.getName(), r));
         tag.put("faceRates", ratesTag);
+
+        // 保存红石控制状态
+        tag.putBoolean("hadRedstoneSignal", hadRedstoneSignal);
+        CompoundTag savedModesTag = new CompoundTag();
+        savedSideModes.forEach((dir, mode) -> savedModesTag.putString(dir.getName(), mode.name()));
+        tag.put("savedSideModes", savedModesTag);
     }
 
     @Override public CompoundTag getUpdateTag() {

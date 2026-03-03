@@ -1,9 +1,7 @@
 package com.yelle233.yuanliuwujin.network;
 
 import com.yelle233.yuanliuwujin.item.WrenchItem;
-import net.minecraft.ChatFormatting;
 import net.minecraft.network.FriendlyByteBuf;
-import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
@@ -47,29 +45,8 @@ public class WrenchModeScrollMessage {
             WrenchItem.WrenchMode next    = current.next(msg.delta);
             WrenchItem.setMode(mainHand, next);
 
-            Component modeName = switch (next) {
-                case IO     -> Component.translatable("mode.yuanliuwujin.wrench.io")
-                        .withStyle(ChatFormatting.AQUA, ChatFormatting.BOLD);
-                case CONFIG -> Component.translatable("mode.yuanliuwujin.wrench.config")
-                        .withStyle(ChatFormatting.GOLD, ChatFormatting.BOLD);
-            };
-
-            player.displayClientMessage(
-                    Component.literal(" ")
-                            .append(Component.translatable("msg.yuanliuwujin.wrench_mode").withStyle(ChatFormatting.GRAY))
-                            .append(Component.literal(": ").withStyle(ChatFormatting.DARK_GRAY))
-                            .append(modeName),
-                    true);
-
-            player.level().playSound(
-                    null,
-                    player.blockPosition(),
-                    SoundEvents.UI_BUTTON_CLICK.value(),
-                    SoundSource.PLAYERS,
-                    0.5f,
-                    1.0f
-            );
-
+            // 移除临时消息，因为现在有持久 HUD 显示
+            player.playNotifySound(SoundEvents.UI_BUTTON_CLICK.value(), SoundSource.PLAYERS, 0.4f, 1.2f);
         });
         ctx.setPacketHandled(true);
     }
