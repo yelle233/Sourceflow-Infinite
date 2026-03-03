@@ -149,7 +149,7 @@ public class Modconfigs {
         MACHINE_VOID_TANK_CAPACITY = b.comment(
                 "两种机器内部虚空流体储罐最大容量（mB，默认 1000 = 1 桶）",
                 "Void tank capacity in mB. 1000 mB = 1 bucket."
-        ).defineInRange("voidTankCapacity", 1000, 1000, Integer.MAX_VALUE - 1);
+        ).defineInRange("voidTankCapacity", 1000000, 10000, Integer.MAX_VALUE - 1);
         b.pop();
 
         // ── 销毁机器 ──────────────────────────────────────────
