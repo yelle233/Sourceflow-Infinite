@@ -540,7 +540,7 @@ public class InfiniteFluidMachineBlockEntity extends BlockEntity implements ICor
                     rand.nextIntBetweenInclusive(-radius / 2, radius),
                     rand.nextIntBetweenInclusive(-radius, radius));
             if (level instanceof ServerLevel serverLevel) {
-                VoidFluidBlock.placeAt(serverLevel, pos);
+                VoidFluidBlock.placeAt(serverLevel, target);
             }
         }
     }
