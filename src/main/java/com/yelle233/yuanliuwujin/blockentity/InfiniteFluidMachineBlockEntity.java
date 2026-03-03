@@ -97,6 +97,7 @@ public class InfiniteFluidMachineBlockEntity extends BlockEntity implements ICor
     // ── Capability LazyOptional ─────────────────────────────
     private LazyOptional<IEnergyStorage> energyCap = LazyOptional.empty();
     private LazyOptional<IFluidHandler> voidTankReadCap = LazyOptional.empty();
+    private LazyOptional<IFluidHandler> voidTankCap = LazyOptional.empty();
     /** 每个侧面的流体 Capability，仅 PULL/BOTH 模式下有效 */
     private final EnumMap<Direction, LazyOptional<IFluidHandler>> fluidCaps = new EnumMap<>(Direction.class);
     // Mekanism 化学品输出（四种类型，避免 Mek 未加载时类加载）
@@ -135,6 +136,7 @@ public class InfiniteFluidMachineBlockEntity extends BlockEntity implements ICor
         // 能量 Capability（顶面接收能量）
         energyCap = LazyOptional.of(() -> energyStorage);
         voidTankReadCap = LazyOptional.of(() -> makeVoidTankReadOnly());
+        voidTankCap = LazyOptional.of(() -> voidTank);
         // 流体 Capability 在 getCapability 中按需创建
         for (Direction dir : Direction.values()) {
             fluidCaps.remove(dir);
@@ -203,13 +205,13 @@ public class InfiniteFluidMachineBlockEntity extends BlockEntity implements ICor
     private void serverTick(Level level, BlockPos pos, BlockState state) {
         secondTick = (secondTick + 1) % 20;
 
-        // 从下方吸取虚空流体
+        // 主动抽取虚空流体到内部储罐（作为缓冲）
         if (voidTank.getFluidAmount() < voidTank.getCapacity()) {
             pullVoidFluidFromBelow(level, pos);
         }
 
         boolean hasCore       = !coreSlot.getStackInSlot(0).isEmpty();
-        boolean voidNotEmpty  = !voidTank.isEmpty();
+        boolean voidNotEmpty  = !voidTank.isEmpty() || hasVoidFluidInputBelow(level, pos);  // 修改：检查底部是否有虚空流体输入
         int baseFE            = Modconfigs.INFINITE_FE_BASE.get();
         int requiredFE        = calcRequiredFE();
         boolean anyFaceEnabled = sideModes.values().stream().anyMatch(m -> m != SideMode.OFF);
@@ -261,16 +263,105 @@ public class InfiniteFluidMachineBlockEntity extends BlockEntity implements ICor
         syncToClient();
     }
 
+    /**
+     * 检查底部是否有虚空流体输入
+     */
+    private boolean hasVoidFluidInputBelow(Level level, BlockPos pos) {
+        BlockPos below = pos.below();
+        var beBelow = level.getBlockEntity(below);
+        if (beBelow == null) return false;
+
+        // 先尝试 Direction.UP
+        var result = beBelow.getCapability(ForgeCapabilities.FLUID_HANDLER, Direction.UP)
+                .map(handler -> {
+                    FluidStack simDrain = handler.drain(new FluidStack(ModFluids.VOID_FLUID_SOURCE.get(), 1), IFluidHandler.FluidAction.SIMULATE);
+                    return !simDrain.isEmpty();
+                }).orElse(false);
+
+        // 如果失败，尝试 null 方向（兼容 Mekanism 等模组）
+        if (!result) {
+            result = beBelow.getCapability(ForgeCapabilities.FLUID_HANDLER, null)
+                    .map(handler -> {
+                        FluidStack simDrain = handler.drain(new FluidStack(ModFluids.VOID_FLUID_SOURCE.get(), 1), IFluidHandler.FluidAction.SIMULATE);
+                        return !simDrain.isEmpty();
+                    }).orElse(false);
+        }
+
+        return result;
+    }
+
+    /**
+     * 消耗虚空流体：优先从底部输入消耗，不足时从内部储罐消耗
+     * @param amount 需要消耗的虚空流体量（mB）
+     * @return 实际消耗的虚空流体量（mB）
+     */
+    private int consumeVoidFluid(Level level, BlockPos pos, int amount) {
+        if (amount <= 0) return 0;
+
+        int consumed = 0;
+
+        // 1. 优先从底部输入消耗
+        BlockPos below = pos.below();
+        var beBelow = level.getBlockEntity(below);
+        if (beBelow != null) {
+            // 先尝试 Direction.UP
+            consumed = beBelow.getCapability(ForgeCapabilities.FLUID_HANDLER, Direction.UP)
+                    .map(handler -> {
+                        FluidStack toDrain = new FluidStack(ModFluids.VOID_FLUID_SOURCE.get(), amount);
+                        FluidStack drained = handler.drain(toDrain, IFluidHandler.FluidAction.EXECUTE);
+                        return drained.getAmount();
+                    }).orElse(0);
+
+            // 如果失败，尝试 null 方向（兼容 Mekanism 等模组）
+            if (consumed == 0) {
+                consumed = beBelow.getCapability(ForgeCapabilities.FLUID_HANDLER, null)
+                        .map(handler -> {
+                            FluidStack toDrain = new FluidStack(ModFluids.VOID_FLUID_SOURCE.get(), amount);
+                            FluidStack drained = handler.drain(toDrain, IFluidHandler.FluidAction.EXECUTE);
+                            return drained.getAmount();
+                        }).orElse(0);
+            }
+        }
+
+        // 2. 如果底部输入不足，从内部储罐消耗剩余部分
+        int remaining = amount - consumed;
+        if (remaining > 0 && voidTank.getFluidAmount() > 0) {
+            int fromTank = Math.min(remaining, voidTank.getFluidAmount());
+            voidTank.drain(fromTank, IFluidHandler.FluidAction.EXECUTE);
+            consumed += fromTank;
+        }
+
+        return consumed;
+    }
+
     private void pullVoidFluidFromBelow(Level level, BlockPos pos) {
         BlockPos below = pos.below();
-        var beBlow = level.getBlockEntity(below);
-        if (beBlow == null) return;
-        beBlow.getCapability(ForgeCapabilities.FLUID_HANDLER, Direction.UP).ifPresent(handler -> {
-            int space = voidTank.getCapacity() - voidTank.getFluidAmount();
-            FluidStack toDrain = new FluidStack(ModFluids.VOID_FLUID_SOURCE.get(), space);
-            FluidStack drained = handler.drain(toDrain, IFluidHandler.FluidAction.EXECUTE);
-            if (!drained.isEmpty()) voidTank.fill(drained, IFluidHandler.FluidAction.EXECUTE);
-        });
+        var beBelow = level.getBlockEntity(below);
+        if (beBelow == null) return;
+
+        int space = voidTank.getCapacity() - voidTank.getFluidAmount();
+        if (space <= 0) return;
+
+        // 先尝试 Direction.UP
+        var pulled = beBelow.getCapability(ForgeCapabilities.FLUID_HANDLER, Direction.UP)
+                .map(handler -> {
+                    FluidStack toDrain = new FluidStack(ModFluids.VOID_FLUID_SOURCE.get(), space);
+                    FluidStack drained = handler.drain(toDrain, IFluidHandler.FluidAction.EXECUTE);
+                    if (!drained.isEmpty()) {
+                        voidTank.fill(drained, IFluidHandler.FluidAction.EXECUTE);
+                        return true;
+                    }
+                    return false;
+                }).orElse(false);
+
+        // 如果失败，尝试 null 方向（兼容 Mekanism 等模组）
+        if (!pulled) {
+            beBelow.getCapability(ForgeCapabilities.FLUID_HANDLER, null).ifPresent(handler -> {
+                FluidStack toDrain = new FluidStack(ModFluids.VOID_FLUID_SOURCE.get(), space);
+                FluidStack drained = handler.drain(toDrain, IFluidHandler.FluidAction.EXECUTE);
+                if (!drained.isEmpty()) voidTank.fill(drained, IFluidHandler.FluidAction.EXECUTE);
+            });
+        }
     }
 
     private void pushFluidToNeighbor(Level level, BlockPos pos, Direction dir) {
@@ -282,8 +373,42 @@ public class InfiniteFluidMachineBlockEntity extends BlockEntity implements ICor
             int budget     = Math.min(tickBudget, fluidBudgetRemaining);
             if (budget <= 0) return;
             int ratio      = getCurrentRatio();
-            int voidAvail  = voidTank.getFluidAmount();
-            int actual     = (int) Math.min(budget, voidAvail / (long) ratio);
+
+            // 计算可用的虚空流体总量（内部储罐 + 底部输入）
+            long voidAvail  = voidTank.getFluidAmount();
+            BlockPos below = pos.below();
+            var beBelow = level.getBlockEntity(below);
+            if (beBelow != null) {
+                // 先尝试 Direction.UP
+                int fromBelow = beBelow.getCapability(ForgeCapabilities.FLUID_HANDLER, Direction.UP)
+                        .map(h -> {
+                            FluidStack simDrain = h.drain(new FluidStack(ModFluids.VOID_FLUID_SOURCE.get(), Integer.MAX_VALUE), IFluidHandler.FluidAction.SIMULATE);
+                            return simDrain.getAmount();
+                        }).orElse(0);
+
+                // 如果失败，尝试 null 方向（兼容 Mekanism 等模组）
+                if (fromBelow == 0) {
+                    fromBelow = beBelow.getCapability(ForgeCapabilities.FLUID_HANDLER, null)
+                            .map(h -> {
+                                FluidStack simDrain = h.drain(new FluidStack(ModFluids.VOID_FLUID_SOURCE.get(), Integer.MAX_VALUE), IFluidHandler.FluidAction.SIMULATE);
+                                return simDrain.getAmount();
+                            }).orElse(0);
+                }
+
+                voidAvail += fromBelow;
+            }
+
+            // 允许不足比例输出
+            int actual;
+            if (voidAvail >= ratio) {
+                actual = (int) Math.min(budget, voidAvail / (long) ratio);
+            } else if (voidAvail > 0) {
+                actual = Math.max(1, (int) (voidAvail * budget / ratio));
+                actual = Math.min(actual, budget);
+            } else {
+                return;
+            }
+
             if (actual <= 0) return;
             FluidStack toFill = makeOutputFluid(actual);
             if (toFill == null) return;
@@ -291,7 +416,8 @@ public class InfiniteFluidMachineBlockEntity extends BlockEntity implements ICor
             if (sim <= 0) return;
             int filled = handler.fill(makeOutputFluid(sim), IFluidHandler.FluidAction.EXECUTE);
             if (filled > 0) {
-                voidTank.drain(filled * ratio, IFluidHandler.FluidAction.EXECUTE);
+                int voidNeeded = filled * ratio;
+                consumeVoidFluid(level, pos, voidNeeded);
                 fluidBudgetRemaining -= filled;
             }
         });
@@ -307,13 +433,35 @@ public class InfiniteFluidMachineBlockEntity extends BlockEntity implements ICor
         int budget     = Math.min(tickBudget, fluidBudgetRemaining);
         if (budget <= 0) return;
         int ratio      = getCurrentRatio();
+
+        // 计算可用的虚空流体总量（内部储罐 + 底部输入）
         int voidAvail  = voidTank.getFluidAmount();
-        int actual     = (int) Math.min(budget, voidAvail / (long) ratio);
+        BlockPos below = pos.below();
+        var beBelow = level.getBlockEntity(below);
+        if (beBelow != null) {
+            voidAvail += beBelow.getCapability(ForgeCapabilities.FLUID_HANDLER, Direction.UP)
+                    .map(h -> {
+                        FluidStack simDrain = h.drain(new FluidStack(ModFluids.VOID_FLUID_SOURCE.get(), Integer.MAX_VALUE), IFluidHandler.FluidAction.SIMULATE);
+                        return simDrain.getAmount();
+                    }).orElse(0);
+        }
+
+        // 允许不足比例输出
+        int actual;
+        if (voidAvail >= ratio) {
+            actual = (int) Math.min(budget, voidAvail / (long) ratio);
+        } else if (voidAvail > 0) {
+            actual = Math.max(1, (int) ((long) voidAvail * budget / ratio));
+            actual = Math.min(actual, budget);
+        } else {
+            return;
+        }
+
         if (actual <= 0) return;
         long pushed    = MekChemicalHelper.pushAnyChemical(level, pos, dir, kind, chemId, actual);
         if (pushed > 0) {
             int voidConsumed = (int)(pushed * ratio);
-            voidTank.drain(voidConsumed, IFluidHandler.FluidAction.EXECUTE);
+            consumeVoidFluid(level, pos, voidConsumed);
             fluidBudgetRemaining -= (int) pushed;
         }
     }
@@ -322,18 +470,51 @@ public class InfiniteFluidMachineBlockEntity extends BlockEntity implements ICor
     public FluidStack extractForSide(int maxAmount, IFluidHandler.FluidAction action, Direction dir) {
         if (!canWorkNow()) return FluidStack.EMPTY;
         if (fluidBudgetRemaining <= 0) return FluidStack.EMPTY;
-        FluidStack fluid = makeOutputFluid(Math.min(maxAmount, fluidBudgetRemaining));
-        if (fluid == null) return FluidStack.EMPTY;
-        int ratio     = getCurrentRatio();
-        int voidNeeded = fluid.getAmount() * ratio;
-        if (voidTank.getFluidAmount() < voidNeeded) {
-            int maxByVoid = voidTank.getFluidAmount() / ratio;
-            if (maxByVoid <= 0) return FluidStack.EMPTY;
-            fluid = makeOutputFluid(maxByVoid);
-            if (fluid == null) return FluidStack.EMPTY;
+
+        int ratio = getCurrentRatio();
+
+        // 计算可用的虚空流体总量（内部储罐 + 底部输入）
+        long voidAvail = voidTank.getFluidAmount();
+        BlockPos below = worldPosition.below();
+        var beBelow = level != null ? level.getBlockEntity(below) : null;
+        if (beBelow != null) {
+            // 先尝试 Direction.UP
+            int fromBelow = beBelow.getCapability(ForgeCapabilities.FLUID_HANDLER, Direction.UP)
+                    .map(h -> {
+                        FluidStack simDrain = h.drain(new FluidStack(ModFluids.VOID_FLUID_SOURCE.get(), Integer.MAX_VALUE), IFluidHandler.FluidAction.SIMULATE);
+                        return simDrain.getAmount();
+                    }).orElse(0);
+
+            // 如果失败，尝试 null 方向（兼容 Mekanism 等模组）
+            if (fromBelow == 0) {
+                fromBelow = beBelow.getCapability(ForgeCapabilities.FLUID_HANDLER, null)
+                        .map(h -> {
+                            FluidStack simDrain = h.drain(new FluidStack(ModFluids.VOID_FLUID_SOURCE.get(), Integer.MAX_VALUE), IFluidHandler.FluidAction.SIMULATE);
+                            return simDrain.getAmount();
+                        }).orElse(0);
+            }
+
+            voidAvail += fromBelow;
         }
-        if (action.execute()) {
-            voidTank.drain(fluid.getAmount() * ratio, IFluidHandler.FluidAction.EXECUTE);
+
+        // 计算实际可输出的流体量
+        int actualAmount;
+        if (voidAvail >= ratio) {
+            actualAmount = Math.min(maxAmount, Math.min(fluidBudgetRemaining, (int) (voidAvail / ratio)));
+        } else if (voidAvail > 0) {
+            actualAmount = Math.max(1, (int) (voidAvail * Math.min(maxAmount, fluidBudgetRemaining) / ratio));
+            actualAmount = Math.min(actualAmount, Math.min(maxAmount, fluidBudgetRemaining));
+        } else {
+            return FluidStack.EMPTY;
+        }
+
+        if (actualAmount <= 0) return FluidStack.EMPTY;
+        FluidStack fluid = makeOutputFluid(actualAmount);
+        if (fluid == null) return FluidStack.EMPTY;
+
+        if (action.execute() && level != null) {
+            int voidNeeded = fluid.getAmount() * ratio;
+            consumeVoidFluid(level, worldPosition, voidNeeded);
             fluidBudgetRemaining -= fluid.getAmount();
         }
         return fluid;
@@ -537,6 +718,11 @@ public class InfiniteFluidMachineBlockEntity extends BlockEntity implements ICor
             return voidTankReadCap.cast();
         }
 
+        // 底部：接受虚空流体输入
+        if (cap == ForgeCapabilities.FLUID_HANDLER && side == Direction.DOWN) {
+            return voidTankCap.cast();
+        }
+
         // 流体：PULL/BOTH 模式下，对应面暴露 IFluidHandler（仅允许 extract，不允许 fill）
         if (cap == ForgeCapabilities.FLUID_HANDLER && side != null && side != Direction.UP && side != Direction.DOWN) {
             SideMode mode = getSideMode(side);
@@ -576,6 +762,7 @@ public class InfiniteFluidMachineBlockEntity extends BlockEntity implements ICor
         super.invalidateCaps();
         energyCap.invalidate();
         voidTankReadCap.invalidate();
+        voidTankCap.invalidate();
         fluidCaps.values().forEach(LazyOptional::invalidate);
         gasCaps.values().forEach(LazyOptional::invalidate);
         infusionCaps.values().forEach(LazyOptional::invalidate);

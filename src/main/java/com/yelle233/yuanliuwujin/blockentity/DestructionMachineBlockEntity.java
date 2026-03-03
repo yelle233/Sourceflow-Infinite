@@ -84,6 +84,7 @@ public class DestructionMachineBlockEntity extends BlockEntity implements ICoreM
     // ── Capability LazyOptional ─────────────────────────────
     private LazyOptional<IEnergyStorage> energyCap = LazyOptional.empty();
     private LazyOptional<IFluidHandler> voidTankReadCap = LazyOptional.empty();
+    private LazyOptional<IFluidHandler> voidTankCap = LazyOptional.empty();
     private final EnumMap<Direction, LazyOptional<IFluidHandler>> fluidCaps = new EnumMap<>(Direction.class);
     // Mekanism 四种化学品 Sink（接收并虚空销毁）
     private Object gasSink, infusionSink, pigmentSink, slurrySink;
@@ -120,6 +121,7 @@ public class DestructionMachineBlockEntity extends BlockEntity implements ICoreM
     private void rebuildCapabilities() {
         energyCap = LazyOptional.of(() -> energyStorage);
         voidTankReadCap = LazyOptional.of(() -> makeVoidTankReadOnly());
+        voidTankCap = LazyOptional.of(() -> voidTank);
         fluidCaps.forEach((d, lo) -> lo.invalidate());
         fluidCaps.clear();
         if (MekanismChecker.isLoaded()) buildMekSinks();
@@ -410,6 +412,11 @@ public class DestructionMachineBlockEntity extends BlockEntity implements ICoreM
             return voidTankReadCap.cast();
         }
 
+        // 底部：输出虚空流体
+        if (cap == ForgeCapabilities.FLUID_HANDLER && side == Direction.DOWN) {
+            return voidTankCap.cast();
+        }
+
         // 流体：PUSH/BOTH 模式，接受外部推送（虚空销毁）
         if (cap == ForgeCapabilities.FLUID_HANDLER && side != null && side != Direction.UP && side != Direction.DOWN) {
             SideMode mode = getSideMode(side);
@@ -441,6 +448,7 @@ public class DestructionMachineBlockEntity extends BlockEntity implements ICoreM
         super.invalidateCaps();
         energyCap.invalidate();
         voidTankReadCap.invalidate();
+        voidTankCap.invalidate();
         fluidCaps.values().forEach(LazyOptional::invalidate);
         gasCaps.values().forEach(LazyOptional::invalidate);
         infusionCaps.values().forEach(LazyOptional::invalidate);

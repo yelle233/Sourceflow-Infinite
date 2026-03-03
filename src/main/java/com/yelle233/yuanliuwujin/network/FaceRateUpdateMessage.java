@@ -1,9 +1,11 @@
 package com.yelle233.yuanliuwujin.network;
 
 import com.yelle233.yuanliuwujin.blockentity.ICoreMachine;
+import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.level.block.entity.BlockEntity;
@@ -61,6 +63,9 @@ public class FaceRateUpdateMessage {
             if (!(be instanceof ICoreMachine machine)) return;
 
             machine.adjustFaceRate(msg.dir, msg.delta);
+            int newRate = machine.getFaceRate(msg.dir);
+            // 显示 mB/s
+            player.displayClientMessage(Component.translatable("msg.yuanliuwujin.face_rate", msg.dir.getName(), newRate).withStyle(ChatFormatting.AQUA), true);
         });
         ctx.setPacketHandled(true);
     }
