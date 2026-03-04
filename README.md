@@ -49,8 +49,9 @@ The Wrench is the primary tool used to operate both machines. It has two modes (
 
 **IO Mode**
 
-* Right-click a machine: inserts the core from your offhand
-* Sneak + right-click a machine: removes the inserted core
+* Right-click a machine with empty offhand: removes the inserted core
+* Right-click a machine with a core in offhand: inserts the core
+* Sneak + right-click a machine: dismantles the machine and returns it (along with the core) to your inventory
 
 **Config Mode**
 
