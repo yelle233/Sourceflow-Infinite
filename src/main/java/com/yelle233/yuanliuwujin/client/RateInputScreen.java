@@ -56,7 +56,7 @@ public class RateInputScreen extends Screen {
         addRenderableWidget(Button.builder(
                 Component.translatable("gui.yuanliuwujin.rate_input.reset"),
                 btn -> {
-                    ModNetwork.CHANNEL.sendToServer(new SetFaceRateMessage(face, 20));
+                    ModNetwork.CHANNEL.sendToServer(new SetFaceRateMessage(face, 1));
                     this.onClose();
                 }
         ).bounds(centerX + 5, centerY + 20, 95, 20).build());
