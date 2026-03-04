@@ -1,6 +1,8 @@
 package com.yelle233.yuanliuwujin.item;
 
 import com.yelle233.yuanliuwujin.blockentity.ICoreMachine;
+import com.yelle233.yuanliuwujin.client.RateInputScreen;
+import net.minecraft.client.Minecraft;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.core.component.DataComponents;
@@ -70,17 +72,18 @@ public class WrenchItem extends Item {
         // 非本模组机器：不拦截交互，让玩家正常操作其他方块（如打开箱子等）
         if (!(be instanceof ICoreMachine machine)) return InteractionResult.PASS;
 
-        if (level.isClientSide) return InteractionResult.SUCCESS;
-
         Player player = ctx.getPlayer();
         if (player == null) return InteractionResult.PASS;
 
         WrenchMode mode = getMode(ctx.getItemInHand());
         Direction face = ctx.getClickedFace();
 
-        return (mode == WrenchMode.IO)
-                ? handleIOMode(level, pos, player, machine)
-                : handleConfigMode(level, pos, player, machine, face, player.isShiftKeyDown());
+        if (mode == WrenchMode.IO) {
+            if (level.isClientSide) return InteractionResult.SUCCESS;
+            return handleIOMode(level, pos, player, machine);
+        } else {
+            return handleConfigMode(level, pos, player, machine, face, player.isShiftKeyDown());
+        }
     }
 
     // ── IO 模式 ──
@@ -153,9 +156,15 @@ public class WrenchItem extends Item {
         if (face == Direction.UP || face == Direction.DOWN) return InteractionResult.PASS;
 
         if (sneaking) {
-            machine.adjustFaceRate(face, 10);
-            level.playSound(null, pos, SoundEvents.UI_BUTTON_CLICK.value(), SoundSource.BLOCKS, 0.3f, 1.2f);
-        } else {
+            // 客户端：打开速率输入界面
+            if (level.isClientSide) {
+                Minecraft.getInstance().setScreen(new RateInputScreen(pos, face, machine.getFaceRate(face)));
+            }
+            return InteractionResult.SUCCESS;
+        }
+
+        // 服务端：切换面模式
+        if (!level.isClientSide) {
             machine.cycleSideMode(face);
             level.playSound(null, pos, SoundEvents.LEVER_CLICK, SoundSource.BLOCKS, 0.6f, 1.0f);
         }

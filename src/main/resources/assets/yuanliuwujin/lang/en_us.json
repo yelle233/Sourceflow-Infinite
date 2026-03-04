@@ -25,6 +25,11 @@
   "msg.yuanliuwujin.face_rate": "Face %s rate: %d mB/s",
   "msg.yuanliuwujin.unbind_disabled": "Unbinding disabled in survival mode.",
 
+  "gui.yuanliuwujin.rate_input.title": "Set Face Rate",
+  "gui.yuanliuwujin.rate_input.field": "Rate (mB/s)",
+  "gui.yuanliuwujin.rate_input.confirm": "Confirm",
+  "gui.yuanliuwujin.rate_input.reset": "Reset",
+
   "hud.sourceflowinfinite.none": "None",
   "hud.sourceflowinfinite.energy": "Energy %s/%s FE",
   "hud.sourceflowinfinite.cost": "Cost %s FE/s (%s FE/t)",

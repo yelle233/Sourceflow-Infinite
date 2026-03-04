@@ -21,6 +21,11 @@
   "mode.yuanliuwujin.wrench.config": "配置模式",
   "msg.yuanliuwujin.face_rate": "%s 面速率：%d mB/s",
   "msg.yuanliuwujin.unbind_disabled": "生存模式下禁止取消绑定。",
+
+  "gui.yuanliuwujin.rate_input.title": "设置面速率",
+  "gui.yuanliuwujin.rate_input.field": "速率（mB/s）",
+  "gui.yuanliuwujin.rate_input.confirm": "确定",
+  "gui.yuanliuwujin.rate_input.reset": "重置",
   "hud.sourceflowinfinite.none": "无",
   "hud.sourceflowinfinite.energy": "能量 %s/%s FE",
   "hud.sourceflowinfinite.cost": "耗电 %s FE/s（%s FE/t）",

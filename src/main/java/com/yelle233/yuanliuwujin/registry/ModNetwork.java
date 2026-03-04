@@ -4,6 +4,7 @@ import com.yelle233.yuanliuwujin.SourceflowInfinite;
 import com.yelle233.yuanliuwujin.blockentity.ICoreMachine;
 import com.yelle233.yuanliuwujin.item.WrenchItem;
 import com.yelle233.yuanliuwujin.network.FaceRateUpdatePayload;
+import com.yelle233.yuanliuwujin.network.SetFaceRatePayload;
 import com.yelle233.yuanliuwujin.network.WrenchModeScrollPayload;
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
@@ -52,6 +53,18 @@ public class ModNetwork {
             int newRate = machine.getFaceRate(payload.dir());
             // 显示 mB/s
             player.displayClientMessage(Component.translatable("msg.yuanliuwujin.face_rate", payload.dir().getName(), newRate).withStyle(ChatFormatting.AQUA), true);
+        }));
+
+        registrar.playToServer(SetFaceRatePayload.TYPE, SetFaceRatePayload.CODEC, (payload, ctx) -> ctx.enqueueWork(() -> {
+            ServerPlayer player = (ServerPlayer) ctx.player();
+            HitResult hit = player.pick(6.0, 0f, false);
+            if (hit.getType() != HitResult.Type.BLOCK) return;
+            BlockPos pos = ((BlockHitResult) hit).getBlockPos();
+            BlockEntity be = player.level().getBlockEntity(pos);
+            if (!(be instanceof ICoreMachine machine)) return;
+            int rate = Math.max(1, Math.min(payload.rate(), Integer.MAX_VALUE - 1));
+            machine.adjustFaceRate(payload.dir(), rate - machine.getFaceRate(payload.dir()));
+            player.playNotifySound(SoundEvents.UI_BUTTON_CLICK.value(), SoundSource.PLAYERS, 0.4f, 1.2f);
         }));
     }
 }

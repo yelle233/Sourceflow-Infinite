@@ -124,19 +124,26 @@ public class InfiniteFluidMachineBlockEntity extends BlockEntity implements ICor
         int baseFE = Modconfigs.INFINITE_FE_BASE.get();
         int requiredFE = calcRequiredFE();
         boolean anyFaceEnabled = sideModes.values().stream().anyMatch(m -> m != SideMode.OFF);
-        boolean hasEnoughEnergy = energyStorage.getEnergyStored() >= requiredFE;
-        boolean canWork = hasCore && voidNotEmpty && anyFaceEnabled && hasValidBinding() && hasEnoughEnergy;
+        int availableEnergy = energyStorage.getEnergyStored();
 
-        // 三档耗电：无核心0，待机baseFE，工作requiredFE
-        lastTickFEConsumed = hasCore ? (canWork ? requiredFE : baseFE) : 0;
+        // 计算能量比例（0.0-1.0）
+        double energyRatio = availableEnergy >= requiredFE ? 1.0 : (double) availableEnergy / requiredFE;
+        boolean canWork = hasCore && voidNotEmpty && anyFaceEnabled && hasValidBinding() && availableEnergy > baseFE;
+
+        // 按比例消耗电量和工作
         if (canWork) {
-            energyStorage.extractEnergy(requiredFE, false);
+            int actualFE = (int) Math.min(availableEnergy, baseFE + (requiredFE - baseFE) * energyRatio);
+            lastTickFEConsumed = actualFE;
+            energyStorage.extractEnergy(actualFE, false);
         } else if (hasCore) {
-            int standbyConsume = Math.min(baseFE, energyStorage.getEnergyStored());
+            int standbyConsume = Math.min(baseFE, availableEnergy);
+            lastTickFEConsumed = standbyConsume;
             if (standbyConsume > 0) energyStorage.extractEnergy(standbyConsume, false);
+        } else {
+            lastTickFEConsumed = 0;
         }
 
-        fluidBudgetRemaining = canWork ? calcTotalOutputBudgetThisTick() : 0;
+        fluidBudgetRemaining = canWork ? (int) (calcTotalOutputBudgetThisTick() * energyRatio) : 0;
 
         if (canWork) {
             for (Direction dir : new Direction[]{Direction.NORTH, Direction.SOUTH, Direction.EAST, Direction.WEST}) {
@@ -393,7 +400,8 @@ public class InfiniteFluidMachineBlockEntity extends BlockEntity implements ICor
         int total = 0;
         for (Direction dir : new Direction[]{Direction.NORTH, Direction.SOUTH, Direction.EAST, Direction.WEST}) {
             SideMode mode = getSideMode(dir);
-            if (mode == SideMode.BOTH || mode == SideMode.PULL) total += calcTickBudget(getFaceRate(dir));
+            if (mode == SideMode.BOTH || mode == SideMode.PULL)
+                total += calcTickBudget(getFaceRate(dir));
         }
         return total;
     }

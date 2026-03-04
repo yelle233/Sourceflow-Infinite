@@ -100,7 +100,9 @@ public class DestructionMachineBlockEntity extends BlockEntity implements ICoreM
         int total = 0;
         for (Direction dir : new Direction[]{Direction.NORTH, Direction.SOUTH, Direction.EAST, Direction.WEST}) {
             SideMode mode = getSideMode(dir);
-            if (mode != SideMode.OFF) total += calcTickBudget(getFaceRate(dir));
+            if (mode != SideMode.OFF) {
+                total += calcTickBudget(getFaceRate(dir));
+            }
         }
         return total;
     }
@@ -124,19 +126,26 @@ public class DestructionMachineBlockEntity extends BlockEntity implements ICoreM
         boolean anyFaceEnabled = sideModes.values().stream().anyMatch(m -> m != SideMode.OFF);
         int baseFE = Modconfigs.DESTROY_FE_BASE.get();
         int requiredFE = calcRequiredFE();
-        boolean hasEnoughEnergy = energyStorage.getEnergyStored() >= requiredFE;
-        boolean canWork = hasCore && voidNotFull && anyFaceEnabled && hasEnoughEnergy;
+        int availableEnergy = energyStorage.getEnergyStored();
 
-        // 三档耗电：无核心0，待机baseFE，工作requiredFE
-        lastTickFEConsumed = hasCore ? (canWork ? requiredFE : baseFE) : 0;
+        // 计算能量比例（0.0-1.0）
+        double energyRatio = availableEnergy >= requiredFE ? 1.0 : (double) availableEnergy / requiredFE;
+        boolean canWork = hasCore && voidNotFull && anyFaceEnabled && availableEnergy > baseFE;
+
+        // 按比例消耗电量和工作
         if (canWork) {
-            energyStorage.extractEnergy(requiredFE, false);
+            int actualFE = (int) Math.min(availableEnergy, baseFE + (requiredFE - baseFE) * energyRatio);
+            lastTickFEConsumed = actualFE;
+            energyStorage.extractEnergy(actualFE, false);
         } else if (hasCore) {
-            int standbyConsume = Math.min(baseFE, energyStorage.getEnergyStored());
+            int standbyConsume = Math.min(baseFE, availableEnergy);
+            lastTickFEConsumed = standbyConsume;
             if (standbyConsume > 0) energyStorage.extractEnergy(standbyConsume, false);
+        } else {
+            lastTickFEConsumed = 0;
         }
 
-        chemBudgetRemaining = canWork ? calcTotalChemBudget() : 0;
+        chemBudgetRemaining = canWork ? (int) (calcTotalChemBudget() * energyRatio) : 0;
 
         if (canWork) {
             for (Direction dir : new Direction[]{Direction.NORTH, Direction.SOUTH, Direction.EAST, Direction.WEST}) {
@@ -287,6 +296,7 @@ public class DestructionMachineBlockEntity extends BlockEntity implements ICoreM
     @Override public void onCoreChanged() { if (level == null) return; pressure = 0.0f; setChanged(); syncToClient(); boolean dirty = !getBlockState().getValue(DestructionMachineBlock.DIRTY); level.setBlock(worldPosition, getBlockState().setValue(DestructionMachineBlock.DIRTY, dirty), 3); }
     @Override public boolean isValidCoreItem(Item item) { return item instanceof DestructionCoreItem; }
     @Override public int getFaceRate(Direction dir) { if (dir == Direction.UP || dir == Direction.DOWN) return Integer.MAX_VALUE - 1; return faceRates.getOrDefault(dir, 20); }
+
     @Override public void adjustFaceRate(Direction dir, int delta) {
         if (dir == Direction.UP || dir == Direction.DOWN) return;
         int current = getFaceRate(dir); long next = (long) current + delta;
