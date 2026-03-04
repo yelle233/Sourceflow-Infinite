@@ -136,19 +136,25 @@ public class DestructionMachineBlockEntity extends BlockEntity implements ICoreM
         int baseFE           = Modconfigs.DESTROY_FE_BASE.get();
         int requiredFE       = calcRequiredFE();
         boolean anyFaceEnabled = sideModes.values().stream().anyMatch(m -> m != SideMode.OFF);
-        boolean hasEnoughFE  = energyStorage.getEnergyStored() >= requiredFE;
-        boolean canWork      = hasCore && voidNotFull && anyFaceEnabled && hasEnoughFE;
+        int availableEnergy  = energyStorage.getEnergyStored();
 
-        // 三档耗电：无核心0，待机baseFE，工作requiredFE
-        lastTickFEConsumed = hasCore ? (canWork ? requiredFE : baseFE) : 0;
+        double energyRatio   = availableEnergy >= requiredFE ? 1.0 : (double) availableEnergy / requiredFE;
+        boolean canWork      = hasCore && voidNotFull && anyFaceEnabled && availableEnergy > baseFE;
+
+        // 按比例耗电和工作
         if (canWork) {
-            energyStorage.extractEnergy(requiredFE, false);
+            int actualFE = (int) Math.min(availableEnergy, baseFE + (requiredFE - baseFE) * energyRatio);
+            lastTickFEConsumed = actualFE;
+            energyStorage.extractEnergy(actualFE, false);
         } else if (hasCore) {
-            int standby = Math.min(baseFE, energyStorage.getEnergyStored());
+            int standby = Math.min(baseFE, availableEnergy);
+            lastTickFEConsumed = standby;
             if (standby > 0) energyStorage.extractEnergy(standby, false);
+        } else {
+            lastTickFEConsumed = 0;
         }
 
-        chemBudgetRemaining = canWork ? calcTotalChemBudget() : 0;
+        chemBudgetRemaining = canWork ? (int) (calcTotalChemBudget() * energyRatio) : 0;
 
         if (canWork) {
             for (Direction dir : new Direction[]{Direction.NORTH, Direction.SOUTH, Direction.EAST, Direction.WEST}) {
@@ -186,6 +192,7 @@ public class DestructionMachineBlockEntity extends BlockEntity implements ICoreM
             level.setBlock(pos, state.setValue(DestructionMachineBlock.LIT, hasCore), 3);
         }
         lastTickCanWork = canWork;
+        lastTickEndEnergy = energyStorage.getEnergyStored();
         setChanged();
         syncToClient();
     }
@@ -269,7 +276,9 @@ public class DestructionMachineBlockEntity extends BlockEntity implements ICoreM
     private int calcTotalChemBudget() {
         int total = 0;
         for (Direction dir : new Direction[]{Direction.NORTH, Direction.SOUTH, Direction.EAST, Direction.WEST}) {
-            if (getSideMode(dir) != SideMode.OFF) total += calcTickBudget(getFaceRate(dir));
+            if (getSideMode(dir) != SideMode.OFF) {
+                total += calcTickBudget(getFaceRate(dir));
+            }
         }
         return total;
     }

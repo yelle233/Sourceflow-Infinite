@@ -46,6 +46,11 @@
   "msg.yuanliuwujin.unbind_disabled": "Unbinding is not allowed in Survival mode.",
   "msg.yuanliuwujin.wrench_mode": "Mode",
 
+  "gui.yuanliuwujin.rate_input.title": "Set Face Rate",
+  "gui.yuanliuwujin.rate_input.field": "Rate (mB/s)",
+  "gui.yuanliuwujin.rate_input.confirm": "Confirm",
+  "gui.yuanliuwujin.rate_input.reset": "Reset",
+
   "tooltip.fluid_banned": "Banned: %s",
   "tooltip.yuanliuwujin.wrench.current_mode": "Current Mode: ",
   "tooltip.yuanliuwujin.wrench.mode.io": "IO Mode",

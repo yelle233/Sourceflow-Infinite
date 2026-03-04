@@ -115,73 +115,9 @@ public class SourceflowInfiniteClient {
             double scrollY = event.getScrollDelta();
             if (scrollY == 0) return;
 
-            if (WrenchItem.getMode(player.getMainHandItem()) == WrenchItem.WrenchMode.CONFIG) {
-                HitResult hit = mc.hitResult;
-                if (hit != null && hit.getType() == HitResult.Type.BLOCK) {
-                    BlockHitResult bhr = (BlockHitResult) hit;
-                    Direction face = bhr.getDirection();
-                    if (face != Direction.UP && face != Direction.DOWN
-                            && mc.level != null
-                            && mc.level.getBlockEntity(bhr.getBlockPos()) instanceof com.yelle233.yuanliuwujin.blockentity.ICoreMachine) {
-                        int delta = scrollY > 0 ? 1000 : -1000;
-                        ModNetwork.CHANNEL.sendToServer(new FaceRateUpdateMessage(face, delta));
-                        event.setCanceled(true);
-                        return;
-                    }
-                }
-            }
+            // 仅用于切换扳手模式
             ModNetwork.CHANNEL.sendToServer(new WrenchModeScrollMessage(scrollY > 0 ? 1 : -1));
             event.setCanceled(true);
-        }
-
-        /* ====== 长按右键速率调整 ====== */
-
-        private static boolean rightMouseHeld = false;
-        private static int holdTicks = 0;
-        private static int lastSentTick = 0;
-        private static Direction heldFace = null;
-
-        @SubscribeEvent
-        public static void onMouseButton(InputEvent.MouseButton.Pre event) {
-            Minecraft mc = Minecraft.getInstance();
-            LocalPlayer player = mc.player;
-            if (player == null) return;
-            if (!(player.getMainHandItem().getItem() instanceof WrenchItem)) return;
-            if (WrenchItem.getMode(player.getMainHandItem()) != WrenchItem.WrenchMode.CONFIG) return;
-            if (!player.isShiftKeyDown()) return;
-            if (event.getButton() == 1) {
-                if (event.getAction() == 1) {
-                    HitResult hit = mc.hitResult;
-                    if (hit != null && hit.getType() == HitResult.Type.BLOCK) {
-                        BlockHitResult bhr = (BlockHitResult) hit;
-                        Direction face = bhr.getDirection();
-                        if (face != Direction.UP && face != Direction.DOWN
-                                && mc.level != null
-                                && mc.level.getBlockEntity(bhr.getBlockPos()) instanceof com.yelle233.yuanliuwujin.blockentity.ICoreMachine) {
-                            rightMouseHeld = true; holdTicks = 0; lastSentTick = 0; heldFace = face;
-                        }
-                    }
-                } else if (event.getAction() == 0) {
-                    rightMouseHeld = false; holdTicks = 0; heldFace = null;
-                }
-            }
-        }
-
-        @SubscribeEvent
-        public static void onClientTick(TickEvent.ClientTickEvent event) {
-            if (event.phase != TickEvent.Phase.START) return;
-            if (!rightMouseHeld || heldFace == null) return;
-            Minecraft mc = Minecraft.getInstance();
-            LocalPlayer player = mc.player;
-            if (player == null) return;
-            if (!(player.getMainHandItem().getItem() instanceof WrenchItem)) { rightMouseHeld = false; return; }
-            if (!player.isShiftKeyDown()) return;
-            holdTicks++; lastSentTick++;
-            int interval = holdTicks < 20 ? 10 : holdTicks < 60 ? 5 : 2;
-            if (lastSentTick >= interval) {
-                lastSentTick = 0;
-                ModNetwork.CHANNEL.sendToServer(new FaceRateUpdateMessage(heldFace, 10));
-            }
         }
 
         /* ====== 机器信息 HUD ====== */

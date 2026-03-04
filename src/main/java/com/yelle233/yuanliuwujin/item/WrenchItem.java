@@ -1,6 +1,8 @@
 package com.yelle233.yuanliuwujin.item;
 
 import com.yelle233.yuanliuwujin.blockentity.ICoreMachine;
+import com.yelle233.yuanliuwujin.client.RateInputScreen;
+import net.minecraft.client.Minecraft;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.nbt.CompoundTag;
@@ -72,17 +74,18 @@ public class WrenchItem extends Item {
 
         if (!(be instanceof ICoreMachine machine)) return InteractionResult.PASS;
 
-        if (level.isClientSide) return InteractionResult.SUCCESS;
-
         Player player = ctx.getPlayer();
         if (player == null) return InteractionResult.PASS;
 
         WrenchMode mode = getMode(ctx.getItemInHand());
         Direction face  = ctx.getClickedFace();
 
-        return (mode == WrenchMode.IO)
-                ? handleIOMode(level, pos, player, machine)
-                : handleConfigMode(level, pos, player, machine, face);
+        if (mode == WrenchMode.IO) {
+            if (level.isClientSide) return InteractionResult.SUCCESS;
+            return handleIOMode(level, pos, player, machine);
+        } else {
+            return handleConfigMode(level, pos, player, machine, face);
+        }
     }
 
     // ── IO 模式：插入/取出核心 ────────────────────────────
@@ -155,14 +158,15 @@ public class WrenchItem extends Item {
         if (face == Direction.UP) return InteractionResult.PASS;
 
         if (player.isShiftKeyDown()) {
-            // 潜行右键：速率 +10（单击）
-            machine.adjustFaceRate(face, 10);
-            level.playSound(null, pos,
-                    SoundEvents.UI_BUTTON_CLICK.value(),
-                    SoundSource.PLAYERS, 0.4f, 1.2f);
+            // 客户端：打开速率输入界面
+            if (level.isClientSide) {
+                Minecraft.getInstance().setScreen(new RateInputScreen(pos, face, machine.getFaceRate(face)));
+            }
+            return InteractionResult.SUCCESS;
+        }
 
-        } else {
-            // 非潜行右键：循环面模式
+        // 服务端：切换面模式
+        if (!level.isClientSide) {
             machine.cycleSideMode(face);
             level.playSound(null, pos, SoundEvents.WOODEN_TRAPDOOR_OPEN, SoundSource.PLAYERS, 0.5f, 1.0f);
         }

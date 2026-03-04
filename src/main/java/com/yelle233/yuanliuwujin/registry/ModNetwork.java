@@ -2,6 +2,7 @@ package com.yelle233.yuanliuwujin.registry;
 
 import com.yelle233.yuanliuwujin.SourceflowInfinite;
 import com.yelle233.yuanliuwujin.network.FaceRateUpdateMessage;
+import com.yelle233.yuanliuwujin.network.SetFaceRateMessage;
 import com.yelle233.yuanliuwujin.network.WrenchModeScrollMessage;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraftforge.network.NetworkRegistry;
@@ -43,6 +44,14 @@ public class ModNetwork {
                 FaceRateUpdateMessage::encode,
                 FaceRateUpdateMessage::decode,
                 FaceRateUpdateMessage::handle
+        );
+
+        CHANNEL.registerMessage(
+                nextId(),
+                SetFaceRateMessage.class,
+                SetFaceRateMessage::encode,
+                SetFaceRateMessage::decode,
+                SetFaceRateMessage::handle
         );
     }
 }

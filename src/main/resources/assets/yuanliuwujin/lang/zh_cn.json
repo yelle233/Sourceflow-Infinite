@@ -46,6 +46,11 @@
   "msg.yuanliuwujin.unbind_disabled": "生存模式下禁止取消绑定。",
   "msg.yuanliuwujin.wrench_mode": "模式",
 
+  "gui.yuanliuwujin.rate_input.title": "设置面速率",
+  "gui.yuanliuwujin.rate_input.field": "速率（mB/s）",
+  "gui.yuanliuwujin.rate_input.confirm": "确定",
+  "gui.yuanliuwujin.rate_input.reset": "重置",
+
   "tooltip.fluid_banned": "已禁用：%s",
   "tooltip.yuanliuwujin.wrench.current_mode": "当前模式：",
   "tooltip.yuanliuwujin.wrench.mode.io": "装配模式",
