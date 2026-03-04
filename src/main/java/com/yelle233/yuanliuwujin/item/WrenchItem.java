@@ -13,6 +13,7 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.context.UseOnContext;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
+import net.minecraft.world.level.block.state.BlockState;
 
 /**
  * 扳手物品（1.20.1 Forge v2.0 版本）。
@@ -87,8 +88,15 @@ public class WrenchItem extends Item {
     // ── IO 模式：插入/取出核心 ────────────────────────────
 
     private InteractionResult handleIOMode(Level level, BlockPos pos, Player player, ICoreMachine machine) {
+        ItemStack offhand = player.getOffhandItem();
+
+        // 潜行右键：拆除机器
         if (player.isShiftKeyDown()) {
-            // 潜行：取出核心
+            return dismantleMachine(level, pos, player, machine);
+        }
+
+        // 左手空着：取出核心
+        if (offhand.isEmpty()) {
             ItemStack core = machine.getCoreSlot().getStackInSlot(0);
             if (core.isEmpty()) return InteractionResult.PASS;
             machine.getCoreSlot().setStackInSlot(0, ItemStack.EMPTY);
@@ -98,8 +106,7 @@ public class WrenchItem extends Item {
             return InteractionResult.SUCCESS;
         }
 
-        // 非潜行：从副手插入核心
-        ItemStack offhand = player.getOffhandItem();
+        // 左手有核心：插入核心
         if (!machine.isValidCoreItem(offhand.getItem())) return InteractionResult.PASS;
         if (!machine.getCoreSlot().getStackInSlot(0).isEmpty()) return InteractionResult.PASS;
 
@@ -109,6 +116,35 @@ public class WrenchItem extends Item {
         machine.onCoreChanged();
         offhand.shrink(1);
         level.playSound(null, pos, SoundEvents.IRON_TRAPDOOR_CLOSE, SoundSource.BLOCKS, 0.8f, 1.0f);
+        return InteractionResult.SUCCESS;
+    }
+
+    // ── 拆除机器 ──────────────────────────────────────────
+
+    private InteractionResult dismantleMachine(Level level, BlockPos pos,
+                                                Player player, ICoreMachine machine) {
+        BlockState state = level.getBlockState(pos);
+
+        // 取出核心并返还给玩家
+        ItemStack core = machine.getCoreSlot().getStackInSlot(0);
+        if (!core.isEmpty()) {
+            if (!player.getInventory().add(core.copy())) {
+                player.drop(core.copy(), false);
+            }
+            // 清空核心槽位，避免 onRemove 重复掉落
+            machine.getCoreSlot().setStackInSlot(0, ItemStack.EMPTY);
+        }
+
+        // 掉落机器方块
+        ItemStack blockItem = new ItemStack(state.getBlock());
+        if (!player.getInventory().add(blockItem)) {
+            player.drop(blockItem, false);
+        }
+
+        // 移除方块
+        level.removeBlock(pos, false);
+        level.playSound(null, pos, SoundEvents.ANVIL_BREAK, SoundSource.BLOCKS, 0.8f, 1.0f);
+
         return InteractionResult.SUCCESS;
     }
 
