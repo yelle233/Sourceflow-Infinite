@@ -96,7 +96,7 @@ public class InfiniteFluidMachineBlockEntity extends BlockEntity implements ICor
     private void initFaceRates() {
         for (Direction dir : Direction.values()) {
             if (dir == Direction.UP || dir == Direction.DOWN) continue;
-            faceRates.put(dir, 20);
+            faceRates.put(dir, 1);
         }
     }
 
@@ -126,15 +126,11 @@ public class InfiniteFluidMachineBlockEntity extends BlockEntity implements ICor
         boolean anyFaceEnabled = sideModes.values().stream().anyMatch(m -> m != SideMode.OFF);
         int availableEnergy = energyStorage.getEnergyStored();
 
-        // 计算能量比例（0.0-1.0）
-        double energyRatio = availableEnergy >= requiredFE ? 1.0 : (double) availableEnergy / requiredFE;
-        boolean canWork = hasCore && voidNotEmpty && anyFaceEnabled && hasValidBinding() && availableEnergy > baseFE;
+        boolean canWork = hasCore && voidNotEmpty && anyFaceEnabled && hasValidBinding() && availableEnergy >= requiredFE;
 
-        // 按比例消耗电量和工作
         if (canWork) {
-            int actualFE = (int) Math.min(availableEnergy, baseFE + (requiredFE - baseFE) * energyRatio);
-            lastTickFEConsumed = actualFE;
-            energyStorage.extractEnergy(actualFE, false);
+            lastTickFEConsumed = requiredFE;
+            energyStorage.extractEnergy(requiredFE, false);
         } else if (hasCore) {
             int standbyConsume = Math.min(baseFE, availableEnergy);
             lastTickFEConsumed = standbyConsume;
@@ -143,7 +139,7 @@ public class InfiniteFluidMachineBlockEntity extends BlockEntity implements ICor
             lastTickFEConsumed = 0;
         }
 
-        fluidBudgetRemaining = canWork ? (int) (calcTotalOutputBudgetThisTick() * energyRatio) : 0;
+        fluidBudgetRemaining = canWork ? calcTotalOutputBudgetThisTick() : 0;
 
         if (canWork) {
             for (Direction dir : new Direction[]{Direction.NORTH, Direction.SOUTH, Direction.EAST, Direction.WEST}) {
@@ -406,7 +402,7 @@ public class InfiniteFluidMachineBlockEntity extends BlockEntity implements ICor
         return total;
     }
 
-    private int calcRequiredFE() {
+    public int calcRequiredFE() {
         long fe = Modconfigs.INFINITE_FE_BASE.get();
         int coeff = Modconfigs.INFINITE_FE_PER_MB_RATE.get();
         for (Direction dir : new Direction[]{Direction.NORTH, Direction.SOUTH, Direction.EAST, Direction.WEST}) {

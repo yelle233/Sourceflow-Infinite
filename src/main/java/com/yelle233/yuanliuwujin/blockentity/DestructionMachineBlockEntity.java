@@ -85,7 +85,7 @@ public class DestructionMachineBlockEntity extends BlockEntity implements ICoreM
     private void initFaceRates() {
         for (Direction dir : Direction.values()) {
             if (dir == Direction.UP || dir == Direction.DOWN) continue;
-            faceRates.put(dir, 20);
+            faceRates.put(dir, 1);
         }
     }
 
@@ -128,15 +128,11 @@ public class DestructionMachineBlockEntity extends BlockEntity implements ICoreM
         int requiredFE = calcRequiredFE();
         int availableEnergy = energyStorage.getEnergyStored();
 
-        // 计算能量比例（0.0-1.0）
-        double energyRatio = availableEnergy >= requiredFE ? 1.0 : (double) availableEnergy / requiredFE;
-        boolean canWork = hasCore && voidNotFull && anyFaceEnabled && availableEnergy > baseFE;
+        boolean canWork = hasCore && voidNotFull && anyFaceEnabled && availableEnergy >= requiredFE;
 
-        // 按比例消耗电量和工作
         if (canWork) {
-            int actualFE = (int) Math.min(availableEnergy, baseFE + (requiredFE - baseFE) * energyRatio);
-            lastTickFEConsumed = actualFE;
-            energyStorage.extractEnergy(actualFE, false);
+            lastTickFEConsumed = requiredFE;
+            energyStorage.extractEnergy(requiredFE, false);
         } else if (hasCore) {
             int standbyConsume = Math.min(baseFE, availableEnergy);
             lastTickFEConsumed = standbyConsume;
@@ -145,7 +141,7 @@ public class DestructionMachineBlockEntity extends BlockEntity implements ICoreM
             lastTickFEConsumed = 0;
         }
 
-        chemBudgetRemaining = canWork ? (int) (calcTotalChemBudget() * energyRatio) : 0;
+        chemBudgetRemaining = canWork ? calcTotalChemBudget() : 0;
 
         if (canWork) {
             for (Direction dir : new Direction[]{Direction.NORTH, Direction.SOUTH, Direction.EAST, Direction.WEST}) {
@@ -182,7 +178,7 @@ public class DestructionMachineBlockEntity extends BlockEntity implements ICoreM
         setChanged(); syncToClient();
     }
 
-    private int calcRequiredFE() {
+    public int calcRequiredFE() {
         long fe = Modconfigs.DESTROY_FE_BASE.get();
         int coeff = Modconfigs.DESTROY_FE_PER_MB_RATE.get();
         for (Direction dir : new Direction[]{Direction.NORTH, Direction.SOUTH, Direction.EAST, Direction.WEST}) {

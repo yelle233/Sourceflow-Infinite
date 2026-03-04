@@ -56,7 +56,7 @@ public class RateInputScreen extends Screen {
         addRenderableWidget(Button.builder(
                 Component.translatable("gui.yuanliuwujin.rate_input.reset"),
                 btn -> {
-                    PacketDistributor.sendToServer(new SetFaceRatePayload(face, 20));
+                    PacketDistributor.sendToServer(new SetFaceRatePayload(face, 1));
                     this.onClose();
                 }
         ).bounds(centerX + 5, centerY + 20, 95, 20).build());
