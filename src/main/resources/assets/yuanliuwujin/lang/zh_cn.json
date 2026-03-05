@@ -61,5 +61,16 @@
   "tooltip.fluid_banned": "已禁用：%s",
   "jei.yuanliuwujin.category.destruction": "销毁机器",
   "jei.yuanliuwujin.category.infinite": "无限流体机器",
-  "jei.yuanliuwujin.ratio_header": "转换比:"
+  "jei.yuanliuwujin.ratio_header": "转换比:",
+
+  "advancement.yuanliuwujin.root.title": "源流无尽",
+  "advancement.yuanliuwujin.root.description": "探索虚空流体的奥秘",
+  "advancement.yuanliuwujin.craft_infinite_core_l1.title": "生生不息",
+  "advancement.yuanliuwujin.craft_infinite_core_l1.description": "合成无限核心",
+  "advancement.yuanliuwujin.craft_destruction_core_l1.title": "周而复始",
+  "advancement.yuanliuwujin.craft_destruction_core_l1.description": "合成销毁核心",
+  "advancement.yuanliuwujin.craft_overclocked_core.title": "转化，轻而易举！",
+  "advancement.yuanliuwujin.craft_overclocked_core.description": "合成四级超频核心",
+  "advancement.yuanliuwujin.machine_explosion.title": "坏了坏了",
+  "advancement.yuanliuwujin.machine_explosion.description": "让机器的压力达到极限并爆炸"
 }

@@ -1,0 +1,26 @@
+{
+  "parent": "yuanliuwujin:root",
+  "display": {
+    "icon": {
+      "id": "yuanliuwujin:destruction_core_l1"
+    },
+    "title": {
+      "translate": "advancement.yuanliuwujin.craft_destruction_core_l1.title"
+    },
+    "description": {
+      "translate": "advancement.yuanliuwujin.craft_destruction_core_l1.description"
+    },
+    "frame": "task",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "criteria": {
+    "crafted_destruction_core": {
+      "trigger": "minecraft:recipe_crafted",
+      "conditions": {
+        "recipe_id": "yuanliuwujin:destruction_core_l1"
+      }
+    }
+  }
+}

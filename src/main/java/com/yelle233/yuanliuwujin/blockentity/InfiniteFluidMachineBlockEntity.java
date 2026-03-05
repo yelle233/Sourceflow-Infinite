@@ -1,5 +1,6 @@
 package com.yelle233.yuanliuwujin.blockentity;
 
+import com.yelle233.yuanliuwujin.advancement.ModCriteriaTriggers;
 import com.yelle233.yuanliuwujin.block.InfiniteFluidMachineBlock;
 import com.yelle233.yuanliuwujin.block.VoidFluidBlock;
 import com.yelle233.yuanliuwujin.compat.MekanismChecker;
@@ -15,7 +16,9 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.util.RandomSource;
+import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
@@ -32,6 +35,7 @@ import net.neoforged.neoforge.items.ItemStackHandler;
 
 import javax.annotation.Nullable;
 import java.util.EnumMap;
+import java.util.UUID;
 
 public class InfiniteFluidMachineBlockEntity extends BlockEntity implements ICoreMachine {
 
@@ -48,6 +52,9 @@ public class InfiniteFluidMachineBlockEntity extends BlockEntity implements ICor
     // 红石控制相关
     private boolean hadRedstoneSignal = false;
     private final EnumMap<Direction, SideMode> savedSideModes = new EnumMap<>(Direction.class);
+
+    // 玩家追踪（用于成就触发）
+    @Nullable private UUID lastInteractingPlayer = null;
 
     private final ItemStackHandler coreSlot = new ItemStackHandler(1) {
         @Override protected void onContentsChanged(int slot) { setChanged(); onCoreChanged(); }
@@ -420,6 +427,14 @@ public class InfiniteFluidMachineBlockEntity extends BlockEntity implements ICor
 
     /** 爆炸：删除核心，炸出弹坑，填充虚空流体 */
     private void triggerExplosion(ServerLevel level, BlockPos pos) {
+        // 触发成就
+        if (lastInteractingPlayer != null) {
+            ServerPlayer player = level.getServer().getPlayerList().getPlayer(lastInteractingPlayer);
+            if (player != null) {
+                ModCriteriaTriggers.MACHINE_EXPLOSION.get().trigger(player);
+            }
+        }
+
         coreSlot.setStackInSlot(0, ItemStack.EMPTY);
         level.removeBlock(pos, false);
         float strength = Modconfigs.EXPLOSION_STRENGTH.get().floatValue();
@@ -501,6 +516,9 @@ public class InfiniteFluidMachineBlockEntity extends BlockEntity implements ICor
     public boolean hadRedstoneSignal() { return hadRedstoneSignal; }
     public void setRedstoneSignal(boolean signal) { hadRedstoneSignal = signal; }
 
+    // ── 玩家追踪（用于成就） ──
+    @Override public void setLastInteractingPlayer(Player player) { lastInteractingPlayer = player.getUUID(); }
+
     /**
      * 切换红石控制：保存当前状态并关闭所有侧面，或恢复保存的状态
      */
@@ -563,6 +581,8 @@ public class InfiniteFluidMachineBlockEntity extends BlockEntity implements ICor
         CompoundTag savedModesTag = new CompoundTag();
         savedSideModes.forEach((dir, mode) -> savedModesTag.putString(dir.getName(), mode.name()));
         tag.put("savedSideModes", savedModesTag);
+
+        if (lastInteractingPlayer != null) tag.putUUID("lastPlayer", lastInteractingPlayer);
     }
     @Override protected void loadAdditional(CompoundTag tag, HolderLookup.Provider registries) {
         super.loadAdditional(tag, registries);
@@ -589,6 +609,8 @@ public class InfiniteFluidMachineBlockEntity extends BlockEntity implements ICor
                 } catch (IllegalArgumentException ignored) {}
             }
         }
+
+        if (tag.hasUUID("lastPlayer")) lastInteractingPlayer = tag.getUUID("lastPlayer");
     }
     @Override public ClientboundBlockEntityDataPacket getUpdatePacket() { return ClientboundBlockEntityDataPacket.create(this); }
     @Override public CompoundTag getUpdateTag(HolderLookup.Provider registries) { return saveWithoutMetadata(registries); }

@@ -1,5 +1,6 @@
 package com.yelle233.yuanliuwujin;
 
+import com.yelle233.yuanliuwujin.advancement.ModCriteriaTriggers;
 import com.yelle233.yuanliuwujin.block.VoidFluidBlock;
 import com.yelle233.yuanliuwujin.registry.*;
 import net.neoforged.bus.api.IEventBus;
@@ -33,6 +34,7 @@ public class SourceflowInfinite {
         ModDataComponents.REGISTRAR.register(modEventBus);
         ModTab.TABS.register(modEventBus);
         ModRecipeSerializers.RECIPE_SERIALIZERS.register(modEventBus);
+        ModCriteriaTriggers.TRIGGERS.register(modEventBus);
 
         modEventBus.addListener(ModCapabilities::register);
 

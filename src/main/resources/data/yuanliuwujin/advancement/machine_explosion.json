@@ -1,0 +1,23 @@
+{
+  "parent": "yuanliuwujin:root",
+  "display": {
+    "icon": {
+      "id": "minecraft:tnt"
+    },
+    "title": {
+      "translate": "advancement.yuanliuwujin.machine_explosion.title"
+    },
+    "description": {
+      "translate": "advancement.yuanliuwujin.machine_explosion.description"
+    },
+    "frame": "task",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "criteria": {
+    "exploded": {
+      "trigger": "yuanliuwujin:machine_explosion"
+    }
+  }
+}

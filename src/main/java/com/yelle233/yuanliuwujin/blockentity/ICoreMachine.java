@@ -1,6 +1,7 @@
 package com.yelle233.yuanliuwujin.blockentity;
 
 import net.minecraft.core.Direction;
+import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import net.neoforged.neoforge.items.ItemStackHandler;
 
@@ -19,4 +20,7 @@ public interface ICoreMachine {
 
     /** 调整指定侧面的流量速率（mB/s） */
     void adjustFaceRate(Direction dir, int delta);
+
+    /** 设置最后交互的玩家（用于成就触发） */
+    default void setLastInteractingPlayer(Player player) {}
 }

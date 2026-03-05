@@ -1,0 +1,21 @@
+{
+  "display": {
+    "icon": {
+      "id": "yuanliuwujin:infinite_core_l1"
+    },
+    "title": {
+      "translate": "advancement.yuanliuwujin.root.title"
+    },
+    "description": {
+      "translate": "advancement.yuanliuwujin.root.description"
+    },
+    "background": "minecraft:textures/gui/advancements/backgrounds/stone.png",
+    "show_toast": false,
+    "announce_to_chat": false
+  },
+  "criteria": {
+    "impossible": {
+      "trigger": "minecraft:impossible"
+    }
+  }
+}
