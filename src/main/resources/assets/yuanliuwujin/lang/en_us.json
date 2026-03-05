@@ -74,6 +74,17 @@
   "tooltip.yuanliuwujin.destruction_core.hint": "Use wrench to insert into Destruction Machine",
   "tooltip.yuanliuwujin.destruction_core.ratio": "Ratio: %d fluid → 1 mB void",
   "tooltip.yuanliuwujin.infinite_core.ratio": "Ratio: %d mB void → 1 fluid",
-  "tooltip.yuanliuwujin.overclock_warning": "OVERCLOCKED: Machine will accumulate pressure!"
+  "tooltip.yuanliuwujin.overclock_warning": "OVERCLOCKED: Machine will accumulate pressure!",
+
+  "advancement.yuanliuwujin.root.title": "Sourceflow Infinite",
+  "advancement.yuanliuwujin.root.description": "Explore the mysteries of void fluid",
+  "advancement.yuanliuwujin.craft_infinite_core_l1.title": "Endless Generation",
+  "advancement.yuanliuwujin.craft_infinite_core_l1.description": "Craft an Infinite Core",
+  "advancement.yuanliuwujin.craft_destruction_core_l1.title": "Cycle of Destruction",
+  "advancement.yuanliuwujin.craft_destruction_core_l1.description": "Craft a Destruction Core",
+  "advancement.yuanliuwujin.craft_overclocked_core.title": "Conversion Made Easy!",
+  "advancement.yuanliuwujin.craft_overclocked_core.description": "Craft an overclocked Lv.4 core",
+  "advancement.yuanliuwujin.machine_explosion.title": "Oops...",
+  "advancement.yuanliuwujin.machine_explosion.description": "Let an overclocked machine's pressure reach critical and explode"
 }
 

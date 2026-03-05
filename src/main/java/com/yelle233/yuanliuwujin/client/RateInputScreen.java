@@ -1,6 +1,6 @@
 package com.yelle233.yuanliuwujin.client;
 
-import com.yelle233.yuanliuwujin.network.ModNetwork;
+import com.yelle233.yuanliuwujin.registry.ModNetwork;
 import com.yelle233.yuanliuwujin.network.SetFaceRateMessage;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;

@@ -1,5 +1,6 @@
 package com.yelle233.yuanliuwujin.blockentity;
 
+import com.yelle233.yuanliuwujin.advancement.ModCriteriaTriggers;
 import com.yelle233.yuanliuwujin.block.DestructionMachineBlock;
 import com.yelle233.yuanliuwujin.block.VoidFluidBlock;
 import com.yelle233.yuanliuwujin.compat.MekanismChecker;
@@ -13,7 +14,9 @@ import net.minecraft.core.Direction;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.protocol.game.ClientboundBlockEntityDataPacket;
 import net.minecraft.server.level.ServerLevel;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.util.RandomSource;
+import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.level.Level;
@@ -31,6 +34,7 @@ import org.jetbrains.annotations.NotNull;
 
 import javax.annotation.Nullable;
 import java.util.EnumMap;
+import java.util.UUID;
 
 /**
  * 销毁机器方块实体（1.20.1 Forge v2.0版本）
@@ -54,6 +58,8 @@ public class DestructionMachineBlockEntity extends BlockEntity implements ICoreM
 
     private boolean hadRedstoneSignal = false;
     private final EnumMap<Direction, SideMode> savedSideModes = new EnumMap<>(Direction.class);
+
+    @Nullable private UUID lastInteractingPlayer = null;
 
     private final ItemStackHandler coreSlot = new ItemStackHandler(1) {
         @Override
@@ -189,7 +195,6 @@ public class DestructionMachineBlockEntity extends BlockEntity implements ICoreM
             level.setBlock(pos, state.setValue(DestructionMachineBlock.LIT, hasCore), 3);
         }
         lastTickCanWork = canWork;
-        lastTickEndEnergy = energyStorage.getEnergyStored();
         setChanged();
         syncToClient();
     }
@@ -238,6 +243,14 @@ public class DestructionMachineBlockEntity extends BlockEntity implements ICoreM
     }
 
     private void triggerExplosion(Level level, BlockPos pos) {
+        // 触发成就
+        if (lastInteractingPlayer != null && level instanceof ServerLevel serverLevel) {
+            ServerPlayer player = serverLevel.getServer().getPlayerList().getPlayer(lastInteractingPlayer);
+            if (player != null) {
+                ModCriteriaTriggers.MACHINE_EXPLOSION.trigger(player);
+            }
+        }
+
         coreSlot.setStackInSlot(0, ItemStack.EMPTY);
         level.removeBlock(pos, false);
         float strength = Modconfigs.EXPLOSION_STRENGTH.get().floatValue();
@@ -510,6 +523,10 @@ public class DestructionMachineBlockEntity extends BlockEntity implements ICoreM
     public boolean hadRedstoneSignal() { return hadRedstoneSignal; }
     public void setRedstoneSignal(boolean signal) { hadRedstoneSignal = signal; }
 
+    // ── 玩家追踪（用于成就） ──────────────────────────────────
+    @Override public void setLastInteractingPlayer(Player player) { lastInteractingPlayer = player.getUUID(); }
+
+
     /**
      * 切换红石控制：保存当前状态并关闭所有侧面，或恢复保存的状态
      */
@@ -583,6 +600,8 @@ public class DestructionMachineBlockEntity extends BlockEntity implements ICoreM
                 } catch (IllegalArgumentException ignored) {}
             }
         }
+
+        if (tag.hasUUID("lastPlayer")) lastInteractingPlayer = tag.getUUID("lastPlayer");
     }
 
     @Override
@@ -605,6 +624,8 @@ public class DestructionMachineBlockEntity extends BlockEntity implements ICoreM
         CompoundTag savedModesTag = new CompoundTag();
         savedSideModes.forEach((dir, mode) -> savedModesTag.putString(dir.getName(), mode.name()));
         tag.put("savedSideModes", savedModesTag);
+
+        if (lastInteractingPlayer != null) tag.putUUID("lastPlayer", lastInteractingPlayer);
     }
 
     @Override public CompoundTag getUpdateTag() {

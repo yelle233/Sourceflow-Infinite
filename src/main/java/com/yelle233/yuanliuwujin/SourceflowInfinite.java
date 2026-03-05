@@ -1,5 +1,6 @@
 package com.yelle233.yuanliuwujin;
 
+import com.yelle233.yuanliuwujin.advancement.ModCriteriaTriggers;
 import com.yelle233.yuanliuwujin.block.VoidFluidBlock;
 import com.yelle233.yuanliuwujin.registry.ModNetwork;
 import com.yelle233.yuanliuwujin.registry.*;
@@ -9,6 +10,7 @@ import net.minecraftforge.eventbus.api.IEventBus;
 import net.minecraftforge.fml.ModLoadingContext;
 import net.minecraftforge.fml.common.Mod;
 import net.minecraftforge.fml.config.ModConfig;
+import net.minecraftforge.fml.event.lifecycle.FMLCommonSetupEvent;
 import net.minecraftforge.fml.javafmlmod.FMLJavaModLoadingContext;
 import org.slf4j.Logger;
 import com.mojang.logging.LogUtils;
@@ -39,6 +41,8 @@ public class SourceflowInfinite {
 
         ModNetwork.register();
 
+        // 注册成就触发器
+        modEventBus.addListener(this::commonSetup);
 
         ModLoadingContext.get().registerConfig(ModConfig.Type.COMMON, Modconfigs.SPEC);
 
@@ -46,5 +50,9 @@ public class SourceflowInfinite {
             VoidFluidBlock.clearBirthTimes();
             LOGGER.debug("Cleared VoidFluidBlock birth times on server stopping.");
         });
+    }
+
+    private void commonSetup(FMLCommonSetupEvent event) {
+        event.enqueueWork(ModCriteriaTriggers::register);
     }
 }

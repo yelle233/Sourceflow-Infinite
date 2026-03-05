@@ -77,6 +77,11 @@ public class WrenchItem extends Item {
         Player player = ctx.getPlayer();
         if (player == null) return InteractionResult.PASS;
 
+        // 记录玩家交互（用于成就触发）
+        if (!level.isClientSide) {
+            machine.setLastInteractingPlayer(player);
+        }
+
         WrenchMode mode = getMode(ctx.getItemInHand());
         Direction face  = ctx.getClickedFace();
 

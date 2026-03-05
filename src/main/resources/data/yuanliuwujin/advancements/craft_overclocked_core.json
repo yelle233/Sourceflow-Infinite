@@ -1,0 +1,38 @@
+{
+  "parent": "yuanliuwujin:root",
+  "display": {
+    "icon": {
+      "item": "yuanliuwujin:infinite_core_l4_oc"
+    },
+    "title": {
+      "translate": "advancement.yuanliuwujin.craft_overclocked_core.title"
+    },
+    "description": {
+      "translate": "advancement.yuanliuwujin.craft_overclocked_core.description"
+    },
+    "frame": "challenge",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "criteria": {
+    "crafted_infinite_oc": {
+      "trigger": "minecraft:recipe_crafted",
+      "conditions": {
+        "recipe_id": "yuanliuwujin:infinite_core_l4_oc"
+      }
+    },
+    "crafted_destruction_oc": {
+      "trigger": "minecraft:recipe_crafted",
+      "conditions": {
+        "recipe_id": "yuanliuwujin:destruction_core_l4_oc"
+      }
+    }
+  },
+  "requirements": [
+    [
+      "crafted_infinite_oc",
+      "crafted_destruction_oc"
+    ]
+  ]
+}
