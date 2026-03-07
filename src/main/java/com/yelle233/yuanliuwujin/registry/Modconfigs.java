@@ -88,6 +88,13 @@ public class Modconfigs {
     public static final ModConfigSpec.IntValue INFINITE_RATIO_OC;
 
     // =========================================================
+    // 虚空发电机
+    // =========================================================
+
+    /** 虚空发电机转换比（1 mB 虚空流体产出 X FE，默认 10） */
+    public static final ModConfigSpec.IntValue VOID_TO_FE_RATIO;
+
+    // =========================================================
     // 超频压力
     // =========================================================
 
@@ -174,6 +181,14 @@ public class Modconfigs {
                 "每 1 mB/s 面速率额外消耗的 FE/tick（默认 1）",
                 "Extra FE/tick per 1 mB/s face rate."
         ).defineInRange("fePerMbRate", 1, 0, Integer.MAX_VALUE - 1);
+        b.pop();
+
+        // ── 虚空发电机 ──────────────────────────────────────────
+        b.comment("虚空发电机设置 / Void Generator Settings").push("void_generator");
+        VOID_TO_FE_RATIO = b.comment(
+                "虚空流体转换为能量的比例（1 mB 虚空流体 = X FE，默认 10）",
+                "Void fluid to FE conversion ratio. 1 mB void = X FE."
+        ).defineInRange("voidToFeRatio", 10, 1, 1000);
         b.pop();
 
         // ── 超频压力 ──────────────────────────────────────────

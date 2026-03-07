@@ -2,6 +2,7 @@ package com.yelle233.yuanliuwujin.registry;
 
 import com.yelle233.yuanliuwujin.SourceflowInfinite;
 import com.yelle233.yuanliuwujin.blockentity.ICoreMachine;
+import com.yelle233.yuanliuwujin.blockentity.IVoidGenerator;
 import com.yelle233.yuanliuwujin.item.WrenchItem;
 import com.yelle233.yuanliuwujin.network.FaceRateUpdatePayload;
 import com.yelle233.yuanliuwujin.network.SetFaceRatePayload;
@@ -48,11 +49,21 @@ public class ModNetwork {
             if (hit.getType() != HitResult.Type.BLOCK) return;
             BlockPos pos = ((BlockHitResult) hit).getBlockPos();
             BlockEntity be = player.level().getBlockEntity(pos);
-            if (!(be instanceof ICoreMachine machine)) return;
-            machine.adjustFaceRate(payload.dir(), payload.delta());
-            int newRate = machine.getFaceRate(payload.dir());
-            // 显示 mB/s
-            player.displayClientMessage(Component.translatable("msg.yuanliuwujin.face_rate", payload.dir().getName(), newRate).withStyle(ChatFormatting.AQUA), true);
+
+            // 支持 ICoreMachine
+            if (be instanceof ICoreMachine machine) {
+                machine.adjustFaceRate(payload.dir(), payload.delta());
+                int newRate = machine.getFaceRate(payload.dir());
+                player.displayClientMessage(Component.translatable("msg.yuanliuwujin.face_rate", payload.dir().getName(), newRate).withStyle(ChatFormatting.AQUA), true);
+                return;
+            }
+
+            // 支持 IVoidGenerator
+            if (be instanceof IVoidGenerator generator) {
+                generator.adjustSideRate(payload.dir(), payload.delta());
+                int newRate = generator.getSideRate(payload.dir());
+                player.displayClientMessage(Component.translatable("msg.yuanliuwujin.generator_rate", payload.dir().getName(), newRate).withStyle(ChatFormatting.GREEN), true);
+            }
         }));
 
         registrar.playToServer(SetFaceRatePayload.TYPE, SetFaceRatePayload.CODEC, (payload, ctx) -> ctx.enqueueWork(() -> {
@@ -61,10 +72,21 @@ public class ModNetwork {
             if (hit.getType() != HitResult.Type.BLOCK) return;
             BlockPos pos = ((BlockHitResult) hit).getBlockPos();
             BlockEntity be = player.level().getBlockEntity(pos);
-            if (!(be instanceof ICoreMachine machine)) return;
-            int rate = Math.max(1, Math.min(payload.rate(), Integer.MAX_VALUE - 1));
-            machine.adjustFaceRate(payload.dir(), rate - machine.getFaceRate(payload.dir()));
-            player.playNotifySound(SoundEvents.UI_BUTTON_CLICK.value(), SoundSource.PLAYERS, 0.4f, 1.2f);
+
+            // 支持 ICoreMachine
+            if (be instanceof ICoreMachine machine) {
+                int rate = Math.max(1, Math.min(payload.rate(), Integer.MAX_VALUE - 1));
+                machine.adjustFaceRate(payload.dir(), rate - machine.getFaceRate(payload.dir()));
+                player.playNotifySound(SoundEvents.UI_BUTTON_CLICK.value(), SoundSource.PLAYERS, 0.4f, 1.2f);
+                return;
+            }
+
+            // 支持 IVoidGenerator
+            if (be instanceof IVoidGenerator generator) {
+                int rate = Math.max(1, Math.min(payload.rate(), Integer.MAX_VALUE - 1));
+                generator.adjustSideRate(payload.dir(), rate - generator.getSideRate(payload.dir()));
+                player.playNotifySound(SoundEvents.UI_BUTTON_CLICK.value(), SoundSource.PLAYERS, 0.4f, 1.2f);
+            }
         }));
     }
 }

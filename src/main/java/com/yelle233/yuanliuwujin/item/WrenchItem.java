@@ -1,19 +1,18 @@
 package com.yelle233.yuanliuwujin.item;
 
 import com.yelle233.yuanliuwujin.blockentity.ICoreMachine;
+import com.yelle233.yuanliuwujin.blockentity.IVoidGenerator;
 import com.yelle233.yuanliuwujin.client.RateInputScreen;
+import com.yelle233.yuanliuwujin.registry.ModDataComponents;
 import net.minecraft.client.Minecraft;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
-import net.minecraft.core.component.DataComponents;
-import net.minecraft.nbt.CompoundTag;
 import net.minecraft.sounds.SoundEvents;
 import net.minecraft.sounds.SoundSource;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.component.CustomData;
 import net.minecraft.world.item.context.UseOnContext;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.entity.BlockEntity;
@@ -42,23 +41,15 @@ public class WrenchItem extends Item {
         }
     }
 
-    private static final String TAG_MODE = "WrenchMode";
-
     public static WrenchMode getMode(ItemStack stack) {
-        CustomData data = stack.get(DataComponents.CUSTOM_DATA);
-        if (data == null) return WrenchMode.IO;
-        CompoundTag tag = data.copyTag();
-        if (!tag.contains(TAG_MODE)) return WrenchMode.IO;
-        try { return WrenchMode.valueOf(tag.getString(TAG_MODE)); }
+        String mode = stack.get(ModDataComponents.WRENCH_MODE.get());
+        if (mode == null) return WrenchMode.IO;
+        try { return WrenchMode.valueOf(mode); }
         catch (IllegalArgumentException e) { return WrenchMode.IO; }
     }
 
     public static void setMode(ItemStack stack, WrenchMode mode) {
-        stack.update(DataComponents.CUSTOM_DATA, CustomData.EMPTY, data -> {
-            CompoundTag tag = data.copyTag();
-            tag.putString(TAG_MODE, mode.name());
-            return CustomData.of(tag);
-        });
+        stack.set(ModDataComponents.WRENCH_MODE.get(), mode.name());
     }
 
     // ── 右键交互 ──
@@ -68,6 +59,22 @@ public class WrenchItem extends Item {
         Level level = ctx.getLevel();
         BlockPos pos = ctx.getClickedPos();
         BlockEntity be = level.getBlockEntity(pos);
+
+        // 虚空发电机：只支持 CONFIG 模式
+        if (be instanceof IVoidGenerator generator) {
+            Player player = ctx.getPlayer();
+            if (player == null) return InteractionResult.PASS;
+
+            WrenchMode mode = getMode(ctx.getItemInHand());
+            Direction face = ctx.getClickedFace();
+
+            if (mode == WrenchMode.CONFIG) {
+                return handleGeneratorConfigMode(level, pos, player, generator, face, player.isShiftKeyDown());
+            } else {
+                // IO 模式不支持虚空发电机
+                return InteractionResult.PASS;
+            }
+        }
 
         // 非本模组机器：不拦截交互，让玩家正常操作其他方块（如打开箱子等）
         if (!(be instanceof ICoreMachine machine)) return InteractionResult.PASS;
@@ -171,6 +178,30 @@ public class WrenchItem extends Item {
         // 服务端：切换面模式
         if (!level.isClientSide) {
             machine.cycleSideMode(face);
+            level.playSound(null, pos, SoundEvents.LEVER_CLICK, SoundSource.BLOCKS, 0.6f, 1.0f);
+        }
+        return InteractionResult.SUCCESS;
+    }
+
+    // ── 虚空发电机 CONFIG 模式 ──
+
+    private InteractionResult handleGeneratorConfigMode(Level level, BlockPos pos,
+                                                         Player player, IVoidGenerator generator,
+                                                         Direction face, boolean sneaking) {
+        // 底部不能配置
+        if (face == Direction.DOWN) return InteractionResult.PASS;
+
+        if (sneaking) {
+            // 客户端：打开速率输入界面
+            if (level.isClientSide) {
+                Minecraft.getInstance().setScreen(new RateInputScreen(pos, face, generator.getSideRate(face)));
+            }
+            return InteractionResult.SUCCESS;
+        }
+
+        // 服务端：切换侧面输出状态
+        if (!level.isClientSide) {
+            generator.toggleSideOutput(face);
             level.playSound(null, pos, SoundEvents.LEVER_CLICK, SoundSource.BLOCKS, 0.6f, 1.0f);
         }
         return InteractionResult.SUCCESS;

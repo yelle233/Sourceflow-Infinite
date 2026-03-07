@@ -1,6 +1,7 @@
 {
   "block.yuanliuwujin.destruction_machine": "销毁机器",
   "block.yuanliuwujin.infinite_fluid_machine": "无限流体机器",
+  "block.yuanliuwujin.void_generator": "虚空发电机",
   "block.yuanliuwujin.reinforced_void_block": "强化虚空方块",
   "fluid_type.yuanliuwujin.void_fluid": "虚空流体",
   "block.yuanliuwujin.void_fluid": "虚空流体",
@@ -21,6 +22,7 @@
   "mode.yuanliuwujin.wrench.io": "装配模式",
   "mode.yuanliuwujin.wrench.config": "配置模式",
   "msg.yuanliuwujin.face_rate": "%s 面速率：%d mB/s",
+  "msg.yuanliuwujin.generator_rate": "%s 面速率：%d FE/t",
   "msg.yuanliuwujin.unbind_disabled": "生存模式下禁止取消绑定。",
 
   "gui.yuanliuwujin.rate_input.title": "设置面速率",
@@ -42,6 +44,13 @@
   "hud.yuanliuwujin.destruction.no_power": "能量不足",
   "hud.yuanliuwujin.destruction.no_core": "未插入核心",
   "hud.yuanliuwujin.destruction.status_label": "状态：%s",
+  "hud.yuanliuwujin.generator.generation": "发电 %s FE/s（%s FE/t）",
+  "hud.yuanliuwujin.generator.consumption": "所需消耗 %s/s（%s/t）",
+  "hud.yuanliuwujin.generator.no_fuel": "无虚空流体",
+  "hud.yuanliuwujin.generator.full": "能量已满",
+  "hud.yuanliuwujin.generator.standby": "待机中",
+  "hud.yuanliuwujin.generator.active": "运行中",
+  "hud.yuanliuwujin.generator.outputs": "输出面（%s）%s",
   "tooltip.yuanliuwujin.core_level": "等级：%s",
   "tooltip.yuanliuwujin.core.unbound": "未绑定流体",
   "tooltip.yuanliuwujin.core.bound": "已绑定：%s",
@@ -72,6 +81,8 @@
   "advancement.yuanliuwujin.craft_destruction_core_l1.description": "合成销毁核心",
   "advancement.yuanliuwujin.craft_overclocked_core.title": "转化，轻而易举！",
   "advancement.yuanliuwujin.craft_overclocked_core.description": "合成四级超频核心",
+  "advancement.yuanliuwujin.craft_void_generator.title": "哇，虚空产电！",
+  "advancement.yuanliuwujin.craft_void_generator.description": "合成一台虚空发电机",
   "advancement.yuanliuwujin.machine_explosion.title": "坏了坏了",
   "advancement.yuanliuwujin.machine_explosion.description": "让机器的压力达到极限并爆炸"
 }

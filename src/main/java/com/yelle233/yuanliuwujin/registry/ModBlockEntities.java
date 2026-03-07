@@ -3,6 +3,7 @@ package com.yelle233.yuanliuwujin.registry;
 import com.yelle233.yuanliuwujin.SourceflowInfinite;
 import com.yelle233.yuanliuwujin.blockentity.DestructionMachineBlockEntity;
 import com.yelle233.yuanliuwujin.blockentity.InfiniteFluidMachineBlockEntity;
+import com.yelle233.yuanliuwujin.blockentity.VoidGeneratorBlockEntity;
 import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.neoforged.neoforge.registries.DeferredRegister;
 
@@ -28,5 +29,12 @@ public class ModBlockEntities {
                     () -> BlockEntityType.Builder
                             .of(DestructionMachineBlockEntity::new,
                                     ModBlocks.DESTRUCTION_MACHINE.get())
+                            .build(null));
+
+    public static final Supplier<BlockEntityType<VoidGeneratorBlockEntity>> VOID_GENERATOR =
+            BLOCK_ENTITIES.register("void_generator",
+                    () -> BlockEntityType.Builder
+                            .of(VoidGeneratorBlockEntity::new,
+                                    ModBlocks.VOID_GENERATOR.get())
                             .build(null));
 }

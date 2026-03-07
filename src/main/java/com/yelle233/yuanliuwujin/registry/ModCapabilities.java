@@ -2,6 +2,7 @@ package com.yelle233.yuanliuwujin.registry;
 
 import com.yelle233.yuanliuwujin.blockentity.DestructionMachineBlockEntity;
 import com.yelle233.yuanliuwujin.blockentity.InfiniteFluidMachineBlockEntity;
+import com.yelle233.yuanliuwujin.blockentity.VoidGeneratorBlockEntity;
 import com.yelle233.yuanliuwujin.compat.MekanismChecker;
 import com.yelle233.yuanliuwujin.item.InfiniteCoreItem.BindType;
 import net.minecraft.core.Direction;
@@ -22,6 +23,7 @@ public class ModCapabilities {
     public static void register(RegisterCapabilitiesEvent event) {
         registerInfiniteMachineCapabilities(event);
         registerDestructionMachineCapabilities(event);
+        registerVoidGeneratorCapabilities(event);
     }
 
     private static void registerInfiniteMachineCapabilities(RegisterCapabilitiesEvent event) {
@@ -109,5 +111,35 @@ public class ModCapabilities {
             @Override public FluidStack drain(int maxDrain, FluidAction action) { return m.getVoidTank().drain(maxDrain, action); }
             @Override public FluidStack drain(FluidStack resource, FluidAction action) { return m.getVoidTank().drain(resource, action); }
         };
+    }
+
+    private static void registerVoidGeneratorCapabilities(RegisterCapabilitiesEvent event) {
+        // 能量输出（除了底部，其余五个面）
+        event.registerBlock(Capabilities.EnergyStorage.BLOCK, (level, pos, state, be, ctx) -> {
+            if (!(be instanceof VoidGeneratorBlockEntity gen)) return null;
+            if (ctx == Direction.DOWN) return null; // 底部不输出能量
+            return gen.getEnergyStorage();
+        }, ModBlocks.VOID_GENERATOR.get());
+
+        // 流体输入（仅底部）
+        event.registerBlock(Capabilities.FluidHandler.BLOCK, (level, pos, state, be, ctx) -> {
+            if (!(be instanceof VoidGeneratorBlockEntity gen)) return null;
+            // 仅底部可以输入虚空流体
+            if (ctx == Direction.DOWN || ctx == null) {
+                return new IFluidHandler() {
+                    @Override public int getTanks() { return 1; }
+                    @Override public FluidStack getFluidInTank(int t) { return gen.getVoidTank().getFluid().copy(); }
+                    @Override public int getTankCapacity(int t) { return gen.getVoidTank().getCapacity(); }
+                    @Override public boolean isFluidValid(int t, FluidStack fs) { return fs.getFluid().isSame(ModFluids.VOID_FLUID_SOURCE.get()); }
+                    @Override public int fill(FluidStack resource, FluidAction action) {
+                        if (!resource.getFluid().isSame(ModFluids.VOID_FLUID_SOURCE.get())) return 0;
+                        return gen.getVoidTank().fill(resource, action);
+                    }
+                    @Override public FluidStack drain(int m2, FluidAction a) { return FluidStack.EMPTY; }
+                    @Override public FluidStack drain(FluidStack r, FluidAction a) { return FluidStack.EMPTY; }
+                };
+            }
+            return null;
+        }, ModBlocks.VOID_GENERATOR.get());
     }
 }
