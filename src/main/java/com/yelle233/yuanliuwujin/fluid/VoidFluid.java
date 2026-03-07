@@ -67,6 +67,8 @@ public abstract class VoidFluid extends ForgeFlowingFluid {
                                   FluidState toFluidState, Fluid fluid) {
         if (toBlockState.is(Blocks.BEDROCK)) return false;
         if (toBlockState.getBlock() instanceof VoidFluidBlock) return false;
+        // 不扩散到强化虚空方块
+        if (toBlockState.is(com.yelle233.yuanliuwujin.registry.ModBlocks.REINFORCED_VOID_BLOCK.get())) return false;
 
         if (!toFluidState.isEmpty()) {
             return Modconfigs.VOID_DESTROY_BLOCKS.get();
@@ -83,6 +85,10 @@ public abstract class VoidFluid extends ForgeFlowingFluid {
     protected void spreadTo(LevelAccessor level, BlockPos pos, BlockState blockState,
                             Direction direction, FluidState fluidState) {
         if (!blockState.isAir() && !(blockState.getBlock() instanceof VoidFluidBlock)) {
+            // 强化虚空方块免疫吞噬
+            if (blockState.is(com.yelle233.yuanliuwujin.registry.ModBlocks.REINFORCED_VOID_BLOCK.get())) {
+                return;
+            }
             if (!blockState.getFluidState().isEmpty()) {
                 level.setBlock(pos, Blocks.AIR.defaultBlockState(), Block.UPDATE_ALL);
             } else if (Modconfigs.VOID_DESTROY_BLOCKS.get()

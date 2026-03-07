@@ -96,6 +96,7 @@ public class VoidFluidBlock extends LiquidBlock {
         if (neighborState.isAir()) return;
         if (neighborState.is(Blocks.BEDROCK)) return;
         if (neighborState.getBlock() instanceof VoidFluidBlock) return;
+        if (neighborState.is(ModBlocks.REINFORCED_VOID_BLOCK.get())) return; // 强化虚空方块免疫吞噬
         if (neighborState.getDestroySpeed(level, neighbor) < 0) return;
 
         if (!neighborState.getFluidState().isEmpty()) {

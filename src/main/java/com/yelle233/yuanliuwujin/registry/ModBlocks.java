@@ -71,6 +71,22 @@ public class ModBlocks {
                                     .lightLevel(s -> 2)
                     ));
 
+    // ── 强化虚空方块 ──
+    /**
+     * 强化虚空方块 - 不会被虚空流体吞噬的建筑方块。
+     * <p>
+     * 硬度比黑曜石高，比基岩低，需要钻石镐开采。
+     */
+    public static final RegistryObject<Block> REINFORCED_VOID_BLOCK =
+            registerBlock("reinforced_void_block",
+                    () -> new Block(
+                            Block.Properties.of()
+                                    .mapColor(MapColor.COLOR_BLACK)
+                                    .strength(100.0F, 2400.0F)
+                                    .requiresCorrectToolForDrops()
+                                    .sound(SoundType.STONE)
+                    ));
+
     // ── 辅助方法 ──
     private static <T extends Block> RegistryObject<T> registerBlock(String name, Supplier<T> supplier) {
         RegistryObject<T> block = BLOCKS.register(name, supplier);
