@@ -1,0 +1,14 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "OVO",
+    "VDV",
+    "OVO"
+  ],
+  "key": {
+    "O": { "item": "minecraft:obsidian" },
+    "V": { "item": "minecraft:diamond" },
+    "D": { "item": "yuanliuwujin:void_bucket" }
+  },
+  "result": { "id": "yuanliuwujin:reinforced_void_block", "count": 4 }
+}

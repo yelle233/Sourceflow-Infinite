@@ -111,6 +111,8 @@ public abstract class VoidFluid extends BaseFlowingFluid {
         if (toBlockState.is(Blocks.BEDROCK)) return false;
         // 不替换同类流体
         if (toBlockState.getBlock() instanceof VoidFluidBlock) return false;
+        // 不扩散到强化虚空方块
+        if (toBlockState.is(com.yelle233.yuanliuwujin.registry.ModBlocks.REINFORCED_VOID_BLOCK.get())) return false;
 
         // 目标是其他流体（水、岩浆等）→ 允许吞噬（配置控制）
         if (!toFluidState.isEmpty()) {
@@ -138,6 +140,10 @@ public abstract class VoidFluid extends BaseFlowingFluid {
     protected void spreadTo(LevelAccessor level, BlockPos pos, BlockState blockState,
                             Direction direction, FluidState fluidState) {
         if (!blockState.isAir() && !(blockState.getBlock() instanceof VoidFluidBlock)) {
+            // 强化虚空方块免疫吞噬
+            if (blockState.is(com.yelle233.yuanliuwujin.registry.ModBlocks.REINFORCED_VOID_BLOCK.get())) {
+                return;
+            }
             if (!blockState.getFluidState().isEmpty()) {
                 // 目标是其他流体（水、岩浆等）→ 强制设为 AIR 后再放置虚空流体
                 // destroyBlock 对流体方块无效（MC 会用流体状态回填），必须显式设为 AIR

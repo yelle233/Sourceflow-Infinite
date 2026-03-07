@@ -34,6 +34,8 @@ public class ModTab {
                         // 机器
                         output.accept(ModBlocks.INFINITE_FLUID_MACHINE.get());
                         output.accept(ModBlocks.DESTRUCTION_MACHINE.get());
+                        // 方块
+                        output.accept(ModBlocks.REINFORCED_VOID_BLOCK.get());
                         // 工具
                         output.accept(ModItems.WRENCH.get());
                         output.accept(ModItems.VOID_BUCKET.get());

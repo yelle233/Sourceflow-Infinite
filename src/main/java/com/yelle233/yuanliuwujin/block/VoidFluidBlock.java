@@ -137,6 +137,7 @@ public class VoidFluidBlock extends LiquidBlock {
         if (neighborState.isAir()) return;
         if (neighborState.is(Blocks.BEDROCK)) return;
         if (neighborState.getBlock() instanceof VoidFluidBlock) return;
+        if (neighborState.is(ModBlocks.REINFORCED_VOID_BLOCK.get())) return; // 强化虚空方块免疫吞噬
         if (neighborState.getDestroySpeed(level, neighbor) < 0) return;
 
         // 流体方块（水、岩浆等）用 destroyBlock 无效（MC 会用流体状态回填），

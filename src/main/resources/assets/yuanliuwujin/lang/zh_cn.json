@@ -1,6 +1,7 @@
 {
   "block.yuanliuwujin.destruction_machine": "销毁机器",
   "block.yuanliuwujin.infinite_fluid_machine": "无限流体机器",
+  "block.yuanliuwujin.reinforced_void_block": "强化虚空方块",
   "fluid_type.yuanliuwujin.void_fluid": "虚空流体",
   "block.yuanliuwujin.void_fluid": "虚空流体",
   "item.yuanliuwujin.infinite_core_l1": "无限核心 Lv.1",
