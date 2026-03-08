@@ -84,7 +84,10 @@ public class WrenchItem extends Item {
             if (mode == WrenchMode.CONFIG) {
                 return handleGeneratorConfigMode(level, pos, player, generator, face, player.isShiftKeyDown());
             } else {
-                // IO 模式不支持虚空发电机
+                // IO 模式：潜行右键拆除
+                if (player.isShiftKeyDown() && !level.isClientSide) {
+                    return dismantleGenerator(level, pos, player);
+                }
                 return InteractionResult.PASS;
             }
         }
@@ -170,6 +173,17 @@ public class WrenchItem extends Item {
         level.removeBlock(pos, false);
         level.playSound(null, pos, SoundEvents.ANVIL_BREAK, SoundSource.BLOCKS, 0.8f, 1.0f);
 
+        return InteractionResult.SUCCESS;
+    }
+
+    // ── 拆除虚空发电机 ──
+
+    private InteractionResult dismantleGenerator(Level level, BlockPos pos, Player player) {
+        BlockState state = level.getBlockState(pos);
+        ItemStack blockItem = new ItemStack(state.getBlock());
+        if (!player.getInventory().add(blockItem)) player.drop(blockItem, false);
+        level.removeBlock(pos, false);
+        level.playSound(null, pos, SoundEvents.ANVIL_BREAK, SoundSource.BLOCKS, 0.8f, 1.0f);
         return InteractionResult.SUCCESS;
     }
 
