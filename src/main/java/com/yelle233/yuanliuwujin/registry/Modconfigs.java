@@ -49,6 +49,9 @@ public class Modconfigs {
     public static final ForgeConfigSpec.IntValue INFINITE_RATIO_L4;
     public static final ForgeConfigSpec.IntValue INFINITE_RATIO_OC;
 
+    // ── 虚空发电机 ──
+    public static final ForgeConfigSpec.IntValue VOID_TO_FE_RATIO;
+
     // ── 超频压力 ──
     public static final ForgeConfigSpec.DoubleValue OVERCLOCK_PRESSURE_PER_TICK;
     public static final ForgeConfigSpec.DoubleValue PRESSURE_DECAY_PER_TICK;
@@ -99,7 +102,7 @@ public class Modconfigs {
         // ── 机器通用 ──────────────────────────────────────────
         b.comment("机器通用设置 / Machine Common Settings").push("machine_common");
         MACHINE_VOID_TANK_CAPACITY = b.comment(
-                "两种机器内部虚空流体储罐最大容量（mB，默认 1000 = 1 桶）",
+                "三种机器内部虚空流体储罐最大容量（mB，默认 1000 = 1 桶）",
                 "Void tank capacity in mB. 1000 mB = 1 bucket."
         ).defineInRange("voidTankCapacity", 1000000, 10000, Integer.MAX_VALUE - 1);
         b.pop();
@@ -126,6 +129,14 @@ public class Modconfigs {
                 "每 1 mB/s 面速率额外消耗的 FE/tick（默认 1）",
                 "Extra FE/tick per 1 mB/s face rate."
         ).defineInRange("fePerMbRate", 1, 0, Integer.MAX_VALUE - 1);
+        b.pop();
+
+        // ── 虚空发电机 ──────────────────────────────────────────
+        b.comment("虚空发电机设置 / Void Generator Settings").push("void_generator");
+        VOID_TO_FE_RATIO = b.comment(
+                "虚空流体转换为能量的比例（1 mB 虚空流体 = X FE，默认 10）",
+                "Void fluid to FE conversion ratio. 1 mB void = X FE."
+        ).defineInRange("voidToFeRatio", 10, 1, 1000);
         b.pop();
 
         // ── 超频压力 ──────────────────────────────────────────

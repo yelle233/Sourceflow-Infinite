@@ -4,6 +4,7 @@ import com.yelle233.yuanliuwujin.SourceflowInfinite;
 import com.yelle233.yuanliuwujin.block.DestructionMachineBlock;
 import com.yelle233.yuanliuwujin.block.InfiniteFluidMachineBlock;
 import com.yelle233.yuanliuwujin.block.VoidFluidBlock;
+import com.yelle233.yuanliuwujin.block.VoidGeneratorBlock;
 import net.minecraft.world.item.BlockItem;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.level.block.Block;
@@ -53,6 +54,17 @@ public class ModBlocks {
 
     public static final RegistryObject<Block> DESTRUCTION_CORE_BLOCK =
             BLOCKS.register("destruction_core_block", () -> new Block(Block.Properties.of()));
+
+    // ── 虚空发电机 ──
+    public static final RegistryObject<Block> VOID_GENERATOR =
+            registerBlock("void_generator",
+                    () -> new VoidGeneratorBlock(
+                            Block.Properties.of()
+                                    .mapColor(MapColor.COLOR_PURPLE)
+                                    .strength(3.0F, 6.0F)
+                                    .lightLevel(s -> s.getValue(VoidGeneratorBlock.LIT) ? 10 : 0)
+                                    .noOcclusion()
+                                    .requiresCorrectToolForDrops()));
 
     // ── 虚空流体方块──
     public static final RegistryObject<VoidFluidBlock> VOID_FLUID_BLOCK =

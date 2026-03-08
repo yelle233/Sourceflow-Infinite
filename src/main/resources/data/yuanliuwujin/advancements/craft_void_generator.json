@@ -1,0 +1,26 @@
+{
+  "parent": "yuanliuwujin:root",
+  "display": {
+    "icon": {
+      "item": "yuanliuwujin:void_generator"
+    },
+    "title": {
+      "translate": "advancement.yuanliuwujin.craft_void_generator.title"
+    },
+    "description": {
+      "translate": "advancement.yuanliuwujin.craft_void_generator.description"
+    },
+    "frame": "task",
+    "show_toast": true,
+    "announce_to_chat": true,
+    "hidden": false
+  },
+  "criteria": {
+    "crafted_void_generator": {
+      "trigger": "minecraft:recipe_crafted",
+      "conditions": {
+        "recipe_id": "yuanliuwujin:void_generator"
+      }
+    }
+  }
+}

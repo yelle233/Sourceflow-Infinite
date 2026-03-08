@@ -1,0 +1,29 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "IRI",
+    "VGK",
+    "IRI"
+  ],
+  "key": {
+    "I": {
+      "item": "minecraft:iron_ingot"
+    },
+    "R": {
+      "item": "minecraft:redstone"
+    },
+    "V": {
+      "tag": "yuanliuwujin:destruction_cores"
+    },
+    "K": {
+      "tag": "yuanliuwujin:infinite_cores"
+    },
+    "G": {
+      "item": "yuanliuwujin:void_bucket"
+    }
+  },
+  "result": {
+    "item": "yuanliuwujin:void_generator",
+    "count": 1
+  }
+}

@@ -1,6 +1,7 @@
 {
   "block.yuanliuwujin.destruction_machine": "Destruction Machine",
   "block.yuanliuwujin.infinite_fluid_machine": "Infinite Fluid Machine",
+  "block.yuanliuwujin.void_generator": "Void Generator",
   "block.yuanliuwujin.reinforced_void_block": "Reinforced Void Block",
   "block.yuanliuwujin.void_fluid": "Void Fluid",
   "fluid_type.yuanliuwujin.void_fluid": "Void Fluid",
@@ -19,6 +20,12 @@
   "hud.yuanliuwujin.destruction.no_core": "No Core Inserted",
   "hud.yuanliuwujin.destruction.no_power": "Insufficient Power",
   "hud.yuanliuwujin.destruction.status_label": "Status: %s",
+  "hud.yuanliuwujin.generator.generation": "Generating %s FE/s (%s FE/t)",
+  "hud.yuanliuwujin.generator.consumption": "Required Consumption %s/s (%s/t)",
+  "hud.yuanliuwujin.generator.no_fuel": "No Void Fluid",
+  "hud.yuanliuwujin.generator.standby": "Standby",
+  "hud.yuanliuwujin.generator.active": "Running",
+  "hud.yuanliuwujin.generator.outputs": "Output Faces (%s) %s",
   "hud.yuanliuwujin.pressure": "Pressure %s",
   "hud.yuanliuwujin.void_tank": "Void Tank %s / %s",
 
@@ -44,6 +51,7 @@
   "mode.yuanliuwujin.wrench.config": "Config Mode",
   "mode.yuanliuwujin.wrench.io": "IO Mode",
   "msg.yuanliuwujin.face_rate": "Face %s rate: %d mB/s",
+  "msg.yuanliuwujin.generator_rate": "Face %s rate: %d FE/t",
   "msg.yuanliuwujin.unbind_disabled": "Unbinding is not allowed in Survival mode.",
   "msg.yuanliuwujin.wrench_mode": "Mode",
 
@@ -85,6 +93,8 @@
   "advancement.yuanliuwujin.craft_destruction_core_l1.description": "Craft a Destruction Core",
   "advancement.yuanliuwujin.craft_overclocked_core.title": "Conversion Made Easy!",
   "advancement.yuanliuwujin.craft_overclocked_core.description": "Craft an overclocked Lv.4 core",
+  "advancement.yuanliuwujin.craft_void_generator.title": "Wow, Void Power!",
+  "advancement.yuanliuwujin.craft_void_generator.description": "Craft a Void Generator",
   "advancement.yuanliuwujin.machine_explosion.title": "Oops...",
   "advancement.yuanliuwujin.machine_explosion.description": "Let an overclocked machine's pressure reach critical and explode"
 }

@@ -2,19 +2,18 @@ package com.yelle233.yuanliuwujin;
 
 import com.yelle233.yuanliuwujin.ber.DestructionMachineBER;
 import com.yelle233.yuanliuwujin.ber.InfiniteFluidMachineBER;
+import com.yelle233.yuanliuwujin.ber.VoidGeneratorBER;
 import com.yelle233.yuanliuwujin.blockentity.DestructionMachineBlockEntity;
 import com.yelle233.yuanliuwujin.blockentity.InfiniteFluidMachineBlockEntity;
 import com.yelle233.yuanliuwujin.blockentity.InfiniteFluidMachineBlockEntity.SideMode;
+import com.yelle233.yuanliuwujin.blockentity.VoidGeneratorBlockEntity;
 import com.yelle233.yuanliuwujin.fluid.VoidFluidType;
 import com.yelle233.yuanliuwujin.item.InfiniteCoreItem;
 import com.yelle233.yuanliuwujin.item.InfiniteCoreItem.BindType;
 import com.yelle233.yuanliuwujin.item.WrenchItem;
 import com.yelle233.yuanliuwujin.network.FaceRateUpdateMessage;
-import com.yelle233.yuanliuwujin.registry.ModFluids;
-import com.yelle233.yuanliuwujin.registry.ModNetwork;
+import com.yelle233.yuanliuwujin.registry.*;
 import com.yelle233.yuanliuwujin.network.WrenchModeScrollMessage;
-import com.yelle233.yuanliuwujin.registry.ModBlockEntities;
-import com.yelle233.yuanliuwujin.registry.ModItems;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
@@ -60,6 +59,7 @@ public class SourceflowInfiniteClient {
         public static void onRegisterRenderers(EntityRenderersEvent.RegisterRenderers event) {
             event.registerBlockEntityRenderer(ModBlockEntities.INFINITE_FLUID_MACHINE.get(), InfiniteFluidMachineBER::new);
             event.registerBlockEntityRenderer(ModBlockEntities.DESTRUCTION_MACHINE.get(), DestructionMachineBER::new);
+            event.registerBlockEntityRenderer(ModBlockEntities.VOID_GENERATOR.get(), VoidGeneratorBER::new);
 
         }
 
@@ -143,6 +143,8 @@ public class SourceflowInfiniteClient {
                 renderInfiniteMachineHud(event.getGuiGraphics(), mc, inf);
             } else if (be instanceof DestructionMachineBlockEntity dest) {
                 renderDestructionMachineHud(event.getGuiGraphics(), mc, dest);
+            } else if (be instanceof VoidGeneratorBlockEntity gen) {
+                renderVoidGeneratorHud(event.getGuiGraphics(), mc, gen);
             }
         }
     }
@@ -329,6 +331,56 @@ public class SourceflowInfiniteClient {
         renderHudPanel(gg, mc, lines, facesLine);
     }
 
+    private static void renderVoidGeneratorHud(GuiGraphics gg, Minecraft mc, VoidGeneratorBlockEntity generator) {
+        long energy = generator.getEnergyStorage().getEnergyStored();
+        long capacity = generator.getEnergyStorage().getMaxEnergyStored();
+        var vt = generator.getVoidTank();
+
+        StringBuilder facesShort = new StringBuilder();
+        int enabledFaces = 0;
+        for (Direction d : Direction.values()) {
+            if (d == Direction.DOWN) continue;
+            boolean outputEnabled = generator.getSideOutput(d);
+            if (!outputEnabled) continue;
+            enabledFaces++;
+            if (!facesShort.isEmpty()) facesShort.append(' ');
+            facesShort.append(dirShort(d)).append("(ON)");
+            if (mc.player != null && mc.player.getMainHandItem().getItem() instanceof WrenchItem) {
+                facesShort.append(':').append(generator.getSideRate(d)).append("FE/t");
+            }
+        }
+
+        Component statusComp;
+        if (vt.isEmpty()) statusComp = Component.translatable("hud.yuanliuwujin.generator.no_fuel").withStyle(ChatFormatting.GRAY);
+        else if (enabledFaces == 0) statusComp = Component.translatable("hud.yuanliuwujin.generator.standby").withStyle(ChatFormatting.YELLOW);
+        else statusComp = Component.translatable("hud.yuanliuwujin.generator.active").withStyle(ChatFormatting.GREEN);
+
+        List<Component> lines = new ArrayList<>();
+        lines.add(Component.translatable("hud.sourceflowinfinite.energy", compactFE(energy), compactFE(capacity)).withStyle(ChatFormatting.WHITE));
+
+        // 计算配置的总输出速率
+        long totalConfiguredRate = 0;
+        for (Direction d : Direction.values()) {
+            if (d == Direction.DOWN) continue;
+            if (generator.getSideOutput(d)) {
+                totalConfiguredRate += generator.getSideRate(d);
+            }
+        }
+        // 根据配置速率计算虚空流体消耗
+        int ratio = Modconfigs.VOID_TO_FE_RATIO.get();
+        long voidPerTick = totalConfiguredRate / ratio;
+        long voidPerSecond = voidPerTick * 20;
+        lines.add(Component.translatable("hud.yuanliuwujin.generator.consumption", compactMB(voidPerSecond), compactMB(voidPerTick)).withStyle(ChatFormatting.DARK_PURPLE));
+
+        lines.add(Component.translatable("hud.yuanliuwujin.destruction.status_label", statusComp));
+        lines.add(Component.translatable("hud.yuanliuwujin.void_tank", compactMB(vt.getFluidAmount()), compactMB(vt.getCapacity())).withStyle(ChatFormatting.DARK_PURPLE));
+
+        Component facesLine = Component.translatable("hud.yuanliuwujin.generator.outputs", enabledFaces,
+                enabledFaces == 0 ? Component.translatable("hud.sourceflowinfinite.none").withStyle(ChatFormatting.DARK_GRAY) : Component.literal(facesShort.toString()).withStyle(ChatFormatting.AQUA)).withStyle(ChatFormatting.WHITE);
+
+        renderHudPanel(gg, mc, lines, facesLine);
+    }
+
     /* ====== HUD 面板绘制 ====== */
 
     private static void renderHudPanel(GuiGraphics gg, Minecraft mc,
@@ -358,7 +410,7 @@ public class SourceflowInfiniteClient {
     }
 
     private static String dirShort(Direction d) {
-        return switch (d) { case NORTH -> "N"; case SOUTH -> "S"; case WEST -> "W"; case EAST -> "E"; case DOWN -> "D"; default -> "?"; };
+        return switch (d) { case NORTH -> "N"; case SOUTH -> "S"; case WEST -> "W"; case EAST -> "E"; case UP -> "U"; case DOWN -> "D"; };
     }
 
     private static String compactFE(long value) {

@@ -1,6 +1,7 @@
 package com.yelle233.yuanliuwujin.network;
 
 import com.yelle233.yuanliuwujin.blockentity.ICoreMachine;
+import com.yelle233.yuanliuwujin.blockentity.IVoidGenerator;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.network.FriendlyByteBuf;
@@ -45,8 +46,17 @@ public class SetFaceRateMessage {
             if (hit.getType() != HitResult.Type.BLOCK) return;
             BlockPos pos = ((BlockHitResult) hit).getBlockPos();
             BlockEntity be = player.level().getBlockEntity(pos);
-            if (!(be instanceof ICoreMachine machine)) return;
+
             int rate = Math.max(1, Math.min(msg.rate, Integer.MAX_VALUE - 1));
+
+            // 支持虚空发电机
+            if (be instanceof IVoidGenerator generator) {
+                generator.adjustSideRate(msg.dir, rate - generator.getSideRate(msg.dir));
+                player.playNotifySound(SoundEvents.UI_BUTTON_CLICK.value(), SoundSource.PLAYERS, 0.4f, 1.2f);
+                return;
+            }
+
+            if (!(be instanceof ICoreMachine machine)) return;
             machine.adjustFaceRate(msg.dir, rate - machine.getFaceRate(msg.dir));
             player.playNotifySound(SoundEvents.UI_BUTTON_CLICK.value(), SoundSource.PLAYERS, 0.4f, 1.2f);
         });

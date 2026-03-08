@@ -1,6 +1,7 @@
 package com.yelle233.yuanliuwujin.item;
 
 import com.yelle233.yuanliuwujin.blockentity.ICoreMachine;
+import com.yelle233.yuanliuwujin.blockentity.IVoidGenerator;
 import com.yelle233.yuanliuwujin.client.RateInputScreen;
 import net.minecraft.client.Minecraft;
 import net.minecraft.core.BlockPos;
@@ -71,6 +72,22 @@ public class WrenchItem extends Item {
         Level level = ctx.getLevel();
         BlockPos pos = ctx.getClickedPos();
         BlockEntity be = level.getBlockEntity(pos);
+
+        // 虚空发电机：只支持 CONFIG 模式
+        if (be instanceof IVoidGenerator generator) {
+            Player player = ctx.getPlayer();
+            if (player == null) return InteractionResult.PASS;
+
+            WrenchMode mode = getMode(ctx.getItemInHand());
+            Direction face = ctx.getClickedFace();
+
+            if (mode == WrenchMode.CONFIG) {
+                return handleGeneratorConfigMode(level, pos, player, generator, face, player.isShiftKeyDown());
+            } else {
+                // IO 模式不支持虚空发电机
+                return InteractionResult.PASS;
+            }
+        }
 
         if (!(be instanceof ICoreMachine machine)) return InteractionResult.PASS;
 
@@ -174,6 +191,30 @@ public class WrenchItem extends Item {
         if (!level.isClientSide) {
             machine.cycleSideMode(face);
             level.playSound(null, pos, SoundEvents.WOODEN_TRAPDOOR_OPEN, SoundSource.PLAYERS, 0.5f, 1.0f);
+        }
+        return InteractionResult.SUCCESS;
+    }
+
+    // ── 虚空发电机 CONFIG 模式 ──
+
+    private InteractionResult handleGeneratorConfigMode(Level level, BlockPos pos,
+                                                         Player player, IVoidGenerator generator,
+                                                         Direction face, boolean sneaking) {
+        // 底部不能配置
+        if (face == Direction.DOWN) return InteractionResult.PASS;
+
+        if (sneaking) {
+            // 客户端：打开速率输入界面
+            if (level.isClientSide) {
+                Minecraft.getInstance().setScreen(new RateInputScreen(pos, face, generator.getSideRate(face)));
+            }
+            return InteractionResult.SUCCESS;
+        }
+
+        // 服务端：切换侧面输出状态
+        if (!level.isClientSide) {
+            generator.toggleSideOutput(face);
+            level.playSound(null, pos, SoundEvents.LEVER_CLICK, SoundSource.BLOCKS, 0.6f, 1.0f);
         }
         return InteractionResult.SUCCESS;
     }

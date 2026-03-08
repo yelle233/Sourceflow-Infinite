@@ -1,6 +1,7 @@
 package com.yelle233.yuanliuwujin.network;
 
 import com.yelle233.yuanliuwujin.blockentity.ICoreMachine;
+import com.yelle233.yuanliuwujin.blockentity.IVoidGenerator;
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -60,6 +61,15 @@ public class FaceRateUpdateMessage {
 
             if (!(player.level() instanceof ServerLevel serverLevel)) return;
             BlockEntity be = serverLevel.getBlockEntity(pos);
+
+            // 支持虚空发电机
+            if (be instanceof IVoidGenerator generator) {
+                generator.adjustSideRate(msg.dir, msg.delta);
+                int newRate = generator.getSideRate(msg.dir);
+                player.displayClientMessage(Component.translatable("msg.yuanliuwujin.generator_rate", msg.dir.getName(), newRate).withStyle(ChatFormatting.AQUA), true);
+                return;
+            }
+
             if (!(be instanceof ICoreMachine machine)) return;
 
             machine.adjustFaceRate(msg.dir, msg.delta);
