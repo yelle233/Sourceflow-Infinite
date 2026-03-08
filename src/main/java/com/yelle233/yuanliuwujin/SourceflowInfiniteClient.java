@@ -321,7 +321,7 @@ public class SourceflowInfiniteClient {
         int ratio = Modconfigs.VOID_TO_FE_RATIO.get();
         long voidPerTick = totalConfiguredRate / ratio;
         long voidPerSecond = voidPerTick * 20;
-        lines.add(Component.translatable("hud.yuanliuwujin.generator.consumption", compactMB(voidPerSecond), compactMB(voidPerTick)).withStyle(ChatFormatting.DARK_PURPLE));
+        lines.add(Component.translatable("hud.yuanliuwujin.generator.consumption", compactMB(voidPerSecond), compactMB(voidPerTick)).withStyle(ChatFormatting.GOLD));
 
         lines.add(Component.translatable("hud.yuanliuwujin.destruction.status_label", statusComp));
         lines.add(Component.translatable("hud.yuanliuwujin.void_tank", compactMB(vt.getFluidAmount()), compactMB(vt.getCapacity())).withStyle(ChatFormatting.DARK_PURPLE));

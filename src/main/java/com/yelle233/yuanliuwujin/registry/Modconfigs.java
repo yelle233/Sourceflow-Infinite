@@ -154,7 +154,7 @@ public class Modconfigs {
         // ── 机器通用 ──────────────────────────────────────────
         b.comment("机器通用设置 / Machine Common Settings").push("machine_common");
         MACHINE_VOID_TANK_CAPACITY = b.comment(
-                "两种机器内部虚空流体储罐最大容量（mB，默认 1000 = 1 桶）",
+                "三种机器内部虚空流体储罐最大容量（mB，默认 1000 = 1 桶）",
                 "Void tank capacity in mB. 1000 mB = 1 bucket."
         ).defineInRange("voidTankCapacity", 1000000, 10000, Integer.MAX_VALUE - 1);
         b.pop();
