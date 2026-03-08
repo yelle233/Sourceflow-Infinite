@@ -30,13 +30,7 @@ public class VoidGeneratorBlock extends Block implements EntityBlock {
 
     public static final BooleanProperty LIT = BlockStateProperties.LIT;
 
-    public static final VoxelShape SHAPE = Stream.of(
-            Block.box(0, 14, 0, 2, 16, 2), Block.box(14, 0, 0, 16, 2, 2),
-            Block.box(0, 0, 14, 2, 2, 16), Block.box(14, 0, 14, 16, 2, 16),
-            Block.box(14, 14, 0, 16, 16, 2), Block.box(0, 14, 14, 2, 16, 16),
-            Block.box(14, 14, 14, 16, 16, 16), Block.box(0, 0, 0, 2, 2, 2),
-            Block.box(1, 1, 1, 15, 15, 15), Block.box(2, 15, 2, 14, 16, 14)
-    ).reduce((v1, v2) -> Shapes.join(v1, v2, BooleanOp.OR)).get();
+    public static final VoxelShape SHAPE = java.util.Optional.of(Block.box(0, 0, 0, 16, 16, 16)).get();
 
     public VoidGeneratorBlock(Properties properties) {
         super(properties);

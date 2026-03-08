@@ -21,9 +21,9 @@ import org.joml.Matrix4f;
  */
 public class VoidGeneratorBER implements BlockEntityRenderer<VoidGeneratorBlockEntity> {
 
-    /** 输出开启的面贴图（使用 BOTH 贴图表示输出） */
+    /** 输出开启的面贴图 */
     private static final ResourceLocation OVERLAY_OUTPUT =
-            ResourceLocation.fromNamespaceAndPath(SourceflowInfinite.MODID, "textures/block/overlay_both.png");
+            ResourceLocation.fromNamespaceAndPath(SourceflowInfinite.MODID, "textures/block/overlay_on.png");
 
     public VoidGeneratorBER(BlockEntityRendererProvider.Context ctx) {}
 
