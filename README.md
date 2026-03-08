@@ -52,6 +52,7 @@ The Wrench is the primary tool used to operate both machines. It has two modes (
 * Right-click a machine with empty offhand: removes the inserted core
 * Right-click a machine with a core in offhand: inserts the core
 * Sneak + right-click a machine: dismantles the machine and returns it (along with the core) to your inventory
+* Sneak + right-click a Void Generator: dismantles it and returns it to your inventory
 
 **Config Mode**
 
@@ -84,6 +85,46 @@ Inserted into the Infinite Fluid Machine. It must first be bound to a fluid or c
 ---
 
 ## Machines
+
+### Void Generator
+
+The Void Generator consumes Void Fluid and converts it into FE energy, outputting it to adjacent blocks.
+
+**Side functions:**
+
+| Side          | Function                                                        |
+| ------------- | --------------------------------------------------------------- |
+| Bottom (DOWN) | Void Fluid input                                                |
+| Other 5 sides | Energy output (FE); each side can be toggled on/off separately |
+
+**Operating requirements:**
+
+1. Void Fluid is being supplied to the bottom
+2. At least one output side is enabled
+
+**Conversion ratio:** 1 mB Void Fluid = 10 FE by default (configurable)
+
+**Side rate:** Each side has an independently configurable output rate (FE/t). Use the wrench in Config Mode to toggle sides on/off; sneak + right-click to open the rate input screen.
+
+**Redstone Control:** Each time a redstone signal is received (transitioning from off to on), all output sides are toggled together (all on ↔ all off).
+
+**HUD:** Displays energy stored, void fluid consumption (mB/s and mB/t), status, void tank level, and per-side output rates.
+
+**Recipe:** Iron Ingots + Redstone + Destruction Core + Infinite Core + Void Bucket (3×3 crafting)
+
+---
+
+### Reinforced Void Block
+
+An extremely durable block that is completely immune to Void Fluid.
+
+* **Hardness:** 100 (Obsidian is 50); requires a diamond pickaxe to mine
+* **Blast resistance:** 2400 (Obsidian is 1200)
+* **Void immunity:** Void Fluid cannot consume or spread into Reinforced Void Blocks, making them ideal for building safe containment areas
+
+**Recipe:** Obsidian + Diamond + Void Bucket
+
+---
 
 ### Destruction Machine
 
@@ -172,7 +213,7 @@ Consumes Void Fluid and outputs the fluid bound to its core.
 When holding the Wrench (or empty hand) and looking at either machine, an on-screen HUD displays real-time information, including:
 
 * **Energy:** current / maximum
-* **Power draw:** current consumption (FE/s and FE/t); shows **0** with no core, and shows **full-load power draw** when a core is inserted (to preview required power)
+* **Power draw / Consumption:** the two machines show power draw (FE/s and FE/t); the Void Generator shows void fluid consumption (mB/s and mB/t)
 * **Core:** whether inserted, and the core level (e.g., `Inserted Lv.3` or `Inserted Lv.4 ★`)
 * **Status:** Running / Insufficient Power / No Core
 * **Bound fluid** (Infinite Fluid Machine only): the currently bound fluid or chemical
