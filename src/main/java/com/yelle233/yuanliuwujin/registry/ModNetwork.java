@@ -68,10 +68,7 @@ public class ModNetwork {
 
         registrar.playToServer(SetFaceRatePayload.TYPE, SetFaceRatePayload.CODEC, (payload, ctx) -> ctx.enqueueWork(() -> {
             ServerPlayer player = (ServerPlayer) ctx.player();
-            HitResult hit = player.pick(6.0, 0f, false);
-            if (hit.getType() != HitResult.Type.BLOCK) return;
-            BlockPos pos = ((BlockHitResult) hit).getBlockPos();
-            BlockEntity be = player.level().getBlockEntity(pos);
+            BlockEntity be = player.level().getBlockEntity(payload.pos());
 
             // 支持 ICoreMachine
             if (be instanceof ICoreMachine machine) {

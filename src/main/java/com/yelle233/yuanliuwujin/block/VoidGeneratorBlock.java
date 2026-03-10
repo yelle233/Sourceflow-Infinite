@@ -30,7 +30,8 @@ public class VoidGeneratorBlock extends Block implements EntityBlock {
 
     public static final BooleanProperty LIT = BlockStateProperties.LIT;
 
-    public static final VoxelShape SHAPE = java.util.Optional.of(Block.box(0, 0, 0, 16, 16, 16)).get();
+    // 完整方块形状（用于视觉轮廓和碰撞）
+    public static final VoxelShape SHAPE = Block.box(0, 0, 0, 16, 16, 16);
 
     public VoidGeneratorBlock(Properties properties) {
         super(properties);
@@ -40,6 +41,12 @@ public class VoidGeneratorBlock extends Block implements EntityBlock {
     @Override
     public @NotNull VoxelShape getShape(BlockState state, BlockGetter level,
                                          BlockPos pos, CollisionContext ctx) {
+        return SHAPE;
+    }
+
+    @Override
+    public @NotNull VoxelShape getCollisionShape(BlockState state, BlockGetter level,
+                                                  BlockPos pos, CollisionContext ctx) {
         return SHAPE;
     }
 
