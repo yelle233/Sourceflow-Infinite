@@ -45,7 +45,7 @@ public class RateInputScreen extends Screen {
                     try {
                         int rate = Integer.parseInt(rateInput.getValue());
                         if (rate >= 1 && rate < Integer.MAX_VALUE) {
-                            ModNetwork.CHANNEL.sendToServer(new SetFaceRateMessage(face, rate));
+                            ModNetwork.CHANNEL.sendToServer(new SetFaceRateMessage(machinePos, face, rate));
                             this.onClose();
                         }
                     } catch (NumberFormatException ignored) {}
@@ -56,7 +56,7 @@ public class RateInputScreen extends Screen {
         addRenderableWidget(Button.builder(
                 Component.translatable("gui.yuanliuwujin.rate_input.reset"),
                 btn -> {
-                    ModNetwork.CHANNEL.sendToServer(new SetFaceRateMessage(face, 1));
+                    ModNetwork.CHANNEL.sendToServer(new SetFaceRateMessage(machinePos, face, 1));
                     this.onClose();
                 }
         ).bounds(centerX + 5, centerY + 20, 95, 20).build());
