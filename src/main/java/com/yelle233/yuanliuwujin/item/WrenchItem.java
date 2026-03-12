@@ -2,9 +2,7 @@ package com.yelle233.yuanliuwujin.item;
 
 import com.yelle233.yuanliuwujin.blockentity.ICoreMachine;
 import com.yelle233.yuanliuwujin.blockentity.IVoidGenerator;
-import com.yelle233.yuanliuwujin.client.RateInputScreen;
 import com.yelle233.yuanliuwujin.registry.ModDataComponents;
-import net.minecraft.client.Minecraft;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.sounds.SoundEvents;
@@ -184,7 +182,7 @@ public class WrenchItem extends Item {
         if (sneaking) {
             // 客户端：打开速率输入界面
             if (level.isClientSide) {
-                Minecraft.getInstance().setScreen(new RateInputScreen(pos, face, machine.getFaceRate(face)));
+                WrenchClientHelper.openRateInputScreen(pos, face, machine.getFaceRate(face));
             }
             return InteractionResult.SUCCESS;
         }
@@ -208,7 +206,7 @@ public class WrenchItem extends Item {
         if (sneaking) {
             // 客户端：打开速率输入界面
             if (level.isClientSide) {
-                Minecraft.getInstance().setScreen(new RateInputScreen(pos, face, generator.getSideRate(face)));
+                WrenchClientHelper.openRateInputScreen(pos, face, generator.getSideRate(face));
             }
             return InteractionResult.SUCCESS;
         }
