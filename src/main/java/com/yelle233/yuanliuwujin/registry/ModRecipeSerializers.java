@@ -1,6 +1,7 @@
 package com.yelle233.yuanliuwujin.registry;
 
 import com.yelle233.yuanliuwujin.SourceflowInfinite;
+import com.yelle233.yuanliuwujin.recipe.CoreReturnRecipe;
 import com.yelle233.yuanliuwujin.recipe.InfiniteCoreUpgradeRecipe;
 import net.minecraft.world.item.crafting.RecipeSerializer;
 import net.minecraftforge.registries.DeferredRegister;
@@ -17,4 +18,7 @@ public class ModRecipeSerializers {
 
     public static final RegistryObject<RecipeSerializer<InfiniteCoreUpgradeRecipe>> INFINITE_CORE_UPGRADE =
             RECIPE_SERIALIZERS.register("infinite_core_upgrade", InfiniteCoreUpgradeRecipe.Serializer::new);
+
+    public static final RegistryObject<RecipeSerializer<CoreReturnRecipe>> CORE_RETURN =
+            RECIPE_SERIALIZERS.register("core_return", CoreReturnRecipe.Serializer::new);
 }

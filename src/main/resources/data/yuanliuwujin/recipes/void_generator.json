@@ -1,5 +1,5 @@
 {
-  "type": "minecraft:crafting_shaped",
+  "type": "yuanliuwujin:core_return",
   "pattern": [
     "IRI",
     "VGK",
